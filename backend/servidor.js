@@ -19,17 +19,18 @@ app.get("/api/clinicas", async (req, res) => {
         id_clinica,
         nombre,
         descripcion,
-        requisitos_generales,
         tipo_institucion,
         telefono,
         correo_contacto,
         sitio_web,
         imagen_portada_url,
-        estado_federativo,
         municipio,
         localidad,
         direccion,
-        codigo_postal
+        codigo_postal,
+        estado_publicacion,
+        ST_Y(ubicacion_geo::geometry) AS latitud,
+        ST_X(ubicacion_geo::geometry) AS longitud
       FROM clinicas
       WHERE estado_publicacion = 'aprobada'
       ORDER BY nombre;

@@ -5,13 +5,18 @@
   "main": "servidor.js",
   "scripts": {
     "start": "node servidor.js",
-    "test": "node probar-db.js"
+    "test": "node probar-db.js",
+    "migrate": "node scripts/migrador.js up",
+    "migrate:down": "node scripts/migrador.js down",
+    "migrate:status": "node scripts/migrador.js status",
+    "migrate:reset": "node scripts/migrador.js reset"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^18.0.8",
     "express": "^5.3.0",
