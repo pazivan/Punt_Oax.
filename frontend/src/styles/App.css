@@ -11,13 +11,15 @@
   --accent-emerald: #10b981;
 }
 
-body {
-  margin: 0;
+.public-directory-view {
   min-height: 100vh;
+  width: 100%;
   background: var(--bg-gradient);
   color: var(--text-primary);
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-container {

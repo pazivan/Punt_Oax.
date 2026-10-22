@@ -5,10 +5,12 @@
 /* Envoltorio principal */
 .auth-page-wrapper {
   min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: linear-gradient(0deg, #F9F9F8, #F9F9F8), #FFFFFF;
+  background-color: #F9F9F8;
   font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #191C1C;
 }
@@ -79,6 +81,18 @@
   opacity: 0.9;
 }
 
+.auth-avatar-circle {
+  width: 32px;
+  height: 32px;
+  background-color: #001D14;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 14px;
+}
+
 /* Contenedor principal de dos columnas */
 .auth-main {
   width: 100%;
@@ -111,6 +125,34 @@
   box-shadow: 0px 10px 30px rgba(16, 51, 40, 0.12);
   box-sizing: border-box;
   color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-left-panel.theme-dark {
+  background-color: #001D14;
+}
+
+.auth-decor-circle {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  right: -80px;
+  bottom: -80px;
+  background: #103328;
+  opacity: 0.3;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-panel-content-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 }
 
 .auth-badge-top {
@@ -124,6 +166,10 @@
   margin-bottom: 8px;
 }
 
+.auth-badge-top.mint-light {
+  color: #C5EBDA;
+}
+
 .auth-heading-hero {
   font-family: 'Liberation Serif', Georgia, serif;
   font-weight: 700;
@@ -133,11 +179,24 @@
   margin: 0 0 8px 0;
 }
 
+.auth-heading-hero.hero-large {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 44px;
+  line-height: 52px;
+  letter-spacing: -1.2px;
+}
+
 .auth-subtext-hero {
   font-size: 14px;
   line-height: 20px;
   color: rgba(170, 207, 191, 0.9);
   margin: 0;
+}
+
+.auth-subtext-hero.larger {
+  font-size: 15px;
+  line-height: 24px;
+  color: #AACFBF;
 }
 
 /* Caja de previsualización del mapa */
@@ -270,6 +329,33 @@
   box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+/* Info Banner oficial de Figma (#D6E6E0) */
+.auth-info-banner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 12px;
+  background-color: #D6E6E0;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.auth-info-icon {
+  font-size: 16px;
+  color: #001D14;
+  flex-shrink: 0;
+}
+
+.auth-info-text {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  color: #596763;
+  margin: 0;
+}
+
 /* Campos de entrada */
 .auth-form {
   display: flex;
@@ -291,21 +377,22 @@
 
 .auth-input {
   width: 100%;
-  height: 42px;
-  background-color: #F3F4F3;
+  height: 46px;
+  background-color: #FFFFFF;
   border-radius: 8px;
-  border: 1px solid transparent;
+  border: 1px solid rgba(193, 200, 195, 0.5);
   padding: 0 16px;
   font-size: 14px;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #191C1C;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .auth-input:focus {
   border-color: #103328;
-  background-color: #FFFFFF;
+  box-shadow: 0 0 0 1px #103328;
 }
 
 /* Botón principal */
@@ -327,6 +414,14 @@
 
 .auth-submit-btn:hover:not(:disabled) {
   background-color: #0c261e;
+}
+
+.auth-submit-btn.dark-btn {
+  background-color: #001D14;
+}
+
+.auth-submit-btn.dark-btn:hover:not(:disabled) {
+  background-color: #083325;
 }
 
 .auth-submit-btn:disabled {
@@ -371,13 +466,21 @@
 }
 
 .auth-public-link {
-  font-size: 12px;
-  color: #6B7280;
+  font-size: 13px;
+  color: #414845;
   text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  transition: all 0.2s ease;
 }
 
 .auth-public-link:hover {
   text-decoration: underline;
+  color: #103328;
 }
 
 /* Footer */
@@ -396,3 +499,28 @@
   color: #414845;
   margin: 0;
 }
+
+/* Responsividad para móviles y pantallas medianas */
+@media (max-width: 960px) {
+  .auth-card-container {
+    flex-direction: column;
+    min-height: auto;
+    max-width: 540px;
+  }
+
+  .auth-left-panel {
+    flex: none;
+    width: 100%;
+    padding: 32px 24px;
+  }
+
+  .auth-right-panel {
+    padding: 32px 24px;
+  }
+
+  .auth-heading-hero {
+    font-size: 28px;
+    line-height: 34px;
+  }
+}
+

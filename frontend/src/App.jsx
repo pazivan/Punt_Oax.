@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Login from './components/Auth/Login'
 import Register from './components/Auth/Register'
-import './App.css'
+import './styles/App.css'
 
 function App() {
   const [currentView, setCurrentView] = useState('login') // Inicia en 'login' para que pruebes tus pantallas
@@ -53,7 +53,8 @@ function App() {
 
   // Vista del Directorio Público
   return (
-    <div className="app-container">
+    <div className="public-directory-view">
+      <div className="app-container">
       <header className="app-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
           <div>
@@ -108,6 +109,7 @@ function App() {
           </div>
         )}
       </main>
+      </div>
     </div>
   )
 }
