@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
+import Login from './components/Auth/Login'
+import Register from './components/Auth/Register'
 import './App.css'
 
 function App() {
+  const [currentView, setCurrentView] = useState('login') // Inicia en 'login' para que pruebes tus pantallas
   const [clinicas, setClinicas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -10,11 +13,9 @@ function App() {
     async function cargarClinicas() {
       try {
         const respuesta = await fetch('/api/clinicas')
-
         if (!respuesta.ok) {
           throw new Error(`El servidor respondió con estado ${respuesta.status}`)
         }
-
         const datos = await respuesta.json()
         setClinicas(datos)
       } catch (err) {
@@ -25,15 +26,58 @@ function App() {
       }
     }
 
-    cargarClinicas()
-  }, [])
+    if (currentView === 'directorio') {
+      cargarClinicas()
+    }
+  }, [currentView])
 
+  // Vista de Login
+  if (currentView === 'login') {
+    return (
+      <Login
+        onSwitchToRegister={() => setCurrentView('register')}
+        onBackToPublic={() => setCurrentView('directorio')}
+      />
+    )
+  }
+
+  // Vista de Registro
+  if (currentView === 'register') {
+    return (
+      <Register
+        onSwitchToLogin={() => setCurrentView('login')}
+        onBackToPublic={() => setCurrentView('directorio')}
+      />
+    )
+  }
+
+  // Vista del Directorio Público
   return (
     <div className="app-container">
       <header className="app-header">
-        <div className="header-badge">PuntOax • Salud en Oaxaca</div>
-        <h1>Directorio de Clínicas</h1>
-        <p className="header-subtitle">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+          <div>
+            <div className="header-badge">PuntOax • Salud en Oaxaca</div>
+            <h1>Directorio de Clínicas</h1>
+          </div>
+          <div>
+            <button
+              onClick={() => setCurrentView('login')}
+              style={{
+                backgroundColor: '#103328',
+                color: '#FFFFFF',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Iniciar Sesión
+            </button>
+          </div>
+        </div>
+        <p className="header-subtitle" style={{ maxWidth: '1200px', margin: '10px auto 0' }}>
           Puntos de atención y servicios de salud integrados con PostgreSQL y PostGIS.
         </p>
       </header>
@@ -59,66 +103,8 @@ function App() {
         {!cargando && !error && clinicas.length === 0 && (
           <div className="state-card empty">
             <span className="empty-icon">🏥</span>
-            <h3>No hay clínicas aprobadas para mostrar</h3>
-            <p>La base de datos está conectada pero aún no cuenta con clínicas registradas con estado "aprobada".</p>
-          </div>
-        )}
-
-        {!cargando && !error && clinicas.length > 0 && (
-          <div className="clinicas-grid">
-            {clinicas.map((clinica) => (
-              <article key={clinica.id_clinica} className="clinica-card">
-                <div className="card-header">
-                  <span className="badge-tipo">{clinica.tipo_institucion || 'Centro de Salud'}</span>
-                  {clinica.municipio && (
-                    <span className="badge-municipio">📍 {clinica.municipio}</span>
-                  )}
-                </div>
-
-                <h3>{clinica.nombre}</h3>
-
-                {clinica.descripcion && (
-                  <p className="card-desc">{clinica.descripcion}</p>
-                )}
-
-                <div className="card-details">
-                  {clinica.direccion && (
-                    <p className="detail-item">
-                      <strong>Dirección:</strong> {clinica.direccion}
-                      {clinica.codigo_postal ? `, C.P. ${clinica.codigo_postal}` : ''}
-                    </p>
-                  )}
-                  {clinica.telefono && (
-                    <p className="detail-item">
-                      <strong>Teléfono:</strong> <a href={`tel:${clinica.telefono}`}>{clinica.telefono}</a>
-                    </p>
-                  )}
-                  {clinica.correo_contacto && (
-                    <p className="detail-item">
-                      <strong>Contacto:</strong> <a href={`mailto:${clinica.correo_contacto}`}>{clinica.correo_contacto}</a>
-                    </p>
-                  )}
-                  {clinica.requisitos_generales && (
-                    <p className="detail-item requisitos">
-                      <strong>Requisitos:</strong> {clinica.requisitos_generales}
-                    </p>
-                  )}
-                </div>
-
-                {clinica.sitio_web && (
-                  <div className="card-footer">
-                    <a
-                      href={clinica.sitio_web}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="link-btn"
-                    >
-                      Sitio Oficial ↗
-                    </a>
-                  </div>
-                )}
-              </article>
-            ))}
+            <h3>No hay clínicas registradas para mostrar</h3>
+            <p>La base de datos aún no cuenta con clínicas disponibles.</p>
           </div>
         )}
       </main>
