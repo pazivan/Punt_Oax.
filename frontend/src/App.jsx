@@ -203,11 +203,6 @@ function App() {
                       <strong>Contacto:</strong> <a href={`mailto:${clinica.correo_contacto}`}>{clinica.correo_contacto}</a>
                     </p>
                   )}
-                  {clinica.requisitos_generales && (
-                    <p className="detail-item requisitos">
-                      <strong>Requisitos:</strong> {clinica.requisitos_generales}
-                    </p>
-                  )}
                 </div>
 
                 {clinica.sitio_web && (

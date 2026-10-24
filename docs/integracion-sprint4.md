@@ -21,10 +21,12 @@ Esta rama reúne el frontend de Miguel/Yareli, el registro de Kelly, el esquema 
 Con una API y una base **aisladas** funcionando, ejecutar en `backend/`:
 
 ```bash
-PUNTOAX_TEST_DB=1 npm run test:integration
+PUNTOAX_TEST_DB=1 PGHOST=127.0.0.1 PGPORT=<puerto_aislado> \
+  PGDATABASE=puntoax_s4_test_revision PGUSER=<usuario_test> PGPASSWORD=<clave_test> \
+  PUNTOAX_TEST_API_PORT=3100 npm run test:integration
 ```
 
-La prueba rechaza ejecutarse si `PGDATABASE` no comienza con `puntoax_s4_test` y cubre: registro sin nombre persistido, errores 400/409, login usuario y clínica, perfil Bearer, token inválido y ruta exclusiva de administrador. Para las pruebas unitarias del cliente: `cd frontend && npm run lint && npm run test && npm run build`. En el navegador probar `/`, `/registro`, `/login`, `/cuenta` y `/admin` (redirige o deniega el acceso sin rol autorizado). La API debe imponer permisos incluso si alguien evita el frontend.
+Arrancar primero una API *separada* en el puerto 3100 apuntando **a la misma base de prueba aislada** de la orden anterior. La prueba rechaza ejecutarse si `PGDATABASE` no comienza con `puntoax_s4_test` o si no se indica un puerto de API distinto del 3000 habitual; este guard no puede comprobar por sí solo a qué base apunta la API, por lo que hay que verificar su configuración antes de probar. Cubre: registro sin nombre persistido, errores 400/409, login usuario y clínica, perfil Bearer, token inválido y ruta exclusiva de administrador. Para las pruebas unitarias del cliente: `cd frontend && npm run lint && npm run test && npm run build`. En el navegador probar `/`, `/registro`, `/login`, `/cuenta` y `/admin` (redirige o deniega el acceso sin rol autorizado). La API debe imponer permisos incluso si alguien evita el frontend.
 
 ### Resultados locales de preparación
 

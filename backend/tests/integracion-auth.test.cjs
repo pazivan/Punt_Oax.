@@ -12,7 +12,12 @@ if (process.env.PUNTOAX_TEST_DB !== '1' ||
 }
 
 const pool = new Pool();
-const url = 'http://127.0.0.1:3000';
+const puerto = Number(process.env.PUNTOAX_TEST_API_PORT);
+if (!process.env.PUNTOAX_TEST_API_PORT || !Number.isInteger(puerto) ||
+    puerto < 1024 || puerto > 65535 || puerto === 3000) {
+  throw new Error('Configura PUNTOAX_TEST_API_PORT con un puerto local de API aislada distinto de 3000.');
+}
+const url = `http://127.0.0.1:${puerto}`;
 
 async function llamar(ruta, { datos, token } = {}) {
   const respuesta = await fetch(`${url}${ruta}`, {
