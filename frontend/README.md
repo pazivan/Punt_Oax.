@@ -1,16 +1,34 @@
-# React + Vite
+# PuntOax · Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Ejecutar en desarrollo
 
-Currently, two official plugins are available:
+Desde `frontend/`:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm ci
+npm run dev
+```
 
-## React Compiler
+Abrir la dirección que muestra Vite (normalmente `http://localhost:5173`). La consulta pública del directorio no exige iniciar sesión. Para obtener datos reales o usar los formularios, debe estar activa una API en `http://localhost:3000`: Vite reenvía allí las peticiones a `/api` mediante `vite.config.js`. En el despliegue con Nginx, `nginx.conf` reenvía `/api/` al servicio `backend:3000`. La URL de la API no se configura en el formulario.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+La API integrada debe ofrecer:
 
-## Expanding the ESLint configuration
+| Operación | Ruta | Solicitud/respuesta esperada |
+| --- | --- | --- |
+| Registro de usuario | `POST /api/auth/registro-usuario` | `{ correo, password }` (mínimo 8 caracteres); respuesta JSON de éxito. No se envía nombre. |
+| Acceso de usuario | `POST /api/auth/login-usuario` | `{ correo, password }` → `{ token, usuario }`. |
+| Acceso de clínica | `POST /api/auth/login-clinica` | `{ correo, password }` → `{ token, clinica }`. |
+| Perfil | `GET /api/auth/perfil` | `Authorization: Bearer <token>` → datos de perfil. |
+| Directorio público | `GET /api/clinicas` | Lista de clínicas sin autenticación. |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+El registro de clínicas **no está disponible**: no existe un endpoint para ello. Las rutas `/cuenta` y `/admin` adaptan la navegación protegida de Citlalli: verifican el token con la API antes de mostrar contenido y `/admin` exige rol de administrador. Los paneles de cada rol siguen pendientes; la protección real de datos también debe imponerse en la API. Para este prototipo, `src/api/auth.js` concentra la persistencia en `sessionStorage` (solo en esta pestaña, se elimina al cerrar sesión o si `/api/auth/perfil` rechaza el token con 401/403). El equipo debe acordar la estrategia definitiva de sesión antes de desplegarla.
+
+## Comprobaciones
+
+```bash
+npm run lint
+npm run test
+npm run build
+```
+
+`npm run test` simula las respuestas de la API: prueba las rutas, el cuerpo de las solicitudes, los formatos de login, errores y la sesión. **No crea cuentas ni prueba la base de datos real**. Para pruebas reales y consideraciones de migración consultar [`docs/integracion-sprint4.md`](../docs/integracion-sprint4.md). Una base ya creada con `nombre NOT NULL` necesita la migración 003: editar solo el SQL de inicialización no altera una tabla existente.
