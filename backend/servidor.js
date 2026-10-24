@@ -49,15 +49,14 @@ app.get("/api/clinicas", async (req, res) => {
 app.post("/api/auth/registro-usuario", async (req, res) => {
   const { nombre, apellidos, correo, password, telefono } = req.body;
 
-  try {
-    // 1. Validar campos obligatorios
-    if (!nombre || !correo || !password) {
+    try {
+    if (!correo || !password) {
       return res.status(400).json({
-        error: "Nombre, correo y contraseña son obligatorios.",
+        error: "Correo y contraseña son obligatorios.",
       });
     }
 
-       const correoValido = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(correo);
+    const correoValido = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(correo);
     if (!correoValido) {
       return res.status(400).json({
         error: "El formato del correo electrónico no es válido.",
