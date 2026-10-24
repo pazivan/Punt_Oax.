@@ -2,44 +2,48 @@
 services:
   db:
     image: postgis/postgis:15-3.3
-    container_name: puntoax_db
+    container_name: puntoax_sprint4_db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password_seguro
+      POSTGRES_PASSWORD: ${SPRINT4_DB_PASSWORD:?Configura SPRINT4_DB_PASSWORD en el entorno}
       POSTGRES_DB: puntoax_bd
     ports:
-      - "5432:5432"
+      - "127.0.0.1:55441:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - sprint4_pgdata:/var/lib/postgresql/data
+      - ./db/migrations/001_create_schema_puntoax_v1_3.up.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+      - ./db/docker-init/002_marcar_schema.sql:/docker-entrypoint-initdb.d/002_marcar_schema.sql:ro
     restart: unless-stopped
 
   backend:
-    build: ./backend  # Corregido: de ./back a ./backend
-    container_name: puntoax_backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: puntoax_sprint4_backend
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - DB_HOST=db
       - DB_USER=postgres
-      - DB_PASSWORD=password_seguro
+      - DB_PASSWORD=${SPRINT4_DB_PASSWORD:?Configura SPRINT4_DB_PASSWORD en el entorno}
       - DB_NAME=puntoax_bd
       - PGHOST=db
       - PGPORT=5432
       - PGUSER=postgres
-      - PGPASSWORD=password_seguro
+      - PGPASSWORD=${SPRINT4_DB_PASSWORD:?Configura SPRINT4_DB_PASSWORD en el entorno}
       - PGDATABASE=puntoax_bd
       - PORT=3000
+      - JWT_SECRET=${JWT_SECRET:?Configura JWT_SECRET en el entorno antes de iniciar la API}
     depends_on:
       - db
 
   frontend:
     build: ./frontend # Corregido: de ./front a ./frontend
-    container_name: puntoax_frontend
+    container_name: puntoax_sprint4_frontend
     ports:
-      - "80:80"
+      - "127.0.0.1:8080:80"
     depends_on:
       - backend
 
 volumes:
-  pgdata:
+  sprint4_pgdata:

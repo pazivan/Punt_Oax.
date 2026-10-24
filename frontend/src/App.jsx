@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Login from './components/Auth/Login.jsx'
 import Register from './components/Auth/Register.jsx'
+import { RutaPrivada } from './RutaPrivada.jsx'
 import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
 import './App.css'
 
 function App() {
-  const [vista, setVista] = useState('directorio')
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [sesion, setSesion] = useState(leerSesion)
   const [mensajeAuth, setMensajeAuth] = useState('')
   const [perfil, setPerfil] = useState(null)
+  const [verificandoPerfil, setVerificandoPerfil] = useState(() => Boolean(leerSesion()))
   const [errorPerfil, setErrorPerfil] = useState('')
   const consultaPerfil = useRef(0)
   const [clinicas, setClinicas] = useState([])
@@ -45,14 +49,17 @@ function App() {
         if (activo && consulta === consultaPerfil.current) {
           setPerfil(datos.usuarioAutenticado)
           setErrorPerfil('')
+          setVerificandoPerfil(false)
         }
       })
       .catch((err) => {
         if (activo && consulta === consultaPerfil.current) {
           setErrorPerfil(err.message)
+          setVerificandoPerfil(false)
           if (!leerSesion()) {
             setSesion(null)
             setPerfil(null)
+            setMensajeAuth('Tu sesión expiró. Inicia sesión de nuevo.')
           }
         }
       })
@@ -62,27 +69,53 @@ function App() {
   function salir() {
     consultaPerfil.current++
     cerrarSesion()
-    setSesion(null)
-    setPerfil(null)
-    setErrorPerfil('')
-    setVista('directorio')
+    // Recargar evita que un guard de la ruta privada redirija a /login
+    // mientras React actualiza la sesión tras cerrar sesión.
+    window.location.replace('/')
   }
 
-  if (vista === 'login') {
+  if (pathname === '/login') {
     return <Login
-      onSwitchToRegister={() => { setMensajeAuth(''); setVista('register') }}
-      onBackToPublic={() => setVista('directorio')}
-      onLogin={(nuevaSesion) => { setSesion(nuevaSesion); setErrorPerfil(''); setMensajeAuth(''); setVista('directorio') }}
+      onSwitchToRegister={() => { setMensajeAuth(''); navigate('/registro') }}
+      onBackToPublic={() => navigate('/')}
+      onLogin={(nuevaSesion) => {
+        setPerfil(null)
+        setVerificandoPerfil(true)
+        setSesion(nuevaSesion)
+        setErrorPerfil('')
+        setMensajeAuth('')
+        navigate('/cuenta')
+      }}
       mensaje={mensajeAuth}
     />
   }
 
-  if (vista === 'register') {
+  if (pathname === '/registro') {
     return <Register
-      onSwitchToLogin={(mensaje = '') => { setMensajeAuth(mensaje); setVista('login') }}
-      onBackToPublic={() => setVista('directorio')}
+      onSwitchToLogin={(mensaje = '') => { setMensajeAuth(mensaje); navigate('/login') }}
+      onBackToPublic={() => navigate('/')}
     />
   }
+
+  if (pathname === '/cuenta' || pathname === '/admin') {
+    return <RutaPrivada
+      sesion={sesion}
+      perfil={perfil}
+      verificando={verificandoPerfil}
+      error={errorPerfil}
+      rolesPermitidos={pathname === '/admin' ? ['administrador'] : ['usuario', 'clinica', 'administrador']}
+    >
+      <main className="app-container">
+        <h1>{pathname === '/admin' ? 'Área de administración' : 'Mi cuenta'}</h1>
+        <p role="status">Sesión verificada: {sesion?.cuenta.correo || sesion?.cuenta.nombre}</p>
+        <p>Los paneles de cada rol aún no están disponibles.</p>
+        <Link to="/">Volver al directorio</Link>{' '}
+        <button type="button" onClick={salir}>Cerrar sesión</button>
+      </main>
+    </RutaPrivada>
+  }
+
+  if (pathname !== '/') return <Navigate to="/" replace />
 
   return (
     <div className="app-container">
@@ -97,12 +130,13 @@ function App() {
             <>
               <p role="status">Sesión iniciada: {sesion.cuenta.correo || sesion.cuenta.nombre}</p>
               {perfil && <p>Perfil verificado.</p>}
+              <Link to="/cuenta">Mi cuenta</Link>
               <button type="button" onClick={salir}>Cerrar sesión</button>
             </>
           ) : (
             <>
-              <button type="button" onClick={() => { setMensajeAuth(''); setVista('login') }}>Iniciar sesión</button>
-              <button type="button" onClick={() => setVista('register')}>Crear cuenta</button>
+              <Link to="/login" onClick={() => setMensajeAuth('')}>Iniciar sesión</Link>
+              <Link to="/registro">Crear cuenta</Link>
             </>
           )}
         </div>

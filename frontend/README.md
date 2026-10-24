@@ -21,7 +21,7 @@ La API integrada debe ofrecer:
 | Perfil | `GET /api/auth/perfil` | `Authorization: Bearer <token>` → datos de perfil. |
 | Directorio público | `GET /api/clinicas` | Lista de clínicas sin autenticación. |
 
-El registro de clínicas **no está disponible**: no existe un endpoint para ello. La aplicación no aplica autorización de rutas por rol. Para este prototipo, `src/api/auth.js` concentra la persistencia en `sessionStorage` (solo en esta pestaña, se elimina al cerrar sesión o si `/api/auth/perfil` rechaza el token con 401/403). El equipo debe acordar la estrategia definitiva de sesión antes de desplegarla.
+El registro de clínicas **no está disponible**: no existe un endpoint para ello. Las rutas `/cuenta` y `/admin` adaptan la navegación protegida de Citlalli: verifican el token con la API antes de mostrar contenido y `/admin` exige rol de administrador. Los paneles de cada rol siguen pendientes; la protección real de datos también debe imponerse en la API. Para este prototipo, `src/api/auth.js` concentra la persistencia en `sessionStorage` (solo en esta pestaña, se elimina al cerrar sesión o si `/api/auth/perfil` rechaza el token con 401/403). El equipo debe acordar la estrategia definitiva de sesión antes de desplegarla.
 
 ## Comprobaciones
 
@@ -31,4 +31,4 @@ npm run test
 npm run build
 ```
 
-`npm run test` simula las respuestas de la API: prueba las rutas, el cuerpo de las solicitudes, los formatos de login, errores y la sesión. **No crea cuentas ni prueba la base de datos real**. Para completar la integración, ejecutar conjuntamente los cambios de registro de Kelly, autenticación de Jonathan y el esquema/migración de Iván, comprobar que la base de datos activa admite `usuarios.nombre` nulo, y probar en el navegador registro correcto, correo repetido, credenciales erróneas, login, perfil, token rechazado y cierre de sesión. Una base ya creada con `nombre NOT NULL` necesita una migración que elimine esa restricción: editar solo el SQL de inicialización no altera una tabla existente.
+`npm run test` simula las respuestas de la API: prueba las rutas, el cuerpo de las solicitudes, los formatos de login, errores y la sesión. **No crea cuentas ni prueba la base de datos real**. Para pruebas reales y consideraciones de migración consultar [`docs/integracion-sprint4.md`](../docs/integracion-sprint4.md). Una base ya creada con `nombre NOT NULL` necesita la migración 003: editar solo el SQL de inicialización no altera una tabla existente.

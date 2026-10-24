@@ -74,13 +74,15 @@ body {
   flex-wrap: wrap;
 }
 
-.auth-directory-actions button {
+.auth-directory-actions button,
+.auth-directory-actions a {
   background: #103328;
   color: white;
   border: 0;
   border-radius: 8px;
   padding: 10px 20px;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .auth-directory-error {
