@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 -- Autenticación vía contraseña segura (hash) o Google OAuth (google_sub)
 CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nombre VARCHAR(100) NOT NULL,
+    nombre VARCHAR(100),
     apellidos VARCHAR(150),
     correo VARCHAR(255) NOT NULL,
     password_hash TEXT,

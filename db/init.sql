@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 -- 3. TABLA: usuarios (Personas que agendan citas)
 CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nombre VARCHAR(100) NOT NULL,
+    nombre VARCHAR(100),
     apellidos VARCHAR(150),
     correo VARCHAR(255) NOT NULL,
     password_hash TEXT,

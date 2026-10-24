@@ -34,7 +34,7 @@ erDiagram
 
     usuarios {
         uuid id_usuario PK "gen_random_uuid()"
-        varchar nombre "NOT NULL (100)"
+        varchar nombre "Opcional en registro (100)"
         varchar apellidos "150"
         varchar correo UK "NOT NULL UNIQUE LOWER"
         text password_hash "NULL si entra con Google"
@@ -198,18 +198,20 @@ const { hashearPassword, generarToken } = require("./auth");
 const pool = require("./db");
 
 app.post("/api/auth/registro-usuario", async (req, res) => {
-  const { nombre, apellidos, correo, password, telefono } = req.body;
+  // Registro progresivo: solo correo y password son requeridos inicialmente.
+  // Nombre, apellidos y teléfono se capturan al momento de agendar cita o en perfil.
+  const { correo, password, nombre = null, apellidos = null, telefono = null } = req.body;
 
   try {
     // 1. Validaciones básicas
-    if (!nombre || !correo || !password) {
-      return res.status(400).json({ error: "Nombre, correo y contraseña son obligatorios." });
+    if (!correo || !password) {
+      return res.status(400).json({ error: "Correo y contraseña son obligatorios." });
     }
 
     // 2. Generar hash seguro (coste 10)
     const hash = await hashearPassword(password);
 
-    // 3. Inserción con correo en minúsculas
+    // 3. Inserción con correo en minúsculas (nombre opcional al registrarse)
     const { rows } = await pool.query(
       `INSERT INTO usuarios (nombre, apellidos, correo, password_hash, telefono)
        VALUES ($1, $2, LOWER(TRIM($3)), $4, $5)
