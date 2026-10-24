@@ -1,0 +1,528 @@
+/* ==========================================================================
+   PuntOax - Módulo de Autenticación (Estilos oficiales de Figma)
+   ========================================================================== */
+
+/* Envoltorio principal */
+.auth-page-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #F9F9F8;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #191C1C;
+}
+
+/* Header superior */
+.auth-header {
+  width: 100%;
+  height: 80px;
+  background-color: rgba(249, 249, 248, 0.8);
+  box-shadow: 0px 1px 8px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.auth-header-container {
+  width: 100%;
+  max-width: 1280px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.auth-brand-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 48px;
+}
+
+.auth-brand-title {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.4px;
+  color: #001D14;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.auth-nav-link {
+  font-size: 14px;
+  color: #414845;
+  text-decoration: none;
+}
+
+.auth-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.auth-btn-outline {
+  background-color: #001D14;
+  color: #FFFFFF;
+  padding: 8px 24px;
+  border-radius: 8px;
+  border: none;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.auth-btn-outline:hover {
+  opacity: 0.9;
+}
+
+.auth-avatar-circle {
+  width: 32px;
+  height: 32px;
+  background-color: #001D14;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 14px;
+}
+
+/* Contenedor principal de dos columnas */
+.auth-main {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 24px;
+  flex: 1;
+}
+
+.auth-card-container {
+  width: 100%;
+  max-width: 1152px;
+  min-height: 592px;
+  display: flex;
+  flex-direction: row;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0px 10px 30px rgba(16, 51, 40, 0.08);
+}
+
+/* Columna Izquierda: Verde Institucional */
+.auth-left-panel {
+  flex: 0 0 552px;
+  background-color: #103328;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0px 10px 30px rgba(16, 51, 40, 0.12);
+  box-sizing: border-box;
+  color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-left-panel.theme-dark {
+  background-color: #001D14;
+}
+
+.auth-decor-circle {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  right: -80px;
+  bottom: -80px;
+  background: #103328;
+  opacity: 0.3;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-panel-content-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.auth-badge-top {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #AACFBF;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.auth-badge-top.mint-light {
+  color: #C5EBDA;
+}
+
+.auth-heading-hero {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 44px;
+  color: #FFFFFF;
+  margin: 0 0 8px 0;
+}
+
+.auth-heading-hero.hero-large {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 44px;
+  line-height: 52px;
+  letter-spacing: -1.2px;
+}
+
+.auth-subtext-hero {
+  font-size: 14px;
+  line-height: 20px;
+  color: rgba(170, 207, 191, 0.9);
+  margin: 0;
+}
+
+.auth-subtext-hero.larger {
+  font-size: 15px;
+  line-height: 24px;
+  color: #AACFBF;
+}
+
+/* Caja de previsualización del mapa */
+.auth-map-preview-box {
+  margin: 24px 0;
+  padding: 24px 16px;
+  background-color: rgba(249, 249, 248, 0.05);
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.auth-map-card-inner {
+  width: 100%;
+  max-width: 424px;
+  height: 180px;
+  background-color: rgba(16, 51, 40, 0.4);
+  border: 1.5px dashed #A0F3D2;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.auth-map-tag {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 8px;
+  background-color: #F9F9F8;
+  border-radius: 8px;
+  box-shadow: 0px 4px 6px -1px rgba(0, 0, 0, 0.1);
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-size: 15px;
+  color: #001D14;
+}
+
+/* Lista de ventajas */
+.auth-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-feature-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #AACFBF;
+}
+
+.auth-check-icon {
+  color: #A0F3D2;
+  font-weight: bold;
+}
+
+/* Columna Derecha: Formulario Blanco */
+.auth-right-panel {
+  flex: 1;
+  background-color: #FFFFFF;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.auth-form-inner {
+  width: 100%;
+  max-width: 448px;
+  margin: 0 auto;
+}
+
+.auth-subtitle-small {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #414845;
+}
+
+.auth-form-title {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 32px;
+  color: #191C1C;
+  margin: 4px 0 6px 0;
+}
+
+.auth-form-instruction {
+  font-size: 14px;
+  line-height: 20px;
+  color: #414845;
+  margin: 0 0 16px 0;
+}
+
+/* Selector Toggle (Usuario / Clínica) */
+.auth-role-toggle {
+  display: flex;
+  flex-direction: row;
+  padding: 4px;
+  gap: 8px;
+  background-color: #F3F4F3;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.auth-toggle-btn {
+  flex: 1;
+  height: 36px;
+  background-color: transparent;
+  border: none;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #414845;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.auth-toggle-btn.active {
+  background-color: #F9F9F8;
+  color: #191C1C;
+  font-weight: 600;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Info Banner oficial de Figma (#D6E6E0) */
+.auth-info-banner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 12px;
+  background-color: #D6E6E0;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.auth-info-icon {
+  font-size: 16px;
+  color: #001D14;
+  flex-shrink: 0;
+}
+
+.auth-info-text {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  color: #596763;
+  margin: 0;
+}
+
+/* Campos de entrada */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #191C1C;
+}
+
+.auth-input {
+  width: 100%;
+  height: 46px;
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  border: 1px solid rgba(193, 200, 195, 0.5);
+  padding: 0 16px;
+  font-size: 14px;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #191C1C;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.auth-input:focus {
+  border-color: #103328;
+  box-shadow: 0 0 0 1px #103328;
+}
+
+/* Botón principal */
+.auth-submit-btn {
+  width: 100%;
+  height: 52px;
+  background-color: #103328;
+  border-radius: 8px;
+  border: none;
+  color: #FFFFFF;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 8px;
+  box-shadow: 0px 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  background-color: #0c261e;
+}
+
+.auth-submit-btn.dark-btn {
+  background-color: #001D14;
+}
+
+.auth-submit-btn.dark-btn:hover:not(:disabled) {
+  background-color: #083325;
+}
+
+.auth-submit-btn:disabled {
+  background-color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+/* Mensajes de error */
+.auth-error-alert {
+  background-color: #FEE2E2;
+  color: #991B1B;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  border: 1px solid #FCA5A5;
+}
+
+/* Enlaces inferiores */
+.auth-bottom-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.auth-switch-text {
+  font-size: 13px;
+  color: #414845;
+  margin: 0;
+}
+
+.auth-inline-link {
+  background: none;
+  border: none;
+  color: #103328;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.auth-public-link {
+  font-size: 13px;
+  color: #414845;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.auth-public-link:hover {
+  text-decoration: underline;
+  color: #103328;
+}
+
+/* Footer */
+.auth-footer {
+  width: 100%;
+  height: 60px;
+  background-color: #F3F4F3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: auto;
+}
+
+.auth-footer-text {
+  font-size: 12px;
+  color: #414845;
+  margin: 0;
+}
+
+/* Responsividad para móviles y pantallas medianas */
+@media (max-width: 960px) {
+  .auth-card-container {
+    flex-direction: column;
+    min-height: auto;
+    max-width: 540px;
+  }
+
+  .auth-left-panel {
+    flex: none;
+    width: 100%;
+    padding: 32px 24px;
+  }
+
+  .auth-right-panel {
+    padding: 32px 24px;
+  }
+
+  .auth-heading-hero {
+    font-size: 28px;
+    line-height: 34px;
+  }
+}
