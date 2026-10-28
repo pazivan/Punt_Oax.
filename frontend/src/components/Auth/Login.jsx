@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import '../../styles/Auth.css';
 import { guardarSesion, iniciarSesion, iniciarSesionClinica } from '../../api/auth';
+import { normalizarCorreo, validarEmail, validarRequerido } from '../../utils/validaciones';
 
 export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, mensaje }) {
   const [accountType, setAccountType] = useState('usuario');
@@ -16,12 +17,14 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
     setError('');
 
     // Validación básica en cliente
-    if (!email.trim() || !password.trim()) {
+    if (!validarRequerido(email) || !validarRequerido(password)) {
       setError('Por favor, completa todos los campos.');
       return;
     }
 
-    if (!/\S+@\S+\.\S+/.test(email)) {
+    const correoLimpio = normalizarCorreo(email);
+
+    if (!validarEmail(correoLimpio)) {
       setError(
         accountType === 'clinica'
           ? 'Por favor, introduce un correo institucional válido.'
@@ -190,6 +193,7 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
                     id="login-email"
                     type="email"
                     required
+                    maxLength={255}
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

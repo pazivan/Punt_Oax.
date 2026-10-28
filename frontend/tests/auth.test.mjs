@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
   cerrarSesion, consultarPerfil, guardarSesion, iniciarSesion,
-  iniciarSesionClinica, leerSesion, registrarUsuario,
+  iniciarSesionClinica, leerSesion, registrarClinica, registrarUsuario,
 } from '../src/api/auth.js'
 
 const almacen = new Map()
@@ -30,6 +30,40 @@ test('registro solo envía correo y password, nunca nombre ni confirmación', as
   assert.equal(llamadas[0].ruta, '/api/auth/registro-usuario')
   assert.equal(llamadas[0].opciones.method, 'POST')
   assert.deepEqual(JSON.parse(llamadas[0].opciones.body), { correo: 'a@ejemplo.com', password: 'contraseña' })
+})
+
+test('registro de clínica envía nombre, correo y contraseña al endpoint institucional', async () => {
+  const llamadas = simular(201, {
+    mensaje: 'Cuenta de clínica creada correctamente.',
+    clinica: {
+      id: 'uuid-clinica',
+      nombre: 'Clínica Comunitaria San Jacinto',
+      correo: 'contacto@ejemplo.com',
+      rol: 'clinica',
+      estado_publicacion: 'borrador',
+    },
+  })
+  const respuesta = await registrarClinica(
+    'Clínica Comunitaria San Jacinto',
+    'contacto@ejemplo.com',
+    'ContrasenaSegura123',
+  )
+  assert.equal(llamadas[0].ruta, '/api/auth/registro-clinica')
+  assert.equal(llamadas[0].opciones.method, 'POST')
+  assert.deepEqual(JSON.parse(llamadas[0].opciones.body), {
+    nombre: 'Clínica Comunitaria San Jacinto',
+    correo: 'contacto@ejemplo.com',
+    password: 'ContrasenaSegura123',
+  })
+  assert.equal(respuesta.clinica.rol, 'clinica')
+  assert.equal(respuesta.clinica.estado_publicacion, 'borrador')
+  assert.equal(leerSesion(), null, 'el registro no inicia sesión automáticamente')
+
+  simular(409, { error: 'El correo ya se encuentra registrado.' })
+  await assert.rejects(
+    registrarClinica('Otra clínica', 'contacto@ejemplo.com', 'ContrasenaSegura123'),
+    /ya se encuentra registrado/,
+  )
 })
 
 test('login usuario y clínica usan sus rutas y estructuras de respuesta', async () => {

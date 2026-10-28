@@ -118,6 +118,96 @@ app.post("/api/auth/registro-usuario", async (req, res) => {
 });
 
 // ==========================================
+// REGISTRO DE CUENTA INSTITUCIONAL (Sprint 4)
+// Crea la cuenta de acceso de una clínica en estado "borrador".
+// No publica la clínica ni crea una solicitud administrativa (Sprint 7).
+// ==========================================
+app.post("/api/auth/registro-clinica", async (req, res) => {
+  const { nombre, correo, password } = req.body || {};
+
+  if (typeof nombre !== "string" || !nombre.trim() ||
+      typeof correo !== "string" || !correo.trim() ||
+      typeof password !== "string" || !password) {
+    return res.status(400).json({
+      error: "Nombre de la clínica, correo y contraseña son obligatorios.",
+    });
+  }
+
+  const nombreLimpio = nombre.trim();
+  if (nombreLimpio.length > 255) {
+    return res.status(400).json({
+      error: "El nombre de la clínica no puede superar los 255 caracteres.",
+    });
+  }
+
+  const correoLimpio = correo.trim().toLowerCase();
+  if (correoLimpio.length > 255) {
+    return res.status(400).json({
+      error: "El correo electrónico no puede superar los 255 caracteres.",
+    });
+  }
+
+  const correoValido = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(correoLimpio);
+  if (!correoValido) {
+    return res.status(400).json({
+      error: "El formato del correo electrónico no es válido.",
+    });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({
+      error: "La contraseña debe tener al menos 8 caracteres.",
+    });
+  }
+
+  // bcrypt trunca en 72 bytes: rechazar en lugar de guardar una clave parcial.
+  if (Buffer.byteLength(password, "utf8") > 72) {
+    return res.status(400).json({
+      error: "La contraseña no puede superar los 72 caracteres.",
+    });
+  }
+
+  try {
+    const hash = await hashearPassword(password);
+
+    // El estado se fija en el servidor: el cliente no puede publicar la clínica.
+    const { rows } = await pool.query(
+      `INSERT INTO clinicas
+        (nombre, correo_acceso, password_hash, estado_publicacion)
+       VALUES ($1, $2, $3, 'borrador')
+       RETURNING id_clinica, nombre, correo_acceso, estado_publicacion, fecha_registro`,
+      [nombreLimpio, correoLimpio, hash]
+    );
+
+    const clinica = rows[0];
+
+    // Sin JWT: el flujo acordado es crear la cuenta y después iniciar sesión.
+    return res.status(201).json({
+      mensaje: "Cuenta de clínica creada correctamente.",
+      clinica: {
+        id: clinica.id_clinica,
+        nombre: clinica.nombre,
+        correo: clinica.correo_acceso,
+        rol: "clinica",
+        estado_publicacion: clinica.estado_publicacion,
+      },
+    });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({
+        error: "El correo ya se encuentra registrado.",
+      });
+    }
+
+    console.error("Error al registrar clínica:", error.message);
+
+    return res.status(500).json({
+      error: "Error interno al registrar la clínica.",
+    });
+  }
+});
+
+// ==========================================
 // RUTAS DE AUTENTICACIÓN (Issue #15 - Jonathan)
 // ==========================================
 
