@@ -1,6 +1,17 @@
 import { useRef, useState } from 'react';
 import '../../styles/Auth.css';
-import { registrarUsuario } from '../../api/auth';
+import { registrarClinica, registrarUsuario } from '../../api/auth';
+import {
+  normalizarCorreo,
+  validarEmail,
+  validarNombreClinica,
+  validarPassword,
+  validarRequerido,
+} from '../../utils/validaciones';
+
+const MENSAJE_CLINICA_CREADA =
+  'Tu cuenta de clínica fue creada correctamente. Ya puedes iniciar sesión. ' +
+  'La información de tu institución todavía no está publicada y deberá verificarse posteriormente.';
 
 export default function Register({ onSwitchToLogin, onBackToPublic }) {
   const [accountType, setAccountType] = useState('clinica'); // Vista de clínica según especificación Figma
@@ -25,46 +36,32 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
     if (enviando.current) return;
     setError('');
 
-    // Validación para el registro de clínicas
-    if (accountType === 'clinica') {
-      if (!nombreClinica.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
-        setError('Por favor, completa todos los campos requeridos.');
-        return;
-      }
+    const correoLimpio = normalizarCorreo(email);
 
-      if (!/\S+@\S+\.\S+/.test(email)) {
-        setError('Por favor, introduce un correo institucional válido.');
-        return;
-      }
-
-      if (password.length < 8) {
-        setError('La contraseña debe tener al menos 8 caracteres.');
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        setError('Las contraseñas no coinciden. Por favor verifícalas.');
-        return;
-      }
-
-      // Hasta que exista conexión con el servidor, seguir avisando que no está disponible
-      setError('El registro de clínicas aún no está disponible en el servidor.');
-      return;
-    }
-
-    // Validación para el registro de usuarios individuales
-    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+    // Validaciones comunes a usuarios y clínicas
+    if (!validarRequerido(email) || !validarRequerido(password) || !validarRequerido(confirmPassword)) {
       setError('Por favor, completa todos los campos requeridos.');
       return;
     }
 
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setError('Por favor, introduce un correo electrónico válido.');
+    if (accountType === 'clinica' && !validarNombreClinica(nombreClinica)) {
+      setError(!validarRequerido(nombreClinica)
+        ? 'Por favor, ingresa el nombre de la clínica.'
+        : 'El nombre de la clínica no puede superar los 255 caracteres.');
       return;
     }
 
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.');
+    if (!validarEmail(correoLimpio)) {
+      setError(accountType === 'clinica'
+        ? 'Por favor, introduce un correo institucional válido.'
+        : 'Por favor, introduce un correo electrónico válido.');
+      return;
+    }
+
+    if (!validarPassword(password)) {
+      setError(password.length < 8
+        ? 'La contraseña debe tener al menos 8 caracteres.'
+        : 'La contraseña no puede superar los 72 caracteres.');
       return;
     }
 
@@ -77,8 +74,13 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
     setLoading(true);
 
     try {
-      await registrarUsuario(email.trim(), password);
-      onSwitchToLogin('Cuenta creada. Ya puedes iniciar sesión.');
+      if (accountType === 'clinica') {
+        await registrarClinica(nombreClinica.trim(), correoLimpio, password);
+        onSwitchToLogin(MENSAJE_CLINICA_CREADA);
+      } else {
+        await registrarUsuario(email.trim(), password);
+        onSwitchToLogin('Cuenta creada. Ya puedes iniciar sesión.');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -133,7 +135,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
             <div className="auth-panel-content-wrap">
               <div>
                 <span className="auth-badge-top mint-light">
-                  {accountType === 'usuario' ? 'CREACIÓN DE CUENTA' : 'PUNTOOAX PARA CENTROS'}
+                  {accountType === 'usuario' ? 'CREACIÓN DE CUENTA' : 'PUNTOAX PARA CENTROS'}
                 </span>
                 <h1 className="auth-heading-hero hero-large">
                   {accountType === 'usuario'
@@ -143,7 +145,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                 <p className="auth-subtext-hero larger">
                   {accountType === 'usuario'
                     ? 'Descubre centros, consulta sus fichas y organiza tus próximas visitas.'
-                    : 'Comienza con un correo institucional y una contraseña para dar de alta tu sede.'}
+                    : 'Registra el nombre de tu clínica, un correo institucional y una contraseña.'}
                 </p>
               </div>
 
@@ -206,7 +208,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
               <p className="auth-form-instruction">
                 {accountType === 'usuario'
                   ? 'Selecciona cómo deseas ingresar a la plataforma.'
-                  : 'Comienza con un correo institucional y una contraseña.'}
+                  : 'Crea la cuenta de acceso de tu institución.'}
               </p>
 
               {/* Toggle de Tipo de Cuenta */}
@@ -239,7 +241,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                 <p className="auth-info-text">
                   {accountType === 'usuario'
                     ? 'Crea tu cuenta de usuario para consultar información de los centros.'
-                    : 'Aviso importante: Tu ficha institucional todavía no es pública (se habilitará tras su revisión y aprobación). El registro requiere conexión con el servidor.'}
+                    : 'Aviso importante: tu ficha institucional todavía no será pública. Después de crear la cuenta podrás iniciar sesión y, más adelante, completar la información para su revisión y aprobación.'}
                 </p>
               </div>
 
@@ -262,6 +264,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                         id="reg-clinica-nombre"
                         type="text"
                         required
+                        maxLength={255}
                         autoComplete="organization"
                         value={nombreClinica}
                         onChange={(e) => setNombreClinica(e.target.value)}
@@ -278,6 +281,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                         id="reg-clinica-email"
                         type="email"
                         required
+                        maxLength={255}
                         autoComplete="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -336,6 +340,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                         id="reg-email"
                         type="email"
                         required
+                        maxLength={255}
                         autoComplete="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
