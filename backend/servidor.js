@@ -15,37 +15,97 @@ app.get("/health", (req, res) => {
 
 app.get("/api/clinicas", async (req, res) => {
   try {
-    const resultado = await pool.query(`
-      SELECT
-        id_clinica,
-        nombre,
-        descripcion,
-        tipo_institucion,
-        telefono,
-        correo_contacto,
-        sitio_web,
-        imagen_portada_url,
-        municipio,
-        localidad,
-        direccion,
-        codigo_postal,
-        estado_publicacion,
-        ST_Y(ubicacion_geo::geometry) AS latitud,
-        ST_X(ubicacion_geo::geometry) AS longitud
-      FROM clinicas
-      WHERE estado_publicacion = 'aprobada'
-      ORDER BY nombre;
-    `);
+    const { nombre, municipio, servicios } = req.query;
 
-    res.json(resultado.rows);
+    // Validar parámetros
+    if (Array.isArray(nombre) || Array.isArray(municipio) || Array.isArray(servicios)) {
+      return res.status(400).json({
+        error: "Los parámetros nombre, municipio y servicios deben enviarse una sola vez.",
+      });
+    }
+
+    const condiciones = ["c.estado_publicacion = 'aprobada'"];
+    const valores = [];
+
+    // Filtro por nombre
+    if (typeof nombre === "string" && nombre.trim()) {
+      valores.push(`%${nombre.trim()}%`);
+      condiciones.push(`c.nombre ILIKE $${valores.length}`);
+    }
+
+    // Filtro por municipio
+    if (typeof municipio === "string" && municipio.trim()) {
+      valores.push(municipio.trim());
+      condiciones.push(`LOWER(TRIM(c.municipio)) = LOWER(TRIM($${valores.length}))`);
+    }
+
+    // Filtro por uno o varios servicios.
+    // Ejemplo: ?servicios=ITS
+    // Ejemplo: ?servicios=ITS,Aborto
+    if (typeof servicios === "string" && servicios.trim()) {
+      const listaServicios = servicios
+        .split(",")
+        .map((servicio) => servicio.trim().toLowerCase())
+        .filter(Boolean);
+
+      if (listaServicios.length === 0) {
+        return res.status(400).json({
+          error: "El parámetro servicios no contiene valores válidos.",
+        });
+      }
+
+      valores.push(listaServicios);
+
+      condiciones.push(`
+        EXISTS (
+          SELECT 1
+          FROM clinicas_servicios cs
+          INNER JOIN servicios s
+            ON s.id_servicio = cs.id_servicio
+          WHERE cs.id_clinica = c.id_clinica
+            AND cs.activo = TRUE
+            AND s.activo = TRUE
+            AND (
+              LOWER(TRIM(s.nombre)) = ANY($${valores.length}::text[])
+              OR LOWER(TRIM(COALESCE(s.categoria, ''))) = ANY($${valores.length}::text[])
+            )
+        )
+      `);
+    }
+
+    const consulta = `
+      SELECT
+        c.id_clinica,
+        c.nombre,
+        c.descripcion,
+        c.tipo_institucion,
+        c.telefono,
+        c.correo_contacto,
+        c.sitio_web,
+        c.imagen_portada_url,
+        c.municipio,
+        c.localidad,
+        c.direccion,
+        c.codigo_postal,
+        c.estado_publicacion,
+        ST_Y(c.ubicacion_geo::geometry) AS latitud,
+        ST_X(c.ubicacion_geo::geometry) AS longitud
+      FROM clinicas c
+      WHERE ${condiciones.join(" AND ")}
+      ORDER BY c.nombre;
+    `;
+
+    const resultado = await pool.query(consulta, valores);
+
+    return res.json(resultado.rows);
   } catch (error) {
     console.error("Error al consultar clínicas:", error.message);
-    res.status(500).json({
-      error: "No se pudieron obtener las clínicas",
+
+    return res.status(500).json({
+      error: "No se pudieron obtener las clínicas.",
     });
   }
 });
-
 app.post("/api/auth/registro-usuario", async (req, res) => {
   const { nombre, apellidos, correo, password, telefono } = req.body || {};
 
