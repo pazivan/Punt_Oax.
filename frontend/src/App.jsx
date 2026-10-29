@@ -2,8 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Login from './components/Auth/Login.jsx'
 import Register from './components/Auth/Register.jsx'
+import Inicio from './components/Inicio/Inicio.jsx'
+import MapaCentros from './components/Inicio/MapaCentros.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
+import {
+  CLINICAS_DEMO,
+  MODO_DEMOSTRACION_ACTIVO,
+  normalizarYUnificarClinicas,
+} from './data/clinicasDemo.js'
 import './App.css'
 
 function App() {
@@ -97,6 +104,27 @@ function App() {
     />
   }
 
+  if (pathname === '/mapa') {
+    const listaParaMapa = clinicas.length > 0
+      ? normalizarYUnificarClinicas(clinicas)
+      : (MODO_DEMOSTRACION_ACTIVO ? normalizarYUnificarClinicas(CLINICAS_DEMO) : [])
+
+    return <RutaPrivada
+      sesion={sesion}
+      perfil={perfil}
+      verificando={verificandoPerfil}
+      error={errorPerfil}
+      rolesPermitidos={['usuario', 'clinica', 'administrador']}
+    >
+      <MapaCentros
+        sesion={sesion}
+        onSalir={salir}
+        clinicas={listaParaMapa}
+        cargando={cargando}
+      />
+    </RutaPrivada>
+  }
+
   if (pathname === '/cuenta' || pathname === '/admin') {
     return <RutaPrivada
       sesion={sesion}
@@ -105,13 +133,17 @@ function App() {
       error={errorPerfil}
       rolesPermitidos={pathname === '/admin' ? ['administrador'] : ['usuario', 'clinica', 'administrador']}
     >
-      <main className="app-container">
-        <h1>{pathname === '/admin' ? 'Área de administración' : 'Mi cuenta'}</h1>
-        <p role="status">Sesión verificada: {sesion?.cuenta.correo || sesion?.cuenta.nombre}</p>
-        <p>Los paneles de cada rol aún no están disponibles.</p>
-        <Link to="/">Volver al directorio</Link>{' '}
-        <button type="button" onClick={salir}>Cerrar sesión</button>
-      </main>
+      {pathname === '/cuenta' && (perfil?.rol === 'usuario' || sesion?.tipo === 'usuario') ? (
+        <Inicio sesion={sesion} onSalir={salir} />
+      ) : (
+        <main className="app-container">
+          <h1>{pathname === '/admin' ? 'Área de administración' : 'Mi cuenta'}</h1>
+          <p role="status">Sesión verificada: {sesion?.cuenta.correo || sesion?.cuenta.nombre}</p>
+          <p>Los paneles de cada rol aún no están disponibles.</p>
+          <Link to="/">Volver al directorio</Link>{' '}
+          <button type="button" onClick={salir}>Cerrar sesión</button>
+        </main>
+      )}
     </RutaPrivada>
   }
 
