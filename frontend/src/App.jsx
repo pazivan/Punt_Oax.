@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, Routes, Route } from 'react-router-dom'
 import Login from './components/Auth/Login.jsx'
 import Register from './components/Auth/Register.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
+import DetalleCentro from './components/DetalleCentro';
 import './App.css'
+
 
 function App() {
   const navigate = useNavigate()
@@ -113,6 +115,14 @@ function App() {
         <button type="button" onClick={salir}>Cerrar sesión</button>
       </main>
     </RutaPrivada>
+  }
+
+  if (pathname.startsWith('/centro/')) {
+    return (
+      <Routes>
+        <Route path="/centro/:id" element={<DetalleCentro />} />
+      </Routes>
+    )
   }
 
   if (pathname !== '/') return <Navigate to="/" replace />
