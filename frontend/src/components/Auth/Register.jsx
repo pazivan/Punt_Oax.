@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { ArrowRight, Building2, Check, ShieldCheck, User } from 'lucide-react';
 import '../../styles/Auth.css';
 import { registrarClinica, registrarUsuario } from '../../api/auth';
 import {
@@ -13,8 +14,12 @@ const MENSAJE_CLINICA_CREADA =
   'Tu cuenta de clínica fue creada correctamente. Ya puedes iniciar sesión. ' +
   'La información de tu institución todavía no está publicada y deberá verificarse posteriormente.';
 
-export default function Register({ onSwitchToLogin, onBackToPublic }) {
-  const [accountType, setAccountType] = useState('clinica'); // Vista de clínica según especificación Figma
+export default function Register({ onSwitchToLogin, onBackToPublic, initialAccountType = 'usuario' }) {
+  const [accountType, setAccountType] = useState(
+    initialAccountType === 'clinica' ? 'clinica' : 'usuario'
+  );
+
+  // Sincronizado con initialAccountType mediante key en App.jsx
   const [nombreClinica, setNombreClinica] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,10 +81,10 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
     try {
       if (accountType === 'clinica') {
         await registrarClinica(nombreClinica.trim(), correoLimpio, password);
-        onSwitchToLogin(MENSAJE_CLINICA_CREADA);
+        onSwitchToLogin(MENSAJE_CLINICA_CREADA, 'clinica');
       } else {
         await registrarUsuario(email.trim(), password);
-        onSwitchToLogin('Cuenta creada. Ya puedes iniciar sesión.');
+        onSwitchToLogin('Cuenta creada. Ya puedes iniciar sesión.', 'usuario');
       }
     } catch (err) {
       setError(err.message);
@@ -115,11 +120,16 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
             </button>
           </div>
           <div className="auth-header-actions">
-            <button type="button" onClick={onSwitchToLogin} disabled={loading} className="auth-btn-outline">
+            <button
+              type="button"
+              onClick={() => onSwitchToLogin('', accountType)}
+              disabled={loading}
+              className="auth-btn-outline"
+            >
               Iniciar sesión
             </button>
             <div className="auth-avatar-circle" aria-hidden="true">
-              👤
+              <User size={16} />
             </div>
           </div>
         </div>
@@ -164,30 +174,30 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                 {accountType === 'clinica' ? (
                   <>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Registro institucional</span>
                     </div>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Verificación de sede</span>
                     </div>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Publicación en catálogo</span>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Directorio verificado de centros de detección de ITS e ILE</span>
                     </div>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Información transparente, confidencial y segura</span>
                     </div>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Consulta rápida y libre sin costo alguno</span>
                     </div>
                   </>
@@ -221,7 +231,8 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                   className={`auth-toggle-btn ${accountType === 'usuario' ? 'active' : ''}`}
                   onClick={() => handleTabChange('usuario')}
                 >
-                  👤 Soy usuario
+                  <User size={15} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} aria-hidden="true" />
+                  Soy usuario
                 </button>
                 <button
                   type="button"
@@ -231,13 +242,14 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                   className={`auth-toggle-btn ${accountType === 'clinica' ? 'active' : ''}`}
                   onClick={() => handleTabChange('clinica')}
                 >
-                  🏥 Soy clínica
+                  <Building2 size={15} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} aria-hidden="true" />
+                  Soy clínica
                 </button>
               </div>
 
               {/* Info Banner oficial (#D6E6E0) */}
               <div className="auth-info-banner" role="status">
-                <span className="auth-info-icon" aria-hidden="true">🛡️</span>
+                <span className="auth-info-icon" aria-hidden="true"><ShieldCheck size={16} /></span>
                 <p className="auth-info-text">
                   {accountType === 'usuario'
                     ? 'Crea tu cuenta de usuario para consultar información de los centros.'
@@ -327,7 +339,14 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                       disabled={loading}
                       className="auth-submit-btn dark-btn"
                     >
-                      {loading ? 'Registrando clínica...' : 'Crear cuenta de clínica →'}
+                      {loading ? (
+                        'Registrando clínica...'
+                      ) : (
+                        <>
+                          <span>Crear cuenta de clínica</span>{' '}
+                          <ArrowRight size={15} style={{ verticalAlign: 'middle' }} aria-hidden="true" />
+                        </>
+                      )}
                     </button>
                   </>
                 ) : (
@@ -386,7 +405,14 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                       disabled={loading}
                       className="auth-submit-btn dark-btn"
                     >
-                      {loading ? 'Creando cuenta...' : 'Crear cuenta →'}
+                      {loading ? (
+                        'Creando cuenta...'
+                      ) : (
+                        <>
+                          <span>Crear cuenta</span>{' '}
+                          <ArrowRight size={15} style={{ verticalAlign: 'middle' }} aria-hidden="true" />
+                        </>
+                      )}
                     </button>
                   </>
                 )}
@@ -396,7 +422,12 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
               <div className="auth-bottom-links">
                 <p className="auth-switch-text">
                   ¿Ya tienes una cuenta registrada?{' '}
-                  <button type="button" onClick={onSwitchToLogin} disabled={loading} className="auth-inline-link">
+                  <button
+                    type="button"
+                    onClick={() => onSwitchToLogin('', accountType)}
+                    disabled={loading}
+                    className="auth-inline-link"
+                  >
                     Iniciar sesión
                   </button>
                 </p>
