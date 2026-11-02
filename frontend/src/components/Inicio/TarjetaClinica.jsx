@@ -1,17 +1,21 @@
+import { ArrowRight, Clock, Heart, MapPin } from 'lucide-react';
+
 /**
- * TarjetaClinica - Tarjeta resumida de sede según diseño de Figma (ventana Mapa).
+ * TarjetaClinica - Tarjeta resumida de sede según diseño de Figma (ventana Mapa)
+ * y columnas exactas del archivo Filtración (Unidad de Salud, Municipio, Dirección,
+ * Servicios, Horario y Nivel de Atención).
  *
  * Contrato de propiedades (Props):
  * @param {Object} props
  * @param {Object} props.clinica - Datos de la clínica/sede.
- * @param {string|number} props.clinica.id_clinica - Identificador único.
- * @param {string} props.clinica.nombre - Nombre del centro (ej. "Punto Fijo de Detección – Dirección de Sanidad").
- * @param {string|null} [props.clinica.municipio] - Municipio en Oaxaca.
+ * @param {string|number} props.clinica.id_clinica - Identificador único (columna Id).
+ * @param {string} props.clinica.nombre - Nombre del centro (columna Unidad de Salud).
+ * @param {string|null} [props.clinica.municipio] - Municipio en Oaxaca (columna Municipio).
  * @param {string|null} [props.clinica.etiqueta_ubicacion] - Etiqueta corta para el badge superior.
- * @param {string|null} [props.clinica.direccion] - Dirección o referencia geográfica.
+ * @param {string|null} [props.clinica.direccion] - Dirección o referencia geográfica (columna Dirección).
  * @param {string[]} [props.clinica.servicios] - Chips de servicios (#C5EBDA).
- * @param {string|null} [props.clinica.horario] - Horario de atención (ej. "Lun. a vie. · 09:00 - 13:00 h").
- * @param {string} [props.clinica.costo] - Indicador de costo (ej. "Gratuito").
+ * @param {string|null} [props.clinica.horario] - Horario de atención visible en la tarjeta (columna Horario).
+ * @param {string|null} [props.clinica.nivel_atencion] - Nivel de atención en la tarjeta (columna Nivel de Atención).
  * @param {boolean} [props.seleccionada=false] - Si está activa (borde 2px #C5EBDA y botón oscuro).
  * @param {(clinica: Object) => void} [props.onSeleccionar] - Callback al seleccionar la tarjeta en el mapa.
  * @param {(clinica: Object) => void} [props.onVerDetalles] - Callback al pulsar el botón "Ver detalles".
@@ -27,8 +31,10 @@ export default function TarjetaClinica({
   const servicios = Array.isArray(clinica.servicios) ? clinica.servicios : [];
   const etiquetaSuperior = clinica.etiqueta_ubicacion || clinica.municipio || 'Oaxaca';
   const textoUbicacion = clinica.direccion || clinica.municipio || 'Oaxaca';
-  const textoCosto = clinica.costo || 'Gratuito';
-  const esGratuito = textoCosto.toLowerCase() === 'gratuito';
+  const textoHorario = clinica.horario || 'Horario no especificado';
+  const textoNivel = clinica.nivel_atencion
+    ? `Nivel: ${clinica.nivel_atencion}`
+    : 'Nivel no especificado';
 
   const manejarSeleccion = () => {
     if (typeof onSeleccionar === 'function') {
@@ -57,12 +63,7 @@ export default function TarjetaClinica({
 
         {seleccionada && (
           <span className="mapa-card-fav-icon" aria-hidden="true">
-            <svg width="19" height="18" viewBox="0 0 19 18" fill="none">
-              <path
-                d="M9.5 17.5L8.17 16.29C3.45 12.01 0.33 9.18 0.33 5.71C0.33 2.88 2.55 0.67 5.37 0.67C6.97 0.67 8.5 1.41 9.5 2.58C10.5 1.41 12.03 0.67 13.63 0.67C16.45 0.67 18.67 2.88 18.67 5.71C18.67 9.18 15.55 12.01 10.83 16.3L9.5 17.5Z"
-                fill="#001D14"
-              />
-            </svg>
+            <Heart size={17} color="#001D14" fill="#001D14" />
           </span>
         )}
       </div>
@@ -73,12 +74,7 @@ export default function TarjetaClinica({
       {/* Fila de dirección / municipio con ícono de pin */}
       <div className="mapa-card-location-row">
         <span className="mapa-card-pin-icon" aria-hidden="true">
-          <svg width="11" height="14" viewBox="0 0 11 14" fill="none">
-            <path
-              d="M5.33 0C2.39 0 0 2.39 0 5.33C0 9.33 5.33 13.33 5.33 13.33C5.33 13.33 10.67 9.33 10.67 5.33C10.67 2.39 8.28 0 5.33 0ZM5.33 7.2C4.3 7.2 3.47 6.36 3.47 5.33C3.47 4.3 4.3 3.47 5.33 3.47C6.36 3.47 7.2 4.3 7.2 5.33C7.2 6.36 6.36 7.2 5.33 7.2Z"
-              fill="#414845"
-            />
-          </svg>
+          <MapPin size={13} color="#414845" />
         </span>
         <span className="mapa-card-location-text">{textoUbicacion}</span>
       </div>
@@ -96,17 +92,18 @@ export default function TarjetaClinica({
         </div>
       )}
 
-      {/* Horario (ej. Lun. a vie. · 09:00 - 13:00 h) */}
-      {clinica.horario && (
-        <div className="mapa-card-schedule-row">
-          <span className="mapa-card-schedule-text">{clinica.horario}</span>
-        </div>
-      )}
+      {/* Horario visible en todas las fichas con ícono de reloj */}
+      <div className="mapa-card-schedule-row">
+        <span className="mapa-card-clock-icon" aria-hidden="true">
+          <Clock size={13} color="#596763" />
+        </span>
+        <span className="mapa-card-schedule-text">{textoHorario}</span>
+      </div>
 
-      {/* Pie de tarjeta: Costo + Botón Ver detalles */}
+      {/* Pie de tarjeta: Nivel de Atención (del archivo CSV) + Botón Ver detalles */}
       <div className="mapa-card-bottom-row">
-        <span className={`mapa-card-cost ${esGratuito ? 'is-free' : 'is-fee'}`}>
-          {textoCosto}
+        <span className={`mapa-card-cost ${clinica.nivel_atencion ? 'is-free' : 'is-fee'}`}>
+          {textoNivel}
         </span>
 
         <button
@@ -116,12 +113,7 @@ export default function TarjetaClinica({
         >
           <span>Ver detalles</span>
           <span className="mapa-card-btn-arrow" aria-hidden="true">
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-              <path
-                d="M5.33 0L4.39 0.94L8.11 4.67H0V6H8.11L4.39 9.73L5.33 10.67L10.67 5.33L5.33 0Z"
-                fill={seleccionada ? '#FFFFFF' : '#001D14'}
-              />
-            </svg>
+            <ArrowRight size={13} color={seleccionada ? '#FFFFFF' : '#001D14'} />
           </span>
         </button>
       </div>

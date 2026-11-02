@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { AlertTriangle, Building2, ExternalLink, MapPin } from 'lucide-react'
 import Login from './components/Auth/Login.jsx'
 import Register from './components/Auth/Register.jsx'
 import Inicio from './components/Inicio/Inicio.jsx'
 import MapaCentros from './components/Inicio/MapaCentros.jsx'
+import InformacionUtil from './components/Inicio/InformacionUtil.jsx'
+import ModalConfirmacion from './components/Inicio/ModalConfirmacion.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
 import {
@@ -18,6 +21,7 @@ function App() {
   const { pathname } = useLocation()
   const [sesion, setSesion] = useState(leerSesion)
   const [mensajeAuth, setMensajeAuth] = useState('')
+  const [tipoRegistro, setTipoRegistro] = useState('usuario')
   const [perfil, setPerfil] = useState(null)
   const [verificandoPerfil, setVerificandoPerfil] = useState(() => Boolean(leerSesion()))
   const [errorPerfil, setErrorPerfil] = useState('')
@@ -25,6 +29,7 @@ function App() {
   const [clinicas, setClinicas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [mostrarConfirmacionSalir, setMostrarConfirmacionSalir] = useState(false)
 
   useEffect(() => {
     async function cargarClinicas() {
@@ -74,16 +79,41 @@ function App() {
   }, [sesion])
 
   function salir() {
+    setMostrarConfirmacionSalir(true)
+  }
+
+  function confirmarSalir() {
     consultaPerfil.current++
     cerrarSesion()
-    // Recargar evita que un guard de la ruta privada redirija a /login
-    // mientras React actualiza la sesión tras cerrar sesión.
-    window.location.replace('/')
+    setMostrarConfirmacionSalir(false)
+    setSesion(null)
+    setPerfil(null)
+    setErrorPerfil('')
+    setMensajeAuth('')
+    navigate('/login', { replace: true })
   }
+
+  const modalConfirmacionSalir = (
+    <ModalConfirmacion
+      abierto={mostrarConfirmacionSalir}
+      titulo="¿Estás seguro de que quieres salir?"
+      mensaje="Se cerrará tu sesión actual y serás dirigido a la página de iniciar sesión."
+      textoCancelar="Cancelar"
+      textoConfirmar="Sí, salir"
+      onCancelar={() => setMostrarConfirmacionSalir(false)}
+      onConfirmar={confirmarSalir}
+    />
+  )
 
   if (pathname === '/login') {
     return <Login
-      onSwitchToRegister={() => { setMensajeAuth(''); navigate('/registro') }}
+      key={tipoRegistro}
+      initialAccountType={tipoRegistro}
+      onSwitchToRegister={(tipo = 'usuario') => {
+        setMensajeAuth('')
+        setTipoRegistro(tipo === 'clinica' ? 'clinica' : 'usuario')
+        navigate('/registro')
+      }}
       onBackToPublic={() => navigate('/')}
       onLogin={(nuevaSesion) => {
         setPerfil(null)
@@ -99,7 +129,13 @@ function App() {
 
   if (pathname === '/registro') {
     return <Register
-      onSwitchToLogin={(mensaje = '') => { setMensajeAuth(mensaje); navigate('/login') }}
+      key={tipoRegistro}
+      initialAccountType={tipoRegistro}
+      onSwitchToLogin={(mensaje = '', tipo = 'usuario') => {
+        setMensajeAuth(typeof mensaje === 'string' ? mensaje : '')
+        setTipoRegistro(tipo === 'clinica' ? 'clinica' : 'usuario')
+        navigate('/login')
+      }}
       onBackToPublic={() => navigate('/')}
     />
   }
@@ -109,42 +145,69 @@ function App() {
       ? normalizarYUnificarClinicas(clinicas)
       : (MODO_DEMOSTRACION_ACTIVO ? normalizarYUnificarClinicas(CLINICAS_DEMO) : [])
 
-    return <RutaPrivada
-      sesion={sesion}
-      perfil={perfil}
-      verificando={verificandoPerfil}
-      error={errorPerfil}
-      rolesPermitidos={['usuario', 'clinica', 'administrador']}
-    >
-      <MapaCentros
-        sesion={sesion}
-        onSalir={salir}
-        clinicas={listaParaMapa}
-        cargando={cargando}
-      />
-    </RutaPrivada>
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          rolesPermitidos={['usuario', 'clinica', 'administrador']}
+        >
+          <MapaCentros
+            sesion={sesion}
+            onSalir={salir}
+            clinicas={listaParaMapa}
+            cargando={cargando}
+          />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
+  }
+
+  if (pathname === '/informacion-util') {
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          rolesPermitidos={['usuario', 'clinica', 'administrador']}
+        >
+          <InformacionUtil sesion={sesion} onSalir={salir} />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
   }
 
   if (pathname === '/cuenta' || pathname === '/admin') {
-    return <RutaPrivada
-      sesion={sesion}
-      perfil={perfil}
-      verificando={verificandoPerfil}
-      error={errorPerfil}
-      rolesPermitidos={pathname === '/admin' ? ['administrador'] : ['usuario', 'clinica', 'administrador']}
-    >
-      {pathname === '/cuenta' && (perfil?.rol === 'usuario' || sesion?.tipo === 'usuario') ? (
-        <Inicio sesion={sesion} onSalir={salir} />
-      ) : (
-        <main className="app-container">
-          <h1>{pathname === '/admin' ? 'Área de administración' : 'Mi cuenta'}</h1>
-          <p role="status">Sesión verificada: {sesion?.cuenta.correo || sesion?.cuenta.nombre}</p>
-          <p>Los paneles de cada rol aún no están disponibles.</p>
-          <Link to="/">Volver al directorio</Link>{' '}
-          <button type="button" onClick={salir}>Cerrar sesión</button>
-        </main>
-      )}
-    </RutaPrivada>
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          rolesPermitidos={pathname === '/admin' ? ['administrador'] : ['usuario', 'clinica', 'administrador']}
+        >
+          {pathname === '/cuenta' && (perfil?.rol === 'usuario' || sesion?.tipo === 'usuario') ? (
+            <Inicio sesion={sesion} onSalir={salir} />
+          ) : (
+            <main className="app-container">
+              <h1>{pathname === '/admin' ? 'Área de administración' : 'Mi cuenta'}</h1>
+              <p role="status">Sesión verificada: {sesion?.cuenta.correo || sesion?.cuenta.nombre}</p>
+              <p>Los paneles de cada rol aún no están disponibles.</p>
+              <Link to="/">Volver al directorio</Link>{' '}
+              <button type="button" onClick={salir}>Cerrar sesión</button>
+            </main>
+          )}
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
   }
 
   if (pathname !== '/') return <Navigate to="/" replace />
@@ -168,7 +231,7 @@ function App() {
           ) : (
             <>
               <Link to="/login" onClick={() => setMensajeAuth('')}>Iniciar sesión</Link>
-              <Link to="/registro">Crear cuenta</Link>
+              <Link to="/registro" onClick={() => setTipoRegistro('usuario')}>Crear cuenta</Link>
             </>
           )}
         </div>
@@ -185,7 +248,7 @@ function App() {
 
         {error && (
           <div className="state-card error" role="alert">
-            <span className="alert-icon">⚠️</span>
+            <span className="alert-icon" aria-hidden="true"><AlertTriangle size={20} /></span>
             <div>
               <strong>Error de conexión</strong>
               <p>{error}</p>
@@ -195,7 +258,7 @@ function App() {
 
         {!cargando && !error && clinicas.length === 0 && (
           <div className="state-card empty">
-            <span className="empty-icon">🏥</span>
+            <span className="empty-icon" aria-hidden="true"><Building2 size={28} /></span>
             <h3>No hay clínicas aprobadas para mostrar</h3>
             <p>La base de datos está conectada pero aún no cuenta con clínicas registradas con estado "aprobada".</p>
           </div>
@@ -208,7 +271,10 @@ function App() {
                 <div className="card-header">
                   <span className="badge-tipo">{clinica.tipo_institucion || 'Centro de Salud'}</span>
                   {clinica.municipio && (
-                    <span className="badge-municipio">📍 {clinica.municipio}</span>
+                    <span className="badge-municipio">
+                      <MapPin size={12} style={{ verticalAlign: 'middle', marginRight: '3px' }} aria-hidden="true" />
+                      {clinica.municipio}
+                    </span>
                   )}
                 </div>
 
@@ -245,7 +311,8 @@ function App() {
                       rel="noreferrer"
                       className="link-btn"
                     >
-                      Sitio Oficial ↗
+                      <span>Sitio Oficial</span>{' '}
+                      <ExternalLink size={13} style={{ verticalAlign: 'middle' }} aria-hidden="true" />
                     </a>
                   </div>
                 )}
@@ -254,6 +321,7 @@ function App() {
           </div>
         )}
       </main>
+      {modalConfirmacionSalir}
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Search, User } from 'lucide-react';
 import ListadoClinicas from './ListadoClinicas.jsx';
 import EspacioMapa from './EspacioMapa.jsx';
 import DetalleCentro from './DetalleCentro.jsx';
@@ -9,8 +10,13 @@ import '../../styles/Inicio.css';
  * MapaCentros - Ventana de Mapa / Directorio de centros según diseño oficial de Figma (1280x1294).
  *
  * Donde conviven:
- * - Buscador y filtros (Buscar centro o municipio, Detección de ITS, Todos los municipios, Cualquier costo, Limpiar).
- * - Listado de tarjetas resumidas con nombre, municipio y servicios (ListadoClinicas / TarjetaClinica).
+ * - Buscador y filtros basados estrictamente en las columnas de la matriz oficial de Filtración:
+ *   1. Búsqueda libre (Unidad de Salud, Municipio, Dirección, Nivel de Atención o Servicios).
+ *   2. Pestaña / Servicio (Todos, ITS, Aborto, Ambos).
+ *   3. Municipio (columna Municipio).
+ *   4. Horario (Cualquier horario, 24 horas, Fines de semana, Lunes a Viernes).
+ *   5. Nivel de Atención (columna Nivel de Atención: Primer Nivel, Segundo Nivel, Tercer Nivel - ISSSTE, IMSS Ordinario, ISSSTE, Comunitario / Social, Privado, Sin nivel especificado).
+ * - Listado de tarjetas resumidas con Unidad de Salud, Municipio, Dirección, Servicios, Horario y Nivel de Atención.
  * - Espacio y contrato de propiedades para el mapa de Jonathan (EspacioMapa).
  * - Al pulsar "Ver detalles" en cualquier tarjeta, muestra la ventana DetalleCentro.
  */
@@ -24,9 +30,10 @@ export default function MapaCentros({
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [filtroServicio, setFiltroServicio] = useState('todos');
   const [filtroMunicipio, setFiltroMunicipio] = useState('todos');
-  const [filtroCosto, setFiltroCosto] = useState('todos');
+  const [filtroHorario, setFiltroHorario] = useState('todos');
+  const [filtroNivel, setFiltroNivel] = useState('todos');
   const [clinicaSeleccionadaId, setClinicaSeleccionadaId] = useState(
-    () => clinicas[0]?.id_clinica ?? 'demo-sanidad-oaxaca'
+    () => clinicas[0]?.id_clinica ?? 'coesdia 1'
   );
   const [clinicaEnDetalle, setClinicaEnDetalle] = useState(null);
 
@@ -49,32 +56,59 @@ export default function MapaCentros({
       if (filtroServicio !== 'todos') {
         const categorias = Array.isArray(c.categorias) ? c.categorias : [];
         const servicios = Array.isArray(c.servicios) ? c.servicios : [];
-        const coincide =
-          categorias.some((cat) => cat.toLowerCase() === filtroServicio.toLowerCase()) ||
-          servicios.some((srv) => srv.toLowerCase().includes(filtroServicio.toLowerCase()));
-        if (!coincide) return false;
+        if (filtroServicio === 'Ambos') {
+          const tieneAmbos =
+            categorias.some((cat) => cat.toLowerCase() === 'ambos') ||
+            (categorias.some((cat) => cat.toLowerCase() === 'its') &&
+              categorias.some((cat) => cat.toLowerCase() === 'aborto'));
+          if (!tieneAmbos) return false;
+        } else {
+          const coincide =
+            categorias.some((cat) => cat.toLowerCase() === filtroServicio.toLowerCase()) ||
+            servicios.some((srv) => srv.toLowerCase().includes(filtroServicio.toLowerCase()));
+          if (!coincide) return false;
+        }
       }
 
       if (filtroMunicipio !== 'todos' && c.municipio !== filtroMunicipio) {
         return false;
       }
 
-      if (filtroCosto !== 'todos' && (c.costo || 'Gratuito') !== filtroCosto) {
+      if (filtroHorario !== 'todos' && c.modalidad_horario !== filtroHorario) {
         return false;
+      }
+
+      if (filtroNivel !== 'todos') {
+        if (filtroNivel === 'sin-especificar') {
+          if (c.nivel_atencion) return false;
+        } else if (
+          (c.nivel_atencion || '').toLowerCase() !== filtroNivel.toLowerCase()
+        ) {
+          return false;
+        }
       }
 
       if (!busqueda) return true;
 
       const enNombre = (c.nombre || '').toLowerCase().includes(busqueda);
       const enMunicipio = (c.municipio || '').toLowerCase().includes(busqueda);
-      const enEtiqueta = (c.etiqueta_ubicacion || '').toLowerCase().includes(busqueda);
+      const enDireccion = (c.direccion || '').toLowerCase().includes(busqueda);
+      const enNivel = (c.nivel_atencion || '').toLowerCase().includes(busqueda);
+      const enServiciosTexto = (c.servicios_texto || '').toLowerCase().includes(busqueda);
       const enServicios =
         Array.isArray(c.servicios) &&
         c.servicios.some((s) => s.toLowerCase().includes(busqueda));
 
-      return enNombre || enMunicipio || enEtiqueta || enServicios;
+      return (
+        enNombre ||
+        enMunicipio ||
+        enDireccion ||
+        enNivel ||
+        enServiciosTexto ||
+        enServicios
+      );
     });
-  }, [clinicas, terminoBusqueda, filtroServicio, filtroMunicipio, filtroCosto]);
+  }, [clinicas, terminoBusqueda, filtroServicio, filtroMunicipio, filtroHorario, filtroNivel]);
 
   const clinicaActiva = useMemo(
     () =>
@@ -88,7 +122,8 @@ export default function MapaCentros({
     setTerminoBusqueda('');
     setFiltroServicio('todos');
     setFiltroMunicipio('todos');
-    setFiltroCosto('todos');
+    setFiltroHorario('todos');
+    setFiltroNivel('todos');
   };
 
   // Si el usuario pulsó "Ver detalles", mostramos la ventana Detalle de centro - PuntoOax
@@ -122,12 +157,9 @@ export default function MapaCentros({
               <Link to="/mapa" className="inicio-nav-link active mapa-nav-active">
                 <span className="inicio-nav-link-active-text">Mapa de centros</span>
               </Link>
-              <a href="#agenda" className="inicio-nav-link">
-                Agenda
-              </a>
-              <a href="#conocenos" className="inicio-nav-link">
-                Conócenos
-              </a>
+              <Link to="/informacion-util" className="inicio-nav-link">
+                Información útil
+              </Link>
             </nav>
           </div>
 
@@ -150,12 +182,7 @@ export default function MapaCentros({
 
             <div className="inicio-avatar-margin">
               <div className="inicio-avatar-circle" aria-hidden="true">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path
-                    d="M6 6C7.65685 6 9 4.65685 9 3C9 1.34315 7.65685 0 6 0C4.34315 0 3 1.34315 3 3C3 4.65685 4.34315 6 6 6ZM6 7.5C3.9975 7.5 0 8.505 0 10.5V12H12V10.5C12 8.505 8.0025 7.5 6 7.5Z"
-                    fill="#FFFFFF"
-                  />
-                </svg>
+                <User size={14} color="#FFFFFF" />
               </div>
             </div>
           </div>
@@ -176,34 +203,29 @@ export default function MapaCentros({
               </div>
               <div className="mapa-subtitle-wrap">
                 <p className="mapa-subtitle-text">
-                  Busca por municipio y descubre las opciones disponibles en Oaxaca.
+                  Filtra por servicio, municipio, horario o institución y revisa los horarios y requisitos de cada unidad en Oaxaca.
                 </p>
               </div>
             </section>
 
-            {/* Barra de búsqueda y filtros (Background+Shadow: 1184px x 68px) */}
+            {/* Barra de búsqueda y filtros */}
             <section className="mapa-search-bar" role="search" aria-label="Buscador de centros">
-              {/* Input con ícono (width: 451.2px, height: 36px) */}
+              {/* Input con ícono */}
               <div className="mapa-search-input-container">
                 <span className="mapa-search-icon" aria-hidden="true">
-                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                    <path
-                      d="M10.7 9.4H10.02L9.78 9.17C10.62 8.19 11.13 6.92 11.13 5.56C11.13 2.49 8.64 0 5.56 0C2.49 0 0 2.49 0 5.56C0 8.64 2.49 11.13 5.56 11.13C6.92 11.13 8.19 10.62 9.17 9.78L9.4 10.02V10.7L13.68 14.97L14.97 13.68L10.7 9.4ZM5.56 9.4C3.44 9.4 1.71 7.68 1.71 5.56C1.71 3.44 3.44 1.71 5.56 1.71C7.68 1.71 9.4 3.44 9.4 5.56C9.4 7.68 7.68 9.4 5.56 9.4Z"
-                      fill="#717975"
-                    />
-                  </svg>
+                  <Search size={15} color="#717975" />
                 </span>
                 <input
                   type="search"
                   value={terminoBusqueda}
                   onChange={(e) => setTerminoBusqueda(e.target.value)}
-                  placeholder="Buscar centro o municipio"
+                  placeholder="Buscar por centro, municipio, colonia o servicio (ej. VIH, AMEU)"
                   aria-label="Buscar centro o municipio"
                   className="mapa-search-input"
                 />
               </div>
 
-              {/* Selector 1: Detección de ITS */}
+              {/* Selector 1: Categoría de Servicio (Pestañas Filtración: ITS, Aborto, Ambos) */}
               <div className="mapa-select-wrap">
                 <select
                   value={filtroServicio}
@@ -211,13 +233,14 @@ export default function MapaCentros({
                   aria-label="Filtrar por tipo de servicio"
                   className="mapa-select-control"
                 >
-                  <option value="todos">Detección de ITS</option>
-                  <option value="ITS">Solo Detección de ITS</option>
-                  <option value="Aborto">ILE / Aborto</option>
+                  <option value="todos">Todos los servicios</option>
+                  <option value="ITS">Detección de ITS (VIH, Sífilis, VHC)</option>
+                  <option value="Aborto">Aborto Seguro (ILE)</option>
+                  <option value="Ambos">Ambos (ITS + ILE)</option>
                 </select>
               </div>
 
-              {/* Selector 2: Todos los municipios */}
+              {/* Selector 2: Municipio */}
               <div className="mapa-select-wrap">
                 <select
                   value={filtroMunicipio}
@@ -234,17 +257,38 @@ export default function MapaCentros({
                 </select>
               </div>
 
-              {/* Grupo derecho: Cualquier costo + Botón Limpiar */}
+              {/* Selector 3: Disponibilidad de Horario */}
+              <div className="mapa-select-wrap">
+                <select
+                  value={filtroHorario}
+                  onChange={(e) => setFiltroHorario(e.target.value)}
+                  aria-label="Filtrar por disponibilidad de horario"
+                  className="mapa-select-control"
+                >
+                  <option value="todos">Cualquier horario</option>
+                  <option value="24-horas">Abierto 24 horas</option>
+                  <option value="fines-semana">Abre fines de semana (Sáb / Dom)</option>
+                  <option value="lunes-viernes">Lunes a Viernes</option>
+                </select>
+              </div>
+
+              {/* Selector 4 + Limpiar: Nivel de Atención (columna Nivel de Atención del CSV) */}
               <div className="mapa-filter-right-group">
                 <select
-                  value={filtroCosto}
-                  onChange={(e) => setFiltroCosto(e.target.value)}
-                  aria-label="Filtrar por costo"
+                  value={filtroNivel}
+                  onChange={(e) => setFiltroNivel(e.target.value)}
+                  aria-label="Filtrar por nivel de atención"
                   className="mapa-select-control mapa-select-cost"
                 >
-                  <option value="todos">Cualquier costo</option>
-                  <option value="Gratuito">Gratuito</option>
-                  <option value="Cuota accesible">Cuota accesible</option>
+                  <option value="todos">Cualquier nivel de atención</option>
+                  <option value="Primer Nivel">Primer Nivel</option>
+                  <option value="Segundo Nivel">Segundo Nivel</option>
+                  <option value="Tercer Nivel - ISSSTE">Tercer Nivel - ISSSTE</option>
+                  <option value="IMSS Ordinario">IMSS Ordinario</option>
+                  <option value="ISSSTE">ISSSTE</option>
+                  <option value="Comunitario / Social">Comunitario / Social</option>
+                  <option value="Privado">Privado</option>
+                  <option value="sin-especificar">Sin nivel especificado (Puntos fijos)</option>
                 </select>
 
                 <button

@@ -1,8 +1,34 @@
 import { Link } from 'react-router-dom';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  Clock,
+  ExternalLink,
+  Mail,
+  MapPin,
+  Phone,
+  User,
+} from 'lucide-react';
 import '../../styles/Inicio.css';
 
 /**
- * DetalleCentro - Ventana "Detalle de centro - PuntoOax" según diseño oficial de Figma (1280x1218).
+ * DetalleCentro - Ventana "Detalle de centro - PuntoOax" según diseño oficial de Figma (1280x1218),
+ * mostrando única y exclusivamente las columnas existentes en el archivo oficial de Filtración:
+ * - Id
+ * - Entidad Federativa y Municipio
+ * - Unidad de Salud (nombre)
+ * - Nivel de Atención
+ * - Dirección
+ * - Teléfono
+ * - Horario
+ * - Correo electrónico
+ * - Servicios
+ * - Requisitos
+ * - Fuente
+ * - Ubicacion maps
+ * - Links relacionados
+ * Si una celda viene vacía en el archivo (null), se indica explícitamente "No especificado".
  *
  * Contrato de propiedades (Props):
  * @param {Object} props
@@ -21,6 +47,12 @@ export default function DetalleCentro({
 
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
   const servicios = Array.isArray(clinica.servicios) ? clinica.servicios : [];
+  const linksRelacionados = Array.isArray(clinica.links_relacionados)
+    ? clinica.links_relacionados.filter(Boolean)
+    : [];
+  const tieneUrlMaps =
+    typeof clinica.ubicacion_maps === 'string' &&
+    clinica.ubicacion_maps.trim().startsWith('http');
 
   return (
     <div className="detalle-page">
@@ -45,12 +77,9 @@ export default function DetalleCentro({
               >
                 <span className="inicio-nav-link-active-text">Mapa de centros</span>
               </button>
-              <a href="#agenda" className="inicio-nav-link">
-                Agenda
-              </a>
-              <a href="#conocenos" className="inicio-nav-link">
-                Conócenos
-              </a>
+              <Link to="/informacion-util" className="inicio-nav-link">
+                Información útil
+              </Link>
             </nav>
           </div>
 
@@ -73,12 +102,7 @@ export default function DetalleCentro({
 
             <div className="inicio-avatar-margin">
               <div className="inicio-avatar-circle" aria-hidden="true">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path
-                    d="M6 6C7.65685 6 9 4.65685 9 3C9 1.34315 7.65685 0 6 0C4.34315 0 3 1.34315 3 3C3 4.65685 4.34315 6 6 6ZM6 7.5C3.9975 7.5 0 8.505 0 10.5V12H12V10.5C12 8.505 8.0025 7.5 6 7.5Z"
-                    fill="#FFFFFF"
-                  />
-                </svg>
+                <User size={14} color="#FFFFFF" />
               </div>
             </div>
           </div>
@@ -97,194 +121,229 @@ export default function DetalleCentro({
                 className="detalle-back-link"
               >
                 <span className="detalle-back-icon" aria-hidden="true">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M13.33 6.17H3.19L7.85 1.51L6.67 0.33L0 7L6.67 13.67L7.85 12.49L3.19 7.83H13.33V6.17Z"
-                      fill="#001D14"
-                    />
-                  </svg>
+                  <ArrowLeft size={14} color="#001D14" />
                 </span>
                 <span className="detalle-back-text">Volver al directorio</span>
               </button>
             </div>
           </div>
 
-          {/* Header Title & Subtitle:margin (height: 120px) */}
+          {/* Header Title & Subtitle:margin */}
           <div className="detalle-header-margin">
             <div className="detalle-header-block">
               <h1 className="detalle-heading-title">{clinica.nombre}</h1>
               <p className="detalle-heading-subtitle">
-                {clinica.subtitulo_region ||
-                  `${clinica.municipio || 'Oaxaca de Juárez'} · Oaxaca y zona metropolitana`}
+                {`${clinica.municipio || 'No especificado'} · ${clinica.entidad_federativa || 'Oaxaca'}`}
               </p>
             </div>
           </div>
 
-          {/* Main Content Grid (1232px x 790px) */}
+          {/* Main Content Grid */}
           <div className="detalle-content-grid">
-            {/* Left Column: General Info & Center Details (698.67px x 790px, padding: 48px) */}
+            {/* Left Column: General Info & Center Details */}
             <section className="detalle-left-card" aria-label="Información general y datos del centro">
-              {/* Category Tag */}
-              <div className="detalle-category-tag-wrap">
+              {/* Category Tag + Nivel de Atención (si existe en el CSV) */}
+              <div className="detalle-category-tag-wrap" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '8px' }}>
                 <span className="detalle-category-pill">
-                  {clinica.etiqueta_categoria || 'DETECCIÓN DE ITS'}
+                  {clinica.etiqueta_categoria || 'ATENCIÓN EN SALUD'}
                 </span>
+                {clinica.nivel_atencion && (
+                  <span className="detalle-category-pill">
+                    {`Nivel de atención: ${clinica.nivel_atencion}`}
+                  </span>
+                )}
               </div>
 
-              {/* General Information */}
+              {/* Servicios registrados en la columna "Servicios" del archivo */}
               <div className="detalle-general-info">
-                <h2 className="detalle-section-h2">Información general</h2>
+                <h2 className="detalle-section-h2">Servicios registrados</h2>
                 <p className="detalle-general-desc">
-                  {clinica.descripcion ||
-                    'Pruebas de VIH, sífilis y hepatitis C. Orientación y consejería asociada al servicio.'}
+                  {clinica.servicios_texto || 'No especificados'}
                 </p>
               </div>
 
-              {/* Services */}
-              <div className="detalle-services-block">
-                <h3 className="detalle-section-h3">Servicios</h3>
-                <div className="detalle-services-chips">
-                  {servicios.map((servicio) => (
-                    <span key={servicio} className="detalle-service-chip">
-                      {servicio}
-                    </span>
-                  ))}
+              {/* Chips de servicios */}
+              {servicios.length > 0 && (
+                <div className="detalle-services-block">
+                  <h3 className="detalle-section-h3">Servicios</h3>
+                  <div className="detalle-services-chips">
+                    {servicios.map((servicio) => (
+                      <span key={servicio} className="detalle-service-chip">
+                        {servicio}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Center Data Grid (Datos del centro) */}
+              {/* Center Data Grid (Columnas exactas del archivo Filtración) */}
               <div className="detalle-data-grid-section">
                 <h3 className="detalle-section-h3">Datos del centro</h3>
 
-                {/* Fila 1: Horario y Costo */}
+                {/* Fila 1: Horario y Nivel de Atención */}
                 <div className="detalle-data-row">
                   <div className="detalle-data-box">
                     <div className="detalle-data-label-row">
                       <span className="detalle-data-icon" aria-hidden="true">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path
-                            d="M6.67 0C2.98 0 0 2.98 0 6.67C0 10.35 2.98 13.33 6.67 13.33C10.35 13.33 13.33 10.35 13.33 6.67C13.33 2.98 10.35 0 6.67 0ZM7.33 7.33H4V6H6V2.67H7.33V7.33Z"
-                            fill="#414845"
-                          />
-                        </svg>
+                        <Clock size={14} color="#414845" />
                       </span>
                       <span className="detalle-data-label">Horario</span>
                     </div>
                     <p className="detalle-data-value">
-                      {clinica.horario_detalle ||
-                        clinica.horario ||
-                        'Lun. a vie., 09:00–10:30 y 11:30–13:00 h'}
+                      {clinica.horario || 'No especificado'}
                     </p>
                   </div>
 
                   <div className="detalle-data-box">
                     <div className="detalle-data-label-row">
                       <span className="detalle-data-icon" aria-hidden="true">
-                        <svg width="15" height="11" viewBox="0 0 15 11" fill="none">
-                          <path
-                            d="M13.33 0H1.33C0.59 0 0 0.59 0 1.33V9.33C0 10.07 0.59 10.67 1.33 10.67H13.33C14.07 10.67 14.67 10.07 14.67 9.33V1.33C14.67 0.59 14.07 0 13.33 0ZM13.33 9.33H1.33V5.33H13.33V9.33ZM13.33 2.67H1.33V1.33H13.33V2.67Z"
-                            fill="#414845"
-                          />
-                        </svg>
+                        <Building2 size={14} color="#414845" />
                       </span>
-                      <span className="detalle-data-label">Costo</span>
+                      <span className="detalle-data-label">Nivel de Atención</span>
                     </div>
-                    <p className="detalle-data-value">{clinica.costo || 'Gratuito'}</p>
+                    <p className="detalle-data-value">
+                      {clinica.nivel_atencion || 'No especificado'}
+                    </p>
                   </div>
                 </div>
 
-                {/* Fila 2: Requisitos y Teléfono */}
+                {/* Fila 2: Teléfono y Correo electrónico */}
                 <div className="detalle-data-row">
                   <div className="detalle-data-box">
                     <div className="detalle-data-label-row">
                       <span className="detalle-data-icon" aria-hidden="true">
-                        <svg width="11" height="14" viewBox="0 0 11 14" fill="none">
-                          <path
-                            d="M6.67 0H1.33C0.6 0 0 0.6 0 1.33V12C0 12.73 0.6 13.33 1.33 13.33H9.33C10.07 13.33 10.67 12.73 10.67 12V4L6.67 0ZM8 10.67H2.67V9.33H8V10.67ZM8 8H2.67V6.67H8V8ZM6 4.67V1L9.67 4.67H6Z"
-                            fill="#414845"
-                          />
-                        </svg>
+                        <Phone size={13} color="#414845" />
                       </span>
-                      <span className="detalle-data-label">Requisitos</span>
+                      <span className="detalle-data-label">Teléfono</span>
                     </div>
-                    <p className="detalle-data-value">{clinica.requisitos || 'Presentar CURP'}</p>
+                    <p className="detalle-data-value">
+                      {clinica.telefono || 'No especificado'}
+                    </p>
                   </div>
 
                   <div className="detalle-data-box">
                     <div className="detalle-data-label-row">
                       <span className="detalle-data-icon" aria-hidden="true">
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                          <path
-                            d="M2.41 5.19C3.37 7.08 4.92 8.62 6.81 9.59L8.28 8.12C8.46 7.94 8.73 7.88 8.96 7.96C9.71 8.21 10.52 8.34 11.33 8.34C11.7 8.34 12 8.64 12 9.01V11.33C12 11.7 11.7 12 11.33 12C5.07 12 0 6.93 0 0.67C0 0.3 0.3 0 0.67 0H3C3.37 0 3.67 0.3 3.67 0.67C3.67 1.5 3.8 2.3 4.05 3.05C4.12 3.28 4.07 3.54 3.88 3.73L2.41 5.19Z"
-                            fill="#414845"
-                          />
-                        </svg>
+                        <Mail size={14} color="#414845" />
                       </span>
-                      <span className="detalle-data-label">Teléfono</span>
+                      <span className="detalle-data-label">Correo electrónico</span>
                     </div>
                     <p className="detalle-data-value">
-                      {clinica.telefono || 'Sin teléfono registrado'}
+                      {clinica.correo_contacto || 'No especificado'}
                     </p>
                   </div>
                 </div>
 
-                {/* Fila 3: Dirección */}
+                {/* Fila 3: Municipio / Entidad Federativa e Id de registro */}
+                <div className="detalle-data-row">
+                  <div className="detalle-data-box">
+                    <div className="detalle-data-label-row">
+                      <span className="detalle-data-icon" aria-hidden="true">
+                        <MapPin size={14} color="#414845" />
+                      </span>
+                      <span className="detalle-data-label">Municipio y Entidad Federativa</span>
+                    </div>
+                    <p className="detalle-data-value">
+                      {clinica.municipio || 'No especificado'}, {clinica.entidad_federativa || 'Oaxaca'}
+                    </p>
+                  </div>
+
+                  <div className="detalle-data-box">
+                    <div className="detalle-data-label-row">
+                      <span className="detalle-data-label">ID de registro</span>
+                    </div>
+                    <p className="detalle-data-value">
+                      {clinica.id_clinica || 'No especificado'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Fila 4: Dirección (columna Dirección) */}
                 <div className="detalle-data-box detalle-data-box-full">
                   <div className="detalle-data-label-row">
                     <span className="detalle-data-icon" aria-hidden="true">
-                      <svg width="11" height="14" viewBox="0 0 11 14" fill="none">
-                        <path
-                          d="M5.33 0C2.39 0 0 2.39 0 5.33C0 9.33 5.33 13.33 5.33 13.33C5.33 13.33 10.67 9.33 10.67 5.33C10.67 2.39 8.28 0 5.33 0ZM5.33 7.2C4.3 7.2 3.47 6.36 3.47 5.33C3.47 4.3 4.3 3.47 5.33 3.47C6.36 3.47 7.2 4.3 7.2 5.33C7.2 6.36 6.36 7.2 5.33 7.2Z"
-                          fill="#414845"
-                        />
-                      </svg>
+                      <MapPin size={14} color="#414845" />
                     </span>
                     <span className="detalle-data-label">Dirección</span>
                   </div>
                   <p className="detalle-data-value">
-                    {clinica.direccion || 'Mártires de Tacubaya 315, Col. Centro, Oaxaca de Juárez'}
+                    {clinica.direccion || 'No especificada'}
                   </p>
+                </div>
+
+                {/* Fila 5: Fuente y Links relacionados */}
+                <div className="detalle-data-box detalle-data-box-full">
+                  <div className="detalle-data-label-row">
+                    <span className="detalle-data-label">Fuente y Links relacionados</span>
+                  </div>
+                  <p className="detalle-data-value" style={{ wordBreak: 'break-word' }}>
+                    {clinica.fuente || 'No especificada'}
+                  </p>
+                  {linksRelacionados.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+                      {linksRelacionados.map((url) => (
+                        <a
+                          key={url}
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="info-util-source-link"
+                          style={{ padding: '6px 12px', fontSize: '12px' }}
+                        >
+                          <span>Abrir link relacionado</span>
+                          <ExternalLink size={12} aria-hidden="true" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Before Your Visit Section */}
+              {/* Requisitos (columna Requisitos del archivo CSV) */}
               <div className="detalle-before-visit">
-                <h3 className="detalle-before-visit-title">Antes de tu visita</h3>
+                <h3 className="detalle-before-visit-title">Requisitos</h3>
                 <p className="detalle-before-visit-text">
-                  {clinica.nota_visita ||
-                    'Para las pruebas rápidas presenta tu CURP. Puedes acudir sin cita previa durante el horario de atención indicado.'}
+                  {clinica.requisitos || 'No especificados'}
                 </p>
-                <div className="detalle-before-visit-badge-wrap">
-                  <span className="detalle-before-visit-badge">
-                    {clinica.etiqueta_visita || 'Atención confidencial'}
-                  </span>
-                </div>
               </div>
             </section>
 
-            {/* Right Column: Location Map & Appointment Scheduling (485.33px x 612px, padding: 48px) */}
+            {/* Right Column: Location Map & Appointment Scheduling */}
             <aside className="detalle-right-card" aria-label="Ubicación y organización de visita">
               {/* Ubicación Title & Address */}
               <div className="detalle-ubicacion-header">
                 <h2 className="detalle-section-h2">Ubicación</h2>
                 <p className="detalle-ubicacion-address">
-                  {clinica.direccion_corta ||
-                    clinica.direccion ||
-                    'Mártires de Tacubaya 315, Col. Centro'}
+                  {clinica.direccion || 'No especificada'}
                 </p>
               </div>
 
               {/* Map View (389.33px x 288px) */}
               <div className="detalle-map-view">
                 <div className="detalle-map-floating-pin" aria-hidden="true">
-                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                    <path
-                      d="M7.5 0C3.91 0 1 2.91 1 6.5C1 11.375 7.5 15 7.5 15C7.5 15 14 11.375 14 6.5C14 2.91 11.09 0 7.5 0ZM7.5 9C6.12 9 5 7.88 5 6.5C5 5.12 6.12 4 7.5 4C8.88 4 10 5.12 10 6.5C10 7.88 8.88 9 7.5 9Z"
-                      fill="#FFFFFF"
-                    />
-                  </svg>
+                  <MapPin size={15} color="#FFFFFF" />
                 </div>
               </div>
+
+              {/* Ubicacion maps (columna Ubicacion maps del archivo CSV) */}
+              {tieneUrlMaps ? (
+                <a
+                  href={clinica.ubicacion_maps}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="info-util-source-link"
+                  style={{ width: '100%', justifyContent: 'center', boxSizing: 'border-box' }}
+                >
+                  <span>Abrir ubicación en Google Maps</span>
+                  <ExternalLink size={13} aria-hidden="true" />
+                </a>
+              ) : (
+                clinica.ubicacion_maps && (
+                  <p className="detalle-ubicacion-address" style={{ fontSize: '13px' }}>
+                    {clinica.ubicacion_maps}
+                  </p>
+                )
+              )}
 
               {/* Visit Organization */}
               <div className="detalle-visit-org">
@@ -298,12 +357,7 @@ export default function DetalleCentro({
               <button type="button" className="detalle-schedule-btn">
                 <span className="detalle-schedule-btn-text">Agendar cita</span>
                 <span className="detalle-schedule-btn-icon" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path
-                      d="M6 0L4.9425 1.0575L9.1275 5.25H0V6.75H9.1275L4.9425 10.9425L6 12L12 6L6 0Z"
-                      fill="#FFFFFF"
-                    />
-                  </svg>
+                  <ArrowRight size={14} color="#FFFFFF" />
                 </span>
               </button>
             </aside>
@@ -322,4 +376,3 @@ export default function DetalleCentro({
     </div>
   );
 }
-

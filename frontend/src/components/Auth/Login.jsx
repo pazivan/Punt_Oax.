@@ -1,10 +1,21 @@
 import { useRef, useState } from 'react';
+import { ArrowRight, Building2, Check, MapPin, User } from 'lucide-react';
 import '../../styles/Auth.css';
 import { guardarSesion, iniciarSesion, iniciarSesionClinica } from '../../api/auth';
 import { normalizarCorreo, validarEmail, validarRequerido } from '../../utils/validaciones';
 
-export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, mensaje }) {
-  const [accountType, setAccountType] = useState('usuario');
+export default function Login({
+  onSwitchToRegister,
+  onBackToPublic,
+  onLogin,
+  mensaje,
+  initialAccountType = 'usuario',
+}) {
+  const [accountType, setAccountType] = useState(
+    initialAccountType === 'clinica' ? 'clinica' : 'usuario'
+  );
+
+  // Sincronizado con initialAccountType mediante key en App.jsx
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -76,11 +87,11 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
             </button>
           </div>
           <div className="auth-header-actions">
-            <button type="button" onClick={onSwitchToRegister} disabled={loading} className="auth-btn-outline">
+            <button type="button" onClick={() => onSwitchToRegister(accountType)} disabled={loading} className="auth-btn-outline">
               Registro de cuenta
             </button>
             <div className="auth-avatar-circle" aria-hidden="true">
-              👤
+              <User size={16} />
             </div>
           </div>
         </div>
@@ -101,7 +112,7 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
                   : 'Bienvenido de nuevo.'}
               </h1>
               <p className="auth-subtext-hero">
-                Consulta la información disponible de los centros de salud.
+                Consulta la información disponible de los centros.
               </p>
             </div>
 
@@ -109,7 +120,7 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
             <div className="auth-map-preview-box">
               <div className="auth-map-card-inner">
                 <div className="auth-map-tag">
-                  <span role="img" aria-label="pin">📍</span>
+                  <MapPin size={14} aria-hidden="true" />
                   <span>PuntOax · Oaxaca</span>
                 </div>
               </div>
@@ -118,15 +129,15 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
             {/* Lista de ventajas según Figma */}
             <div className="auth-features-list">
               <div className="auth-feature-row">
-                <span className="auth-check-icon">✔</span>
+                <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                 <span>Gestión integral de centros de detección de ITS e ILE</span>
               </div>
               <div className="auth-feature-row">
-                <span className="auth-check-icon">✔</span>
+                <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                 <span>Información actualizada de servicios y horarios</span>
               </div>
               <div className="auth-feature-row">
-                <span className="auth-check-icon">✔</span>
+                <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                 <span>Administración accesible, rápida y segura</span>
               </div>
             </div>
@@ -145,7 +156,9 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
                   : 'Selecciona el tipo de cuenta con el que deseas continuar.'}
               </p>
 
-              {mensaje && <div className="auth-info-banner" role="status">{mensaje}</div>}
+              {typeof mensaje === 'string' && mensaje && (
+                <div className="auth-info-banner" role="status">{mensaje}</div>
+              )}
               {/* Mensaje de error accesible */}
               {error && (
                 <div className="auth-error-alert" role="alert">
@@ -166,7 +179,8 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
                     setError('');
                   }}
                 >
-                  👤 Soy usuario
+                  <User size={15} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} aria-hidden="true" />
+                  Soy usuario
                 </button>
                 <button
                   type="button"
@@ -179,7 +193,8 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
                     setError('');
                   }}
                 >
-                  🏥 Soy clínica
+                  <Building2 size={15} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} aria-hidden="true" />
+                  Soy clínica
                 </button>
               </div>
 
@@ -225,9 +240,14 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
                   disabled={loading}
                   className="auth-submit-btn"
                 >
-                  {loading
-                    ? 'Verificando datos...'
-                    : 'Iniciar sesión →'}
+                  {loading ? (
+                    'Verificando datos...'
+                  ) : (
+                    <>
+                      <span>Iniciar sesión</span>{' '}
+                      <ArrowRight size={15} style={{ verticalAlign: 'middle' }} aria-hidden="true" />
+                    </>
+                  )}
                 </button>
               </form>
 
@@ -235,7 +255,7 @@ export default function Login({ onSwitchToRegister, onBackToPublic, onLogin, men
               <div className="auth-bottom-links">
                 <p className="auth-switch-text">
                   ¿Aún no registras tu cuenta?{' '}
-                  <button type="button" onClick={onSwitchToRegister} disabled={loading} className="auth-inline-link">
+                  <button type="button" onClick={() => onSwitchToRegister(accountType)} disabled={loading} className="auth-inline-link">
                     Crear cuenta
                   </button>
                 </p>
