@@ -71,25 +71,45 @@ ON CONFLICT (nombre) DO UPDATE SET
 
 ---
 
-## 3. Matriz de Mapeo: Google Sheets $\rightarrow$ Formulario Figma $\rightarrow$ Base de Datos
+## 3. Matriz de Mapeo y Priorización de la Interfaz
 
-| Campo en Figma (*Datos del centro*) | Columna en Hoja (*Filtración*) | Tabla y Columna PostgreSQL | Regla y Tipo de Dato |
+### 3.1. Alcance Activo y Simplificado de la Interfaz (Decisión de Alcance)
+
+Para mantener la interfaz clara, rápida y sin sobrecarga innecesaria, se acordó priorizar estrictamente el siguiente núcleo de campos:
+
+#### A. Campos Activos y Obligatorios en Pantalla:
+1. **`nombre`**: Nombre público del centro.
+2. **`id`**: `id_clinica` (UUID interno del sistema) y `id_origen` (auditoría de origen).
+3. **`municipio`**: Municipio operativo.
+4. **`direccion`**: Dirección física completa.
+5. **`horario`**: Horario de atención (`horario_texto` y franjas estructuradas).
+6. **`telefono`**: Teléfono institucional a 10 dígitos.
+7. **`servicios`**: Estandarizado estrictamente a **Detección de ITS**, **ILE**, o **ambos**.
+8. **`tipo_institucion`**: Selector estándar (`publica`, `privada`, `ong`, `otra`).
+
+#### B. Campos Secundarios / Opcionales (No requeridos en la interfaz actual / obsoletos para esta versión):
+* **`costo_texto` y `requisitos`**: No se exigirán en la pantalla de datos; permanecen como opcionales en BD.
+* **`ubicacion_maps_url` / `ubicacion_geo`**: No se forzarán en la vista si la clínica no cuenta con link de Maps.
+* **`links_relacionados` y notas de confirmación**: Manejadas internamente en backend sin ensuciar el formulario.
+* **`estado_publicacion`**: Se maneja por defecto en `'borrador'` internamente en el backend sin requerir controles adicionales en el cliente.
+
+### 3.2. Tabla de Correspondencia Técnica
+
+| Campo en Pantalla | Columna en Hoja (*Filtración*) | Tabla y Columna PostgreSQL | Prioridad / Estado |
 | :--- | :--- | :--- | :--- |
-| **Nombre público del centro \*** | `Unidad de Salud` (o nombre en `Dirección`) | `clinicas.nombre` | `VARCHAR(255) NOT NULL`. Nombre representativo del centro. |
-| **Tipo de institución \*** | `Nivel de Atención` | `clinicas.tipo_institucion` y `clinicas.nivel_atencion` | `VARCHAR(30)` (`'publica'`, `'privada'`, `'ong'`, `'otra'`) y `VARCHAR(50)` para nivel descriptivo. |
-| **Municipio \*** | `Municipio` | `clinicas.municipio` | `VARCHAR(100) NOT NULL`. |
-| **Región \*** | *(Inferido por municipio)* | `clinicas.region` | `VARCHAR(100)` (`'Oaxaca y zona metropolitana'`, `'Istmo'`, `'Costa'`, etc.). |
-| **Dirección completa \*** | `Dirección` | `clinicas.direccion` y `codigo_postal` | `TEXT` y `VARCHAR(5)` extraído por regex. |
-| **Servicios \*** | `Servicios` (Pestaña `ITS`, `Aborto` o `Ambos`) | `clinicas_servicios` $\rightarrow$ `servicios` | Relación N:M estandarizada a: `Detección de ITS`, `Interrupción Legal del Embarazo (ILE)` o ambos. |
-| **Horario de atención \*** | `Horario` | `clinicas.horario_texto` y `horarios_atencion` | `TEXT` literal en `clinicas` y franjas con `es_24_horas` / `cruza_medianoche` en `horarios_atencion`. |
-| **Teléfono de contacto \*** | `Teléfono` | `clinicas.telefono` | `VARCHAR(20)`. |
-| **Costo y requisitos** | `Requisitos` | `clinicas_servicios.costo_texto` y `clinicas_servicios.requisitos` | `VARCHAR(100)` para la etiqueta (`'Gratuito'`, `'Costo accesible'`) y `TEXT` para requisitos. |
-| **Id de referencia de origen** | `Id` (ej. `'coesdia 1'`, `'imss 2'`) | `clinicas.id_origen` y `clinicas_servicios.id_origen` | `VARCHAR(50)`. Trazabilidad exacta sin usar `N.º de origen`. |
-| **Ubicación Google Maps** | `Ubicacion maps` | `clinicas.ubicacion_maps_url` y `ubicacion_geo` | `TEXT` para link a Maps y `GEOGRAPHY(Point, 4326)` para coordenadas del pin. |
-| **Situación de la sede** | Columna `Dirección` / notas operativas | `clinicas.situacion_ubicacion` | `VARCHAR(20)` (`'fija'`, `'pendiente'`, `'itinerante'`, `'reubicacion'`). |
-| **Verificación de datos** | Auditoría de campos | `clinicas.verificacion_datos` | `VARCHAR(20)` (`'pendiente'`, `'por_confirmar'`, `'parcial'`, `'verificado'`, `'inconsistente'`). |
-| **Botón "Guardar borrador"** | — | `clinicas.estado_publicacion = 'borrador'` | La clínica edita sin publicar todavía en el mapa. |
-| **Botón "Enviar para revisión"** | — | `solicitudes_clinicas.estado = 'pendiente'` | Se genera postulación administrativa; la clínica pasa a revisión. |
+| **Nombre público del centro \*** | `Unidad de Salud` (o nombre en `Dirección`) | `clinicas.nombre` | **Activo prioritario** |
+| **Tipo de institución** | `Nivel de Atención` | `clinicas.tipo_institucion` | **Activo** |
+| **Municipio \*** | `Municipio` | `clinicas.municipio` | **Activo prioritario** |
+| **Región** | *(Inferido por municipio)* | `clinicas.region` | Complementario |
+| **Dirección completa \*** | `Dirección` | `clinicas.direccion` y `codigo_postal` | **Activo prioritario** |
+| **Servicios \*** | `Servicios` (Pestaña `ITS`, `Aborto` o `Ambos`) | `clinicas_servicios` $\rightarrow$ `servicios` | **Activo prioritario (ITS / ILE / Ambos)** |
+| **Horario de atención \*** | `Horario` | `clinicas.horario_texto` y `horarios_atencion` | **Activo prioritario** |
+| **Teléfono de contacto \*** | `Teléfono` | `clinicas.telefono` | **Activo prioritario** |
+| **Id de referencia de origen** | `Id` (ej. `'coesdia 1'`, `'imss 2'`) | `clinicas.id_origen` y `clinicas_servicios.id_origen` | Auditoría interna (no clave) |
+| **Costo y requisitos** | `Requisitos` | `clinicas_servicios.costo_texto` / `requisitos` | Opcional / en pausa en interfaz |
+| **Ubicación Google Maps** | `Ubicacion maps` | `clinicas.ubicacion_maps_url` / `ubicacion_geo` | Opcional / no exigido en formulario |
+| **Situación de la sede** | Columna `Dirección` / notas | `clinicas.situacion_ubicacion` | Soporte backend (`'fija'`, `'itinerante'`, etc.) |
+| **Verificación de datos** | Auditoría de campos | `clinicas.verificacion_datos` | Soporte backend (`'verificado'`, etc.) |
 
 ---
 
@@ -128,7 +148,6 @@ Soporta casos reales como *"Lunes a domingo las 24 horas"* (`es_24_horas = TRUE`
    * El filtro `?servicios=Aborto` o `?servicios=ILE` filtrará `s.categoria = 'ILE'` o `s.nombre = 'Interrupción Legal del Embarazo (ILE)'`.
    * Clínicas con ambos servicios responderán a cualquiera de los dos filtros automáticamente y sin duplicarse.
 2. **Citlalli (`origin/citlalli/sprint5-ficha-centros` y pantalla de alta de clínica):**
-   * El formulario *"Cuéntanos sobre tu clínica"* mapea directo a los campos de `clinicas` y `clinicas_servicios`.
-   * En el selector de servicios, basta ofrecer las dos opciones canónicas: `[ ] Detección de ITS` y `[ ] Interrupción Legal del Embarazo (ILE)`.
+   * El formulario se enfoca en los campos activos esenciales: `nombre`, `tipo_institucion`, `municipio`, `direccion`, `horario`, `telefono` y los dos checkboxes de `servicios` (`[ ] Detección de ITS`, `[ ] Interrupción Legal del Embarazo (ILE)`).
 3. **Miguel (Integración):**
    * Esta rama no introduce conflictos de merge con `origin/main`.
