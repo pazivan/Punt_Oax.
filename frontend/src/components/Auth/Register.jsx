@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Building2, Check, ShieldCheck, User } from 'lucide-react';
 import '../../styles/Auth.css';
 import { registrarClinica, registrarUsuario } from '../../api/auth';
 import {
@@ -12,16 +13,58 @@ import {
 const MENSAJE_CLINICA_CREADA =
   'Tu cuenta de clínica fue creada correctamente. Ya puedes iniciar sesión. ' +
   'La información de tu institución todavía no está publicada y deberá verificarse posteriormente.';
+const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-export default function Register({ onSwitchToLogin, onBackToPublic }) {
-  const [accountType, setAccountType] = useState('clinica'); // Vista de clínica según especificación Figma
+export default function Register({ onSwitchToLogin, onBackToPublic, initialAccountType = 'usuario' }) {
+  const [accountType, setAccountType] = useState(
+    initialAccountType === 'clinica' ? 'clinica' : 'usuario'
+  );
+
+  // Sincronizado con initialAccountType mediante key en App.jsx
   const [nombreClinica, setNombreClinica] = useState('');
+  const [tipoInstitucion, setTipoInstitucion] = useState('');
+  const [municipio, setMunicipio] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [codigoPostal, setCodigoPostal] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [catalogoServicios, setCatalogoServicios] = useState([]);
+  const [errorCatalogo, setErrorCatalogo] = useState('');
+  const [serviciosSeleccionados, setServiciosSeleccionados] = useState([]);
+  const [horarios, setHorarios] = useState([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const enviando = useRef(false);
+
+  useEffect(() => {
+    if (accountType !== 'clinica') return;
+    const controlador = new AbortController();
+    fetch('/api/servicios', { signal: controlador.signal })
+      .then(async (respuesta) => {
+        if (!respuesta.ok) throw new Error('Catálogo no disponible');
+        return respuesta.json();
+      })
+      .then((datos) => {
+        if (!controlador.signal.aborted) {
+          setCatalogoServicios(Array.isArray(datos) ? datos : []);
+          setErrorCatalogo('');
+        }
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') setErrorCatalogo('No se pudo cargar el catálogo de servicios.');
+      });
+    return () => controlador.abort();
+  }, [accountType]);
+
+  const alternarHorario = (dia) => setHorarios((actuales) => actuales.some((h) => h.dia_semana === dia)
+    ? actuales.filter((h) => h.dia_semana !== dia)
+    : [...actuales, { dia_semana: dia, apertura: '09:00', cierre: '17:00' }]);
+
+  const cambiarHorario = (dia, campo, valor) => setHorarios((actuales) => actuales.map((h) =>
+    h.dia_semana === dia ? { ...h, [campo]: valor } : h));
 
   const handleTabChange = (tipo) => {
     setAccountType(tipo);
@@ -51,6 +94,33 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
       return;
     }
 
+    if (accountType === 'clinica') {
+      if (!['publica', 'privada', 'ong', 'otra'].includes(tipoInstitucion) ||
+          !municipio.trim() || !direccion.trim() || !telefono.trim()) {
+        setError('Completa el tipo de institución, municipio, dirección y teléfono de la clínica.');
+        return;
+      }
+      if (municipio.trim().length > 100 || direccion.trim().length > 500 ||
+          telefono.trim().length > 20 || !/^[+\d()\s.-]+$/.test(telefono.trim()) ||
+          (codigoPostal.trim() && !/^\d{5}$/.test(codigoPostal.trim())) ||
+          descripcion.trim().length > 2000) {
+        setError('Revisa municipio, dirección, teléfono, código postal y descripción.');
+        return;
+      }
+      if (serviciosSeleccionados.length === 0 || horarios.length === 0) {
+        setError('Selecciona al menos un servicio y un día con horario de atención.');
+        return;
+      }
+      if (horarios.some((h) => !h.apertura || !h.cierre || h.apertura >= h.cierre)) {
+        setError('Cada horario seleccionado debe tener apertura anterior al cierre. Los turnos nocturnos y 24 horas aún no están disponibles.');
+        return;
+      }
+      if (serviciosSeleccionados.length && errorCatalogo) {
+        setError('Vuelve a cargar el catálogo antes de registrar los servicios.');
+        return;
+      }
+    }
+
     if (!validarEmail(correoLimpio)) {
       setError(accountType === 'clinica'
         ? 'Por favor, introduce un correo institucional válido.'
@@ -75,11 +145,19 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
 
     try {
       if (accountType === 'clinica') {
-        await registrarClinica(nombreClinica.trim(), correoLimpio, password);
-        onSwitchToLogin(MENSAJE_CLINICA_CREADA);
+        await registrarClinica({
+          nombre: nombreClinica.trim(), correo: correoLimpio, password,
+          tipo_institucion: tipoInstitucion, municipio: municipio.trim(),
+          direccion: direccion.trim(), telefono: telefono.trim(),
+          codigo_postal: codigoPostal.trim() || null,
+          descripcion: descripcion.trim() || null,
+          servicios: serviciosSeleccionados,
+          horarios,
+        });
+        onSwitchToLogin(MENSAJE_CLINICA_CREADA, 'clinica');
       } else {
         await registrarUsuario(email.trim(), password);
-        onSwitchToLogin('Cuenta creada. Ya puedes iniciar sesión.');
+        onSwitchToLogin('Cuenta creada. Ya puedes iniciar sesión.', 'usuario');
       }
     } catch (err) {
       setError(err.message);
@@ -115,11 +193,16 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
             </button>
           </div>
           <div className="auth-header-actions">
-            <button type="button" onClick={onSwitchToLogin} disabled={loading} className="auth-btn-outline">
+            <button
+              type="button"
+              onClick={() => onSwitchToLogin('', accountType)}
+              disabled={loading}
+              className="auth-btn-outline"
+            >
               Iniciar sesión
             </button>
             <div className="auth-avatar-circle" aria-hidden="true">
-              👤
+              <User size={16} />
             </div>
           </div>
         </div>
@@ -145,7 +228,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                 <p className="auth-subtext-hero larger">
                   {accountType === 'usuario'
                     ? 'Descubre centros, consulta sus fichas y organiza tus próximas visitas.'
-                    : 'Registra el nombre de tu clínica, un correo institucional y una contraseña.'}
+                    : 'Registra los datos, servicios y horarios de tu clínica. La ficha permanecerá en borrador.'}
                 </p>
               </div>
 
@@ -164,30 +247,30 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                 {accountType === 'clinica' ? (
                   <>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Registro institucional</span>
                     </div>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Verificación de sede</span>
                     </div>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Publicación en catálogo</span>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Directorio verificado de centros de detección de ITS e ILE</span>
                     </div>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Información transparente, confidencial y segura</span>
                     </div>
                     <div className="auth-feature-row">
-                      <span className="auth-check-icon">✔</span>
+                      <span className="auth-check-icon"><Check size={14} strokeWidth={2.5} /></span>
                       <span>Consulta rápida y libre sin costo alguno</span>
                     </div>
                   </>
@@ -208,7 +291,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
               <p className="auth-form-instruction">
                 {accountType === 'usuario'
                   ? 'Selecciona cómo deseas ingresar a la plataforma.'
-                  : 'Crea la cuenta de acceso de tu institución.'}
+                  : 'Crea tu cuenta y registra la información de tu institución.'}
               </p>
 
               {/* Toggle de Tipo de Cuenta */}
@@ -221,7 +304,8 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                   className={`auth-toggle-btn ${accountType === 'usuario' ? 'active' : ''}`}
                   onClick={() => handleTabChange('usuario')}
                 >
-                  👤 Soy usuario
+                  <User size={15} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} aria-hidden="true" />
+                  Soy usuario
                 </button>
                 <button
                   type="button"
@@ -231,17 +315,18 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                   className={`auth-toggle-btn ${accountType === 'clinica' ? 'active' : ''}`}
                   onClick={() => handleTabChange('clinica')}
                 >
-                  🏥 Soy clínica
+                  <Building2 size={15} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} aria-hidden="true" />
+                  Soy clínica
                 </button>
               </div>
 
               {/* Info Banner oficial (#D6E6E0) */}
               <div className="auth-info-banner" role="status">
-                <span className="auth-info-icon" aria-hidden="true">🛡️</span>
+                <span className="auth-info-icon" aria-hidden="true"><ShieldCheck size={16} /></span>
                 <p className="auth-info-text">
                   {accountType === 'usuario'
                     ? 'Crea tu cuenta de usuario para consultar información de los centros.'
-                    : 'Aviso importante: tu ficha institucional todavía no será pública. Después de crear la cuenta podrás iniciar sesión y, más adelante, completar la información para su revisión y aprobación.'}
+                    : 'Indica servicios y horarios desde el registro. Tu ficha no aparecerá en el mapa hasta la aprobación; la solicitud y la subida segura de documentos todavía no están disponibles.'}
                 </p>
               </div>
 
@@ -272,6 +357,88 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                         className="auth-input"
                       />
                     </div>
+
+                    <div className="auth-input-group">
+                      <label htmlFor="reg-clinica-tipo" className="auth-label">Tipo de institución</label>
+                      <select id="reg-clinica-tipo" className="auth-input" required value={tipoInstitucion}
+                        onChange={(e) => setTipoInstitucion(e.target.value)}>
+                        <option value="">Selecciona una opción</option>
+                        <option value="publica">Pública</option>
+                        <option value="privada">Privada</option>
+                        <option value="ong">Organización social</option>
+                        <option value="otra">Otra</option>
+                      </select>
+                    </div>
+
+                    <div className="auth-input-group">
+                      <label htmlFor="reg-clinica-municipio" className="auth-label">Municipio</label>
+                      <input id="reg-clinica-municipio" className="auth-input" type="text" required
+                        maxLength={100} value={municipio} onChange={(e) => setMunicipio(e.target.value)} />
+                    </div>
+
+                    <div className="auth-input-group">
+                      <label htmlFor="reg-clinica-direccion" className="auth-label">Dirección completa</label>
+                      <input id="reg-clinica-direccion" className="auth-input" type="text" required
+                        maxLength={500} value={direccion} onChange={(e) => setDireccion(e.target.value)} />
+                    </div>
+
+                    <div className="auth-input-group">
+                      <label htmlFor="reg-clinica-cp" className="auth-label">Código postal (opcional)</label>
+                      <input id="reg-clinica-cp" className="auth-input" type="text" inputMode="numeric"
+                        maxLength={5} value={codigoPostal} onChange={(e) => setCodigoPostal(e.target.value)} />
+                    </div>
+
+                    <div className="auth-input-group">
+                      <label htmlFor="reg-clinica-telefono" className="auth-label">Teléfono de contacto</label>
+                      <input id="reg-clinica-telefono" className="auth-input" type="tel" required
+                        maxLength={20} value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+                    </div>
+
+                    <div className="auth-input-group">
+                      <label htmlFor="reg-clinica-descripcion" className="auth-label">Descripción (opcional)</label>
+                      <textarea id="reg-clinica-descripcion" className="auth-input" maxLength={2000}
+                        value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+                    </div>
+
+                    <fieldset className="auth-input-group">
+                      <legend className="auth-label">Servicios ofrecidos (elige al menos uno)</legend>
+                      {errorCatalogo && <p role="alert">{errorCatalogo} Es necesario cargar el catálogo para registrarte.</p>}
+                      {!errorCatalogo && catalogoServicios.length === 0 &&
+                        <p role="status">No hay servicios disponibles. Es necesario configurar el catálogo antes de registrarte.</p>}
+                      {catalogoServicios.map((servicio) => (
+                        <label key={servicio.id_servicio} className="auth-label">
+                          <input type="checkbox" checked={serviciosSeleccionados.includes(servicio.id_servicio)}
+                            onChange={() => setServiciosSeleccionados((actuales) => actuales.includes(servicio.id_servicio)
+                              ? actuales.filter((id) => id !== servicio.id_servicio)
+                              : [...actuales, servicio.id_servicio])} /> {servicio.nombre}
+                        </label>
+                      ))}
+                    </fieldset>
+
+                    <fieldset className="auth-input-group">
+                      <legend className="auth-label">Días y horario de atención (elige al menos un día)</legend>
+                      <p>Selecciona días con un horario regular. Turnos 24 horas o que cruzan medianoche se configurarán después de revisar el esquema.</p>
+                      {DIAS_SEMANA.map((dia, numero) => {
+                        const horario = horarios.find((h) => h.dia_semana === numero);
+                        return <div key={dia}>
+                          <label className="auth-label">
+                            <input type="checkbox" checked={Boolean(horario)} onChange={() => alternarHorario(numero)} /> {dia}
+                          </label>
+                          {horario && <div>
+                            <label className="auth-label">Apertura {dia}
+                              <input className="auth-input" type="time" required value={horario.apertura}
+                                onChange={(e) => cambiarHorario(numero, 'apertura', e.target.value)} />
+                            </label>
+                            <label className="auth-label">Cierre {dia}
+                              <input className="auth-input" type="time" required value={horario.cierre}
+                                onChange={(e) => cambiarHorario(numero, 'cierre', e.target.value)} />
+                            </label>
+                          </div>}
+                        </div>;
+                      })}
+                    </fieldset>
+
+                    <p role="note">Documentos de respaldo: todavía no se pueden adjuntar de forma segura. Esta ficha no incluye documentos y el flujo de postulación aún no está disponible.</p>
 
                     <div className="auth-input-group">
                       <label htmlFor="reg-clinica-email" className="auth-label">
@@ -327,7 +494,14 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                       disabled={loading}
                       className="auth-submit-btn dark-btn"
                     >
-                      {loading ? 'Registrando clínica...' : 'Crear cuenta de clínica →'}
+                      {loading ? (
+                        'Registrando clínica...'
+                      ) : (
+                        <>
+                          <span>Crear cuenta de clínica</span>{' '}
+                          <ArrowRight size={15} style={{ verticalAlign: 'middle' }} aria-hidden="true" />
+                        </>
+                      )}
                     </button>
                   </>
                 ) : (
@@ -386,7 +560,14 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
                       disabled={loading}
                       className="auth-submit-btn dark-btn"
                     >
-                      {loading ? 'Creando cuenta...' : 'Crear cuenta →'}
+                      {loading ? (
+                        'Creando cuenta...'
+                      ) : (
+                        <>
+                          <span>Crear cuenta</span>{' '}
+                          <ArrowRight size={15} style={{ verticalAlign: 'middle' }} aria-hidden="true" />
+                        </>
+                      )}
                     </button>
                   </>
                 )}
@@ -396,7 +577,12 @@ export default function Register({ onSwitchToLogin, onBackToPublic }) {
               <div className="auth-bottom-links">
                 <p className="auth-switch-text">
                   ¿Ya tienes una cuenta registrada?{' '}
-                  <button type="button" onClick={onSwitchToLogin} disabled={loading} className="auth-inline-link">
+                  <button
+                    type="button"
+                    onClick={() => onSwitchToLogin('', accountType)}
+                    disabled={loading}
+                    className="auth-inline-link"
+                  >
                     Iniciar sesión
                   </button>
                 </p>

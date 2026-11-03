@@ -73,7 +73,18 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     // ---------------------------------------------------------------
     // Registro de clínicas (Sprint 4)
     // ---------------------------------------------------------------
-    const baseClinica = { nombre: 'Clínica Comunitaria San Jacinto', correo: correoClinicaNormalizado, password };
+    const servicioPrueba = await pool.query(
+      `INSERT INTO servicios (nombre, categoria, activo) VALUES ($1, 'ITS', TRUE)
+       RETURNING id_servicio`,
+      [`Servicio de prueba ${randomUUID()}`]
+    );
+    const idServicio = servicioPrueba.rows[0].id_servicio;
+    const baseClinica = {
+    nombre: 'Clínica Comunitaria San Jacinto', correo: correoClinicaNormalizado, password,
+    tipo_institucion: 'ong', municipio: 'Oaxaca de Juárez', direccion: 'Calle Mina 310',
+    telefono: '9511234567', codigo_postal: '68000', descripcion: 'Atención comunitaria',
+    servicios: [idServicio], horarios: [{ dia_semana: 1, apertura: '09:00', cierre: '17:00' }],
+  };
 
     // Validaciones de entrada: 400 sin tocar la base.
     for (const datos of [
@@ -86,6 +97,20 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
       { ...baseClinica, password: 'a'.repeat(73) },
       { ...baseClinica, nombre: 'a'.repeat(256) },
       { ...baseClinica, password: null },
+      { ...baseClinica, tipo_institucion: 'administrador' },
+      { ...baseClinica, municipio: '' },
+      { ...baseClinica, direccion: '' },
+      { ...baseClinica, telefono: 'a'.repeat(21) },
+      { ...baseClinica, codigo_postal: 'abcde' },
+      { ...baseClinica, servicios: ['id-invalido'] },
+      { ...baseClinica, servicios: [] },
+      { ...baseClinica, horarios: [] },
+      { ...baseClinica, servicios: [randomUUID()] },
+      { ...baseClinica, horarios: [{ dia_semana: 1, apertura: '17:00', cierre: '09:00' }] },
+      { ...baseClinica, horarios: [
+        { dia_semana: 1, apertura: '09:00', cierre: '13:00' },
+        { dia_semana: 1, apertura: '12:00', cierre: '17:00' },
+      ] },
     ]) {
       const respuesta = await llamar('/api/auth/registro-clinica', { datos });
       assert.equal(respuesta.status, 400, `debería rechazar ${JSON.stringify(datos)}`);
@@ -94,7 +119,7 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
 
     // Registro exitoso con nombre y correo con espacios/mayúsculas.
     const registroClinica = await llamar('/api/auth/registro-clinica', {
-      datos: { nombre: '  Clínica Comunitaria San Jacinto  ', correo: correoClinica, password },
+      datos: { ...baseClinica, nombre: '  Clínica Comunitaria San Jacinto  ', correo: correoClinica },
     });
     assert.equal(registroClinica.status, 201);
     assert.equal(registroClinica.cuerpo.mensaje, 'Cuenta de clínica creada correctamente.');
@@ -113,7 +138,8 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
 
     // Persistencia: hash bcrypt, estado borrador y sin solicitud administrativa.
     const clinicaDb = await pool.query(
-      `SELECT id_clinica, nombre, correo_acceso, password_hash, estado_publicacion
+      `SELECT id_clinica, nombre, correo_acceso, password_hash, estado_publicacion,
+        tipo_institucion, municipio, direccion, telefono, codigo_postal, descripcion
        FROM clinicas WHERE correo_acceso = $1`,
       [correoClinicaNormalizado]
     );
@@ -121,20 +147,39 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     assert.equal(clinicaDb.rows[0].id_clinica, clinicaId);
     assert.equal(clinicaDb.rows[0].nombre, 'Clínica Comunitaria San Jacinto');
     assert.equal(clinicaDb.rows[0].estado_publicacion, 'borrador');
+    for (const campo of ['tipo_institucion', 'municipio', 'direccion', 'telefono', 'codigo_postal', 'descripcion']) {
+      assert.equal(clinicaDb.rows[0][campo], baseClinica[campo]);
+    }
     assert.notEqual(clinicaDb.rows[0].password_hash, password);
     assert.equal(await bcrypt.compare(password, clinicaDb.rows[0].password_hash), true);
+    const horariosDb = await pool.query(
+      'SELECT dia_semana, hora_apertura, hora_cierre FROM horarios_atencion WHERE id_clinica = $1',
+      [clinicaId]
+    );
+    assert.equal(horariosDb.rows.length, 1);
+    assert.equal(horariosDb.rows[0].dia_semana, 1);
+    assert.equal(horariosDb.rows[0].hora_apertura, '09:00:00');
+    assert.equal(horariosDb.rows[0].hora_cierre, '17:00:00');
+    const serviciosDb = await pool.query(
+      'SELECT id_servicio FROM clinicas_servicios WHERE id_clinica = $1', [clinicaId]
+    );
+    assert.deepEqual(serviciosDb.rows.map((row) => row.id_servicio), [idServicio]);
+    const catalogo = await llamar('/api/servicios');
+    assert.equal(catalogo.status, 200);
+    assert.ok(Array.isArray(catalogo.cuerpo));
     const solicitudes = await pool.query('SELECT 1 FROM solicitudes_clinicas WHERE id_clinica = $1', [clinicaId]);
     assert.equal(solicitudes.rowCount, 0);
 
     // Correo duplicado: 409 aunque cambien mayúsculas y espacios.
     const duplicado = await llamar('/api/auth/registro-clinica', {
-      datos: { nombre: 'Otra clínica', correo: `  ${correoClinicaNormalizado.toUpperCase()}  `, password },
+      datos: { ...baseClinica, nombre: 'Otra clínica', correo: `  ${correoClinicaNormalizado.toUpperCase()}  ` },
     });
     assert.equal(duplicado.status, 409);
 
     // El cliente no puede inyectar rol ni estado de publicación.
     const intentoRol = await llamar('/api/auth/registro-clinica', {
       datos: {
+        ...baseClinica,
         nombre: 'Clínica con rol inyectado',
         correo: `rol-${randomUUID()}@ejemplo.com`,
         password,

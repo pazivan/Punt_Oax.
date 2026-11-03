@@ -13,36 +13,167 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Catálogo real para el formulario institucional; nunca crea servicios nuevos desde el cliente.
+app.get("/api/servicios", async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT id_servicio, nombre, categoria FROM servicios WHERE activo = TRUE ORDER BY nombre"
+    );
+    return res.json(rows);
+  } catch (error) {
+    console.error("Error al consultar servicios:", error.message);
+    return res.status(500).json({ error: "No se pudo obtener el catálogo de servicios." });
+  }
+});
+
 app.get("/api/clinicas", async (req, res) => {
   try {
-    const resultado = await pool.query(`
-      SELECT
-        id_clinica,
-        nombre,
-        descripcion,
-        tipo_institucion,
-        telefono,
-        correo_contacto,
-        sitio_web,
-        imagen_portada_url,
-        municipio,
-        localidad,
-        direccion,
-        codigo_postal,
-        estado_publicacion,
-        ST_Y(ubicacion_geo::geometry) AS latitud,
-        ST_X(ubicacion_geo::geometry) AS longitud
-      FROM clinicas
-      WHERE estado_publicacion = 'aprobada'
-      ORDER BY nombre;
-    `);
+    const { nombre, municipio, servicios } = req.query;
 
-    res.json(resultado.rows);
+    // Validar parámetros
+    if (Array.isArray(nombre) || Array.isArray(municipio) || Array.isArray(servicios)) {
+      return res.status(400).json({
+        error: "Los parámetros nombre, municipio y servicios deben enviarse una sola vez.",
+      });
+    }
+
+    const condiciones = ["c.estado_publicacion = 'aprobada'"];
+    const valores = [];
+
+    // Filtro por nombre
+    if (typeof nombre === "string" && nombre.trim()) {
+      valores.push(`%${nombre.trim()}%`);
+      condiciones.push(`c.nombre ILIKE $${valores.length}`);
+    }
+
+    // Filtro por municipio
+    if (typeof municipio === "string" && municipio.trim()) {
+      valores.push(municipio.trim());
+      condiciones.push(`LOWER(TRIM(c.municipio)) = LOWER(TRIM($${valores.length}))`);
+    }
+
+    // Filtro por uno o varios servicios.
+    // Ejemplo: ?servicios=ITS
+    // Ejemplo: ?servicios=ITS,Aborto
+    if (typeof servicios === "string" && servicios.trim()) {
+      const listaServicios = servicios
+        .split(",")
+        .map((servicio) => servicio.trim().toLowerCase())
+        .filter(Boolean);
+
+      if (listaServicios.length === 0) {
+        return res.status(400).json({
+          error: "El parámetro servicios no contiene valores válidos.",
+        });
+      }
+
+      valores.push(listaServicios);
+
+      condiciones.push(`
+        EXISTS (
+          SELECT 1
+          FROM clinicas_servicios cs
+          INNER JOIN servicios s
+            ON s.id_servicio = cs.id_servicio
+          WHERE cs.id_clinica = c.id_clinica
+            AND cs.activo = TRUE
+            AND s.activo = TRUE
+            AND (
+              LOWER(TRIM(s.nombre)) = ANY($${valores.length}::text[])
+              OR LOWER(TRIM(COALESCE(s.categoria, ''))) = ANY($${valores.length}::text[])
+            )
+        )
+      `);
+    }
+
+    const consulta = `
+      SELECT
+        c.id_clinica,
+        c.nombre,
+        c.descripcion,
+        c.tipo_institucion,
+        c.telefono,
+        c.correo_contacto,
+        c.sitio_web,
+        c.imagen_portada_url,
+        c.municipio,
+        c.localidad,
+        c.direccion,
+        c.codigo_postal,
+        c.estado_publicacion,
+        ST_Y(c.ubicacion_geo::geometry) AS latitud,
+        ST_X(c.ubicacion_geo::geometry) AS longitud,
+        COALESCE((
+          SELECT json_agg(s.nombre ORDER BY s.nombre)
+          FROM clinicas_servicios cs
+          JOIN servicios s ON s.id_servicio = cs.id_servicio
+          WHERE cs.id_clinica = c.id_clinica AND cs.activo = TRUE AND s.activo = TRUE
+        ), '[]'::json) AS servicios,
+        COALESCE((
+          SELECT json_agg(json_build_object(
+            'dia_semana', h.dia_semana,
+            'apertura', to_char(h.hora_apertura, 'HH24:MI'),
+            'cierre', to_char(h.hora_cierre, 'HH24:MI')
+          ) ORDER BY h.dia_semana, h.hora_apertura)
+          FROM horarios_atencion h
+          WHERE h.id_clinica = c.id_clinica
+        ), '[]'::json) AS horarios
+      FROM clinicas c
+      WHERE ${condiciones.join(" AND ")}
+      ORDER BY c.nombre;
+    `;
+
+    const resultado = await pool.query(consulta, valores);
+
+    return res.json(resultado.rows);
   } catch (error) {
     console.error("Error al consultar clínicas:", error.message);
-    res.status(500).json({
-      error: "No se pudieron obtener las clínicas",
+
+    return res.status(500).json({
+      error: "No se pudieron obtener las clínicas.",
     });
+  }
+});
+
+// La ficha solo expone centros aprobados y usa el identificador real de la sede.
+app.get("/api/clinicas/:id", async (req, res) => {
+  const { id } = req.params;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return res.status(400).json({ error: "Identificador de clínica no válido" });
+  }
+  try {
+    const resultado = await pool.query(`
+      SELECT c.id_clinica, c.nombre, c.descripcion, c.tipo_institucion,
+        c.telefono, c.correo_contacto, c.sitio_web,
+        c.municipio, c.localidad, c.direccion, c.codigo_postal,
+        ST_Y(c.ubicacion_geo::geometry) AS latitud,
+        ST_X(c.ubicacion_geo::geometry) AS longitud
+      FROM clinicas c
+      WHERE c.id_clinica = $1 AND c.estado_publicacion = 'aprobada'
+    `, [id]);
+    if (!resultado.rows.length) {
+      return res.status(404).json({ error: "Centro no encontrado" });
+    }
+    const [servicios, horarios] = await Promise.all([
+      pool.query(`
+        SELECT cs.id_clinica_servicio, s.nombre, s.descripcion,
+          cs.costo, cs.requisitos, cs.requiere_cita
+        FROM clinicas_servicios cs JOIN servicios s ON s.id_servicio = cs.id_servicio
+        WHERE cs.id_clinica = $1 AND cs.activo = TRUE AND s.activo = TRUE
+        ORDER BY s.nombre
+      `, [id]),
+      pool.query(`
+        SELECT dia_semana, to_char(hora_apertura, 'HH24:MI') AS apertura,
+          to_char(hora_cierre, 'HH24:MI') AS cierre
+        FROM horarios_atencion
+        WHERE id_clinica = $1
+        ORDER BY dia_semana, hora_apertura
+      `, [id]),
+    ]);
+    return res.json({ ...resultado.rows[0], servicios: servicios.rows, horarios: horarios.rows });
+  } catch (error) {
+    console.error("Error al consultar ficha de clínica:", error.message);
+    return res.status(500).json({ error: "No se pudo obtener la ficha del centro" });
   }
 });
 
@@ -123,13 +254,16 @@ app.post("/api/auth/registro-usuario", async (req, res) => {
 // No publica la clínica ni crea una solicitud administrativa (Sprint 7).
 // ==========================================
 app.post("/api/auth/registro-clinica", async (req, res) => {
-  const { nombre, correo, password } = req.body || {};
+  const { nombre, correo, password, tipo_institucion, municipio, direccion, telefono,
+    codigo_postal, descripcion, servicios = [], horarios = [] } = req.body || {};
 
   if (typeof nombre !== "string" || !nombre.trim() ||
       typeof correo !== "string" || !correo.trim() ||
-      typeof password !== "string" || !password) {
+      typeof password !== "string" || !password ||
+      ![municipio, direccion, telefono].every((valor) => typeof valor === "string" && valor.trim()) ||
+      !["publica", "privada", "ong", "otra"].includes(tipo_institucion)) {
     return res.status(400).json({
-      error: "Nombre de la clínica, correo y contraseña son obligatorios.",
+      error: "Nombre, correo, contraseña, tipo de institución, municipio, dirección y teléfono son obligatorios.",
     });
   }
 
@@ -167,19 +301,80 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
     });
   }
 
+  const municipioLimpio = municipio.trim();
+  const direccionLimpia = direccion.trim();
+  const telefonoLimpio = telefono.trim();
+  const cpLimpio = codigo_postal == null ? null : typeof codigo_postal === "string" ? codigo_postal.trim() : null;
+  const descripcionLimpia = descripcion == null ? null : typeof descripcion === "string" ? descripcion.trim() : null;
+  if (municipioLimpio.length > 100 || direccionLimpia.length > 500 ||
+      telefonoLimpio.length > 20 || !/^[+\d()\s.-]+$/.test(telefonoLimpio) ||
+      (codigo_postal != null && (cpLimpio === null || (cpLimpio && !/^\d{5}$/.test(cpLimpio)))) ||
+      (descripcion != null && (descripcionLimpia === null || descripcionLimpia.length > 2000))) {
+    return res.status(400).json({ error: "Revisa municipio, dirección, teléfono, código postal y descripción." });
+  }
+
+  const esUuid = (valor) => typeof valor === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor);
+  if (!Array.isArray(servicios) || servicios.length === 0 || servicios.length > 30 ||
+      servicios.some((id) => !esUuid(id)) || new Set(servicios).size !== servicios.length ||
+      !Array.isArray(horarios) || horarios.length === 0 || horarios.length > 14 ||
+      horarios.some((h) => !h || !Number.isInteger(h.dia_semana) ||
+        h.dia_semana < 0 || h.dia_semana > 6 ||
+        typeof h.apertura !== "string" || typeof h.cierre !== "string" ||
+        !/^([01]\d|2[0-3]):[0-5]\d$/.test(h.apertura) ||
+        !/^([01]\d|2[0-3]):[0-5]\d$/.test(h.cierre) ||
+        h.apertura >= h.cierre)) {
+    return res.status(400).json({ error: "Selecciona al menos un servicio y un día con horario de atención válido." });
+  }
+  const horariosOrdenados = [...horarios].sort((a, b) => a.dia_semana - b.dia_semana ||
+    a.apertura.localeCompare(b.apertura));
+  if (horariosOrdenados.some((h, i) => i > 0 &&
+      h.dia_semana === horariosOrdenados[i - 1].dia_semana &&
+      h.apertura < horariosOrdenados[i - 1].cierre)) {
+    return res.status(400).json({ error: "Los horarios de un mismo día no deben solaparse." });
+  }
+
+  let client;
   try {
     const hash = await hashearPassword(password);
 
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const { rows: serviciosActivos } = await client.query(
+      "SELECT id_servicio FROM servicios WHERE activo = TRUE AND id_servicio = ANY($1::uuid[])",
+      [servicios]
+    );
+    if (serviciosActivos.length !== servicios.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Selecciona solo servicios disponibles en el catálogo." });
+    }
+
     // El estado se fija en el servidor: el cliente no puede publicar la clínica.
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `INSERT INTO clinicas
-        (nombre, correo_acceso, password_hash, estado_publicacion)
-       VALUES ($1, $2, $3, 'borrador')
+        (nombre, correo_acceso, password_hash, tipo_institucion, municipio, direccion,
+         telefono, codigo_postal, descripcion, estado_publicacion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'borrador')
        RETURNING id_clinica, nombre, correo_acceso, estado_publicacion, fecha_registro`,
-      [nombreLimpio, correoLimpio, hash]
+      [nombreLimpio, correoLimpio, hash, tipo_institucion, municipioLimpio,
+        direccionLimpia, telefonoLimpio, cpLimpio || null, descripcionLimpia || null]
     );
 
     const clinica = rows[0];
+    for (const idServicio of servicios) {
+      await client.query(
+        "INSERT INTO clinicas_servicios (id_clinica, id_servicio) VALUES ($1, $2)",
+        [clinica.id_clinica, idServicio]
+      );
+    }
+    for (const horario of horariosOrdenados) {
+      await client.query(
+        `INSERT INTO horarios_atencion (id_clinica, dia_semana, hora_apertura, hora_cierre)
+         VALUES ($1, $2, $3, $4)`,
+        [clinica.id_clinica, horario.dia_semana, horario.apertura, horario.cierre]
+      );
+    }
+    await client.query("COMMIT");
 
     // Sin JWT: el flujo acordado es crear la cuenta y después iniciar sesión.
     return res.status(201).json({
@@ -193,6 +388,9 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
       },
     });
   } catch (error) {
+    if (client) {
+      try { await client.query("ROLLBACK"); } catch { /* Conservar el error original. */ }
+    }
     if (error.code === "23505") {
       return res.status(409).json({
         error: "El correo ya se encuentra registrado.",
@@ -204,6 +402,8 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
     return res.status(500).json({
       error: "Error interno al registrar la clínica.",
     });
+  } finally {
+    client?.release();
   }
 });
 

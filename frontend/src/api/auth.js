@@ -45,8 +45,8 @@ export function registrarUsuario(correo, password) {
   return enviarAuth('/api/auth/registro-usuario', { correo, password })
 }
 
-export function registrarClinica(nombre, correo, password) {
-  return enviarAuth('/api/auth/registro-clinica', { nombre, correo, password })
+export function registrarClinica(datos) {
+  return enviarAuth('/api/auth/registro-clinica', datos)
 }
 
 export function iniciarSesion(correo, password) {

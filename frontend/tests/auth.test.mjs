@@ -32,7 +32,7 @@ test('registro solo envía correo y password, nunca nombre ni confirmación', as
   assert.deepEqual(JSON.parse(llamadas[0].opciones.body), { correo: 'a@ejemplo.com', password: 'contraseña' })
 })
 
-test('registro de clínica envía nombre, correo y contraseña al endpoint institucional', async () => {
+test('registro de clínica envía datos básicos y conserva estado borrador', async () => {
   const llamadas = simular(201, {
     mensaje: 'Cuenta de clínica creada correctamente.',
     clinica: {
@@ -43,25 +43,25 @@ test('registro de clínica envía nombre, correo y contraseña al endpoint insti
       estado_publicacion: 'borrador',
     },
   })
-  const respuesta = await registrarClinica(
-    'Clínica Comunitaria San Jacinto',
-    'contacto@ejemplo.com',
-    'ContrasenaSegura123',
-  )
+  const datos = {
+    nombre: 'Clínica Comunitaria San Jacinto', correo: 'contacto@ejemplo.com',
+    password: 'ContrasenaSegura123', tipo_institucion: 'ong',
+    municipio: 'Oaxaca de Juárez', direccion: 'Calle Mina 310',
+    telefono: '9511234567', codigo_postal: '68000', descripcion: null,
+    servicios: ['00000000-0000-4000-8000-000000000001'],
+    horarios: [{ dia_semana: 1, apertura: '09:00', cierre: '17:00' }],
+  }
+  const respuesta = await registrarClinica(datos)
   assert.equal(llamadas[0].ruta, '/api/auth/registro-clinica')
   assert.equal(llamadas[0].opciones.method, 'POST')
-  assert.deepEqual(JSON.parse(llamadas[0].opciones.body), {
-    nombre: 'Clínica Comunitaria San Jacinto',
-    correo: 'contacto@ejemplo.com',
-    password: 'ContrasenaSegura123',
-  })
+  assert.deepEqual(JSON.parse(llamadas[0].opciones.body), datos)
   assert.equal(respuesta.clinica.rol, 'clinica')
   assert.equal(respuesta.clinica.estado_publicacion, 'borrador')
   assert.equal(leerSesion(), null, 'el registro no inicia sesión automáticamente')
 
   simular(409, { error: 'El correo ya se encuentra registrado.' })
   await assert.rejects(
-    registrarClinica('Otra clínica', 'contacto@ejemplo.com', 'ContrasenaSegura123'),
+    registrarClinica({ ...datos, nombre: 'Otra clínica' }),
     /ya se encuentra registrado/,
   )
 })
