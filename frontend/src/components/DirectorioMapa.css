@@ -1,0 +1,86 @@
+/* Pantalla pública de mapa/fichas. Clases aisladas para no alterar login ni registro. */
+.puntoax-directorio { --pverde: #203e32; --ptexto: #2e453b; --pgris: #718076; --pfondo: #f7f7f3; font-family: Arial, Helvetica, sans-serif; color: var(--ptexto); min-height: 100vh; background: var(--pfondo); font-size: 14px; }
+.puntoax-directorio * { box-sizing: border-box; }
+.puntoax-topbar { position: relative; z-index: 401; background: #fff; display: flex; justify-content: space-between; align-items: center; gap: 22px; padding: 14px 5%; min-height: 70px; border-bottom: 1px solid #e6ebe6; }
+.puntoax-topbar a { color: #334f42; text-decoration: none; }
+.puntoax-topbar a:hover { text-decoration: underline; }
+.puntoax-logo { font-family: Georgia, serif; font-weight: bold; font-size: 25px; color: #163b2c !important; }
+.puntoax-logo-dot { color: #b5cbbd; }
+.puntoax-topbar nav { display: flex; gap: 32px; align-items: center; color: #707d73; }
+.puntoax-topbar nav .puntoax-topbar-active { background: var(--pverde); color: white; border-radius: 5px; padding: 10px 17px; }
+.puntoax-topbar-auth { display: flex; gap: 20px; align-items: center; }
+.puntoax-topbar-auth button, .puntoax-registrar { background: #193c2b; color: white !important; border: 0; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.puntoax-error-auth { background: #ffefee; color: #8b2626; padding: 12px 5%; }
+.puntoax-contenido { display: grid; grid-template-columns: minmax(310px, 375px) minmax(0, 1fr); height: calc(100vh - 70px); min-height: 525px; }
+.puntoax-barra-lateral { background: #fff; border-right: 1px solid #e3e8e1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.puntoax-lateral-titulo { padding: 25px 25px 18px; }
+.puntoax-kicker { font-size: 11px; font-weight: bold; letter-spacing: 2px; color: #6c816e; }
+.puntoax-lateral-titulo h1 { margin: 12px 0 9px !important; font-size: 29px !important; line-height: 1.12; font-family: Georgia, serif; letter-spacing: -0.5px; font-weight: 400; color: #1b3b2d; }
+.puntoax-lateral-titulo p { font-size: 13px; color: #7b857e; line-height: 1.5; }
+.puntoax-filtros { padding: 0 25px 20px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #e7ebe7; }
+.puntoax-filtros label { font-size: 12px; color: #465d4d; font-weight: 600; margin-top: 6px; }
+.puntoax-filtros input, .puntoax-filtros select { width: 100%; font: inherit; padding: 11px 12px; border-radius: 7px; border: 1px solid #d7dfd8; background: #fafbf9; color: #314638; outline-color: #628f75; }
+.puntoax-limpiar { align-self: flex-end; background: transparent; border: 0; text-decoration: underline; color: #65796a; cursor: pointer; padding: 6px 0; }
+.puntoax-limpiar:disabled { opacity: .4; cursor: default; }
+.puntoax-resultados { padding: 17px 25px 25px; overflow-y: auto; flex: 1; }
+.puntoax-resultados h2 { font-size: 13px; color: #576b5d; font-family: Arial, sans-serif; font-weight: 600; margin: 0 0 13px; }
+.puntoax-resultados > p { color: #738077; line-height: 1.6; }
+.puntoax-resultados [role=alert] { background: #fff1f0; color: #872b25; padding: 14px; border-radius: 8px; }
+.puntoax-resultados [role=alert] button { margin-top: 12px; display: block; }
+.puntoax-centro-item { border: 1px solid #e9ece8; border-radius: 12px; padding: 17px; margin-bottom: 12px; background: #fff; box-shadow: 0 3px 10px #1b322b08; }
+.puntoax-centro-item-enc { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.puntoax-etiqueta { display: inline-block; padding: 5px 9px; background: #edf2e9; color: #4d654a; border-radius: 5px; text-transform: uppercase; font-size: 10px; font-weight: 650; letter-spacing: .3px; }
+.puntoax-tipo { font-size: 11px; color: #98a39b; text-transform: capitalize; }
+.puntoax-centro-item h3 { font-size: 17px; margin: 13px 0 7px; color: #293f36; }
+.puntoax-centro-item p { font-size: 12px; color: #69756e; line-height: 1.5; }
+.puntoax-centro-item-acciones { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 15px; }
+.puntoax-centro-item-acciones button { background: transparent; border: none; padding: 0; font-size: 12px; color: #244837; font-weight: 700; cursor: pointer; }
+.puntoax-centro-item-acciones button:hover { text-decoration: underline; }
+.puntoax-mapa-contenedor { position: relative; min-width: 0; min-height: 380px; background: #e1e8da; }
+.puntoax-mapa { height: 100%; width: 100%; }
+.puntoax-mapa-leyenda { z-index: 400; position: absolute; top: 18px; left: 18px; background: #fff; border-radius: 8px; box-shadow: 0 4px 20px #0002; padding: 12px 15px; font-size: 12px; }
+.puntoax-leyenda-punto { width: 11px; height: 11px; border-radius: 50%; background: #153b2f; display: inline-block; vertical-align: middle; margin-right: 6px; }
+.puntoax-mapa-pie { position: absolute; right: 12px; bottom: 25px; z-index: 400; background: #ffffffce; color: #55685a; padding: 5px 9px; border-radius: 5px; font-size: 10px; }
+.puntoax-mapa-sin-puntos { position: absolute; z-index: 400; left: 50%; top: 49%; transform: translate(-50%, -50%); background: #fff; border-radius: 8px; padding: 16px; color: #516253; text-align: center; max-width: 280px; box-shadow: 0 3px 15px #0002; }
+.puntoax-mapa-popup .leaflet-popup-content-wrapper { border-radius: 16px; box-shadow: 0 12px 35px #15241d30; }
+.puntoax-mapa-popup .leaflet-popup-content { margin: 0; width: 300px !important; max-width: calc(100vw - 75px); }
+.puntoax-resumen { padding: 18px 20px; color: #364c42; font-family: Arial, sans-serif; }
+.puntoax-resumen h3 { font-size: 19px; margin: 12px 0; line-height: 1.2; color: #33483e; }
+.puntoax-resumen p { font-size: 13px; color: #606f66; line-height: 1.45; margin-bottom: 12px; }
+.puntoax-resumen-acciones { display: flex; flex-direction: column; gap: 8px; }
+.puntoax-btn { display: inline-flex; align-items: center; justify-content: center; padding: 13px 19px; border-radius: 8px; font-weight: 600; border: 1px solid transparent; cursor: pointer; font-size: 13px; text-decoration: none; font-family: inherit; }
+.puntoax-btn--primario { background: #203e32; color: white !important; }
+.puntoax-btn--secundario { background: #e9f0eb; color: #204431 !important; }
+.puntoax-btn--borde { background: #fff; color: #3c5144 !important; border-color: #d5ddd4; }
+.puntoax-modal-fondo { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 18px; background: #102c1d9c; backdrop-filter: blur(5px); }
+.puntoax-ficha { width: min(670px, 100%); max-height: min(94vh, 950px); overflow-y: auto; border-radius: 16px; background: #faf9f5; box-shadow: 0 25px 80px #0d201b45; padding: 32px 34px 24px; color: #354c40; }
+.puntoax-ficha-cabecera { display: flex; justify-content: space-between; align-items: center; }
+.puntoax-ficha-sobretitulo { letter-spacing: 2px; font-size: 11px; font-weight: 700; color: #6f7d70; }
+.puntoax-cerrar { font-size: 26px; font-weight: 300; background: #fff; color: #63776d; border: 1px solid #d9e0da; height: 38px; width: 38px; line-height: 1; border-radius: 8px; cursor: pointer; }
+.puntoax-cerrar:focus-visible, .puntoax-btn:focus-visible { outline: 3px solid #8ab29a; outline-offset: 2px; }
+.puntoax-ficha h2 { font: normal 32px/1.18 Georgia, serif; letter-spacing: -.4px; color: #284537; margin: 20px 0 12px; }
+.puntoax-ficha-descripcion { font-size: 13px; line-height: 1.65; color: #64736a; margin-bottom: 18px; }
+.puntoax-ficha-datos { margin: 23px 0 16px; display: grid; gap: 17px; }
+.puntoax-ficha-campo { display: grid; grid-template-columns: 155px minmax(0, 1fr); gap: 12px; line-height: 1.55; font-size: 13px; }
+.puntoax-ficha-campo dt { color: #788278; }
+.puntoax-ficha-campo dd { margin: 0; color: #35483d; overflow-wrap: anywhere; }
+.puntoax-ficha a { color: #254936; }
+.puntoax-ficha-servicios { border-top: 1px solid #e3e7dd; padding-top: 18px; margin-top: 16px; }
+.puntoax-ficha-servicios > h3 { color: #304c3a; font-size: 16px; margin: 0 0 13px; }
+.puntoax-ficha-servicio { background: #fff; border: 1px solid #e5ebe4; padding: 15px; border-radius: 9px; margin-bottom: 10px; }
+.puntoax-ficha-servicio h4 { margin: 0 0 8px; color: #304737; font-size: 14px; }
+.puntoax-ficha-servicio p { color: #67766b; font-size: 12px; margin-bottom: 12px; }
+.puntoax-ficha-servicio dl { margin: 0; display: grid; gap: 7px; }
+.puntoax-ficha-servicio .puntoax-ficha-campo { grid-template-columns: 95px minmax(0, 1fr); font-size: 12px; }
+.puntoax-advertencia { background: #eeeddb; border-radius: 7px; padding: 17px 20px; font-size: 12px; color: #78745b; line-height: 1.65; margin: 17px 0 20px; }
+.puntoax-ficha-botones { display: flex; gap: 10px; flex-wrap: wrap; }
+.puntoax-ficha-estado { padding: 40px 6px; color: #5d7065; line-height: 1.6; }
+.puntoax-ficha-estado button { margin: 15px 10px; background: #203e32; color: white; border: 0; border-radius: 6px; padding: 11px; cursor: pointer; }
+.puntoax-ficha-pie { padding-top: 20px; font-size: 12px; }
+.puntoax-aviso { margin-top: 12px; font-size: 12px; color: #43674f; overflow-wrap: anywhere; }
+@media(max-width: 900px) { .puntoax-contenido { grid-template-columns: minmax(260px, 330px) 1fr; } .puntoax-topbar nav { gap: 10px; } .puntoax-barra-lateral .puntoax-lateral-titulo { padding: 17px; } .puntoax-filtros { padding: 0 17px 15px; } .puntoax-resultados { padding: 15px 17px; } }
+@media(max-width: 680px) { .puntoax-topbar { padding: 12px 15px; flex-wrap: wrap; min-height: auto; gap: 12px; } .puntoax-topbar nav { order: 3; width: 100%; gap: 22px; font-size: 12px; } .puntoax-topbar-auth { margin-left: auto; font-size: 12px; gap: 12px; } .puntoax-contenido { display: flex; flex-direction: column; height: auto; min-height: calc(100svh - 105px); } .puntoax-barra-lateral { max-height: none; overflow: visible; } .puntoax-resultados { max-height: 240px; overflow-y: auto; } .puntoax-mapa-contenedor { height: 57svh; min-height: 390px; } .puntoax-ficha { padding: 22px 20px 24px; max-height: 95svh; } .puntoax-ficha h2 { font-size: 27px; } .puntoax-ficha-campo { grid-template-columns: 1fr; gap: 2px; } .puntoax-ficha-servicio .puntoax-ficha-campo { grid-template-columns: 85px 1fr; } }
+
+.puntoax-ficha-pie button { background: transparent; border: 0; padding: 0; color: #254936; text-decoration: underline; cursor: pointer; }
+
+.puntoax-resumen .puntoax-horario-resumen { font-size: 12px; color: #526c57; margin-top: -4px; }

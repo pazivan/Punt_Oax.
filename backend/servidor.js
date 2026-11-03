@@ -13,36 +13,83 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Directorio público: solamente centros aprobados. Se incluyen los servicios
+// activos para que mapa, listado y filtro compartan una sola fuente de datos.
 app.get("/api/clinicas", async (req, res) => {
   try {
     const resultado = await pool.query(`
-      SELECT
-        id_clinica,
-        nombre,
-        descripcion,
-        tipo_institucion,
-        telefono,
-        correo_contacto,
-        sitio_web,
-        imagen_portada_url,
-        municipio,
-        localidad,
-        direccion,
-        codigo_postal,
-        estado_publicacion,
-        ST_Y(ubicacion_geo::geometry) AS latitud,
-        ST_X(ubicacion_geo::geometry) AS longitud
-      FROM clinicas
-      WHERE estado_publicacion = 'aprobada'
-      ORDER BY nombre;
+      SELECT c.id_clinica, c.nombre, c.descripcion, c.tipo_institucion,
+        c.telefono, c.correo_contacto, c.sitio_web, c.imagen_portada_url,
+        c.municipio, c.localidad, c.direccion, c.codigo_postal,
+        c.estado_publicacion,
+        ST_Y(c.ubicacion_geo::geometry) AS latitud,
+        ST_X(c.ubicacion_geo::geometry) AS longitud,
+        COALESCE((
+          SELECT json_agg(s.nombre ORDER BY s.nombre)
+          FROM clinicas_servicios cs
+          JOIN servicios s ON s.id_servicio = cs.id_servicio
+          WHERE cs.id_clinica = c.id_clinica AND cs.activo = TRUE AND s.activo = TRUE
+        ), '[]'::json) AS servicios,
+        COALESCE((
+          SELECT json_agg(json_build_object(
+            'dia_semana', h.dia_semana,
+            'apertura', to_char(h.hora_apertura, 'HH24:MI'),
+            'cierre', to_char(h.hora_cierre, 'HH24:MI')
+          ) ORDER BY h.dia_semana, h.hora_apertura)
+          FROM horarios_atencion h
+          WHERE h.id_clinica = c.id_clinica
+        ), '[]'::json) AS horarios
+      FROM clinicas c
+      WHERE c.estado_publicacion = 'aprobada'
+      ORDER BY c.nombre;
     `);
-
     res.json(resultado.rows);
   } catch (error) {
     console.error("Error al consultar clínicas:", error.message);
-    res.status(500).json({
-      error: "No se pudieron obtener las clínicas",
-    });
+    res.status(500).json({ error: "No se pudieron obtener las clínicas" });
+  }
+});
+
+// La ficha de un centro siempre se obtiene por su identificador, no por un
+// índice del array. Evita mostrar clínicas pendientes o suspendidas.
+app.get("/api/clinicas/:id", async (req, res) => {
+  const { id } = req.params;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return res.status(400).json({ error: "Identificador de clínica no válido" });
+  }
+  try {
+    const resultado = await pool.query(`
+      SELECT c.id_clinica, c.nombre, c.descripcion, c.tipo_institucion,
+        c.telefono, c.correo_contacto, c.sitio_web,
+        c.municipio, c.localidad, c.direccion, c.codigo_postal,
+        ST_Y(c.ubicacion_geo::geometry) AS latitud,
+        ST_X(c.ubicacion_geo::geometry) AS longitud
+      FROM clinicas c
+      WHERE c.id_clinica = $1 AND c.estado_publicacion = 'aprobada'
+    `, [id]);
+    if (!resultado.rows.length) {
+      return res.status(404).json({ error: "Centro no encontrado" });
+    }
+    const [servicios, horarios] = await Promise.all([
+      pool.query(`
+        SELECT cs.id_clinica_servicio, s.nombre, s.descripcion,
+          cs.costo, cs.requisitos, cs.requiere_cita
+        FROM clinicas_servicios cs JOIN servicios s ON s.id_servicio = cs.id_servicio
+        WHERE cs.id_clinica = $1 AND cs.activo = TRUE AND s.activo = TRUE
+        ORDER BY s.nombre
+      `, [id]),
+      pool.query(`
+        SELECT dia_semana, to_char(hora_apertura, 'HH24:MI') AS apertura,
+          to_char(hora_cierre, 'HH24:MI') AS cierre
+        FROM horarios_atencion
+        WHERE id_clinica = $1
+        ORDER BY dia_semana, hora_apertura
+      `, [id]),
+    ]);
+    res.json({ ...resultado.rows[0], servicios: servicios.rows, horarios: horarios.rows });
+  } catch (error) {
+    console.error("Error al consultar ficha de clínica:", error.message);
+    res.status(500).json({ error: "No se pudo obtener la ficha del centro" });
   }
 });
 
