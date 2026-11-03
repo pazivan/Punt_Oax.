@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArrowRight, Building2, Check, ShieldCheck, User } from 'lucide-react';
 import '../../styles/Auth.css';
 import { registrarClinica, registrarUsuario } from '../../api/auth';
@@ -14,6 +14,10 @@ const MENSAJE_CLINICA_CREADA =
   'Tu cuenta de clínica fue creada correctamente. Ya puedes iniciar sesión. ' +
   'La información de tu institución todavía no está publicada y deberá verificarse posteriormente.';
 const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const AREAS = [
+  { categoria: 'its', nombre: 'Atención de ITS', ejemplo: 'Ej. pruebas de VIH, sífilis, orientación y seguimiento.' },
+  { categoria: 'ile', nombre: 'Interrupción legal del embarazo (ILE)', ejemplo: 'Ej. orientación, valoración y acompañamiento.' },
+];
 
 export default function Register({ onSwitchToLogin, onBackToPublic, initialAccountType = 'usuario' }) {
   const [accountType, setAccountType] = useState(
@@ -28,10 +32,9 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
   const [telefono, setTelefono] = useState('');
   const [codigoPostal, setCodigoPostal] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [catalogoServicios, setCatalogoServicios] = useState([]);
-  const [errorCatalogo, setErrorCatalogo] = useState('');
-  const [serviciosSeleccionados, setServiciosSeleccionados] = useState([]);
+  const [serviciosSeleccionados, setServiciosSeleccionados] = useState({});
   const [horarios, setHorarios] = useState([]);
+  const [documentos, setDocumentos] = useState([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,25 +42,12 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
   const [error, setError] = useState('');
   const enviando = useRef(false);
 
-  useEffect(() => {
-    if (accountType !== 'clinica') return;
-    const controlador = new AbortController();
-    fetch('/api/servicios', { signal: controlador.signal })
-      .then(async (respuesta) => {
-        if (!respuesta.ok) throw new Error('Catálogo no disponible');
-        return respuesta.json();
-      })
-      .then((datos) => {
-        if (!controlador.signal.aborted) {
-          setCatalogoServicios(Array.isArray(datos) ? datos : []);
-          setErrorCatalogo('');
-        }
-      })
-      .catch((err) => {
-        if (err.name !== 'AbortError') setErrorCatalogo('No se pudo cargar el catálogo de servicios.');
-      });
-    return () => controlador.abort();
-  }, [accountType]);
+  const alternarServicio = (categoria) => setServiciosSeleccionados((actuales) => {
+    const siguientes = { ...actuales };
+    if (categoria in siguientes) delete siguientes[categoria];
+    else siguientes[categoria] = '';
+    return siguientes;
+  });
 
   const alternarHorario = (dia) => setHorarios((actuales) => actuales.some((h) => h.dia_semana === dia)
     ? actuales.filter((h) => h.dia_semana !== dia)
@@ -107,16 +97,22 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
         setError('Revisa municipio, dirección, teléfono, código postal y descripción.');
         return;
       }
-      if (serviciosSeleccionados.length === 0 || horarios.length === 0) {
-        setError('Selecciona al menos un servicio y un día con horario de atención.');
+      if (Object.keys(serviciosSeleccionados).length === 0 || horarios.length === 0) {
+        setError('Selecciona al menos un área de atención y un día con horario.');
+        return;
+      }
+      if (Object.values(serviciosSeleccionados).some((detalle) => !detalle.trim())) {
+        setError('Describe los servicios específicos de cada área seleccionada.');
+        return;
+      }
+      if (documentos.length === 0 || documentos.length > 5 || documentos.some((archivo) =>
+        !['application/pdf', 'image/png', 'image/jpeg'].includes(archivo.type) ||
+        archivo.size === 0 || archivo.size > 5 * 1024 * 1024)) {
+        setError('Adjunta de uno a cinco documentos PDF, PNG o JPG, de hasta 5 MB cada uno.');
         return;
       }
       if (horarios.some((h) => !h.apertura || !h.cierre || h.apertura >= h.cierre)) {
         setError('Cada horario seleccionado debe tener apertura anterior al cierre. Los turnos nocturnos y 24 horas aún no están disponibles.');
-        return;
-      }
-      if (serviciosSeleccionados.length && errorCatalogo) {
-        setError('Vuelve a cargar el catálogo antes de registrar los servicios.');
         return;
       }
     }
@@ -151,9 +147,11 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
           direccion: direccion.trim(), telefono: telefono.trim(),
           codigo_postal: codigoPostal.trim() || null,
           descripcion: descripcion.trim() || null,
-          servicios: serviciosSeleccionados,
+          servicios: Object.entries(serviciosSeleccionados).map(([categoria, detalle]) => ({
+            categoria, detalle: detalle.trim(),
+          })),
           horarios,
-        });
+        }, documentos);
         onSwitchToLogin(MENSAJE_CLINICA_CREADA, 'clinica');
       } else {
         await registrarUsuario(email.trim(), password);
@@ -326,7 +324,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
                 <p className="auth-info-text">
                   {accountType === 'usuario'
                     ? 'Crea tu cuenta de usuario para consultar información de los centros.'
-                    : 'Indica servicios y horarios desde el registro. Tu ficha no aparecerá en el mapa hasta la aprobación; la solicitud y la subida segura de documentos todavía no están disponibles.'}
+                    : 'Registra servicios, horarios y al menos un respaldo en la misma ficha. Los documentos son privados y la clínica no aparecerá en el mapa hasta su aprobación; la postulación corresponde a una etapa posterior.'}
                 </p>
               </div>
 
@@ -400,45 +398,61 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
                         value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
                     </div>
 
-                    <fieldset className="auth-input-group">
-                      <legend className="auth-label">Servicios ofrecidos (elige al menos uno)</legend>
-                      {errorCatalogo && <p role="alert">{errorCatalogo} Es necesario cargar el catálogo para registrarte.</p>}
-                      {!errorCatalogo && catalogoServicios.length === 0 &&
-                        <p role="status">No hay servicios disponibles. Es necesario configurar el catálogo antes de registrarte.</p>}
-                      {catalogoServicios.map((servicio) => (
-                        <label key={servicio.id_servicio} className="auth-label">
-                          <input type="checkbox" checked={serviciosSeleccionados.includes(servicio.id_servicio)}
-                            onChange={() => setServiciosSeleccionados((actuales) => actuales.includes(servicio.id_servicio)
-                              ? actuales.filter((id) => id !== servicio.id_servicio)
-                              : [...actuales, servicio.id_servicio])} /> {servicio.nombre}
-                        </label>
-                      ))}
+                    <fieldset className="auth-clinica-section">
+                      <legend className="auth-clinica-legend">Servicios ofrecidos</legend>
+                      <p className="auth-clinica-help">Elige una o ambas áreas. Describe debajo los servicios que ofrece tu clínica en cada una.</p>
+                      <div className="auth-service-list">
+                        {AREAS.map(({ categoria, nombre, ejemplo }) => (
+                          <div className={`auth-service-card ${categoria in serviciosSeleccionados ? 'is-selected' : ''}`} key={categoria}>
+                            <label className="auth-service-option">
+                              <input type="checkbox" checked={categoria in serviciosSeleccionados}
+                                onChange={() => alternarServicio(categoria)} />
+                              <span>{nombre}</span>
+                            </label>
+                            {categoria in serviciosSeleccionados && <label className="auth-label" htmlFor={`reg-servicio-${categoria}`}>
+                              Servicios específicos que ofrece tu clínica
+                              <textarea id={`reg-servicio-${categoria}`} className="auth-input auth-textarea"
+                                required maxLength={2000} rows={3} placeholder={ejemplo}
+                                value={serviciosSeleccionados[categoria]}
+                                onChange={(e) => setServiciosSeleccionados((actuales) => ({ ...actuales, [categoria]: e.target.value }))} />
+                            </label>}
+                          </div>
+                        ))}
+                      </div>
                     </fieldset>
 
-                    <fieldset className="auth-input-group">
-                      <legend className="auth-label">Días y horario de atención (elige al menos un día)</legend>
-                      <p>Selecciona días con un horario regular. Turnos 24 horas o que cruzan medianoche se configurarán después de revisar el esquema.</p>
-                      {DIAS_SEMANA.map((dia, numero) => {
+                    <fieldset className="auth-clinica-section">
+                      <legend className="auth-clinica-legend">Días y horario de atención</legend>
+                      <p className="auth-clinica-help">Selecciona al menos un día y especifica su horario de apertura y cierre.</p>
+                      <div className="auth-days-list">{DIAS_SEMANA.map((dia, numero) => {
                         const horario = horarios.find((h) => h.dia_semana === numero);
-                        return <div key={dia}>
-                          <label className="auth-label">
+                        return <div className={`auth-day-row ${horario ? 'is-selected' : ''}`} key={dia}>
+                          <label className="auth-day-option">
                             <input type="checkbox" checked={Boolean(horario)} onChange={() => alternarHorario(numero)} /> {dia}
                           </label>
-                          {horario && <div>
-                            <label className="auth-label">Apertura {dia}
+                          {horario && <div className="auth-time-pair">
+                            <label className="auth-label">Apertura
                               <input className="auth-input" type="time" required value={horario.apertura}
                                 onChange={(e) => cambiarHorario(numero, 'apertura', e.target.value)} />
                             </label>
-                            <label className="auth-label">Cierre {dia}
+                            <label className="auth-label">Cierre
                               <input className="auth-input" type="time" required value={horario.cierre}
                                 onChange={(e) => cambiarHorario(numero, 'cierre', e.target.value)} />
                             </label>
                           </div>}
                         </div>;
-                      })}
+                      })}</div>
+                      <p className="auth-clinica-help">Por ahora se admiten horarios dentro del mismo día; no turnos nocturnos ni de 24 horas.</p>
                     </fieldset>
 
-                    <p role="note">Documentos de respaldo: todavía no se pueden adjuntar de forma segura. Esta ficha no incluye documentos y el flujo de postulación aún no está disponible.</p>
+                    <div className="auth-clinica-section">
+                      <label className="auth-clinica-legend" htmlFor="reg-clinica-documentos">Documentos de respaldo</label>
+                      <p className="auth-clinica-help">Adjunta al menos un archivo que respalde la información de tu clínica. No se exige un documento legal igual para todas las instituciones; se revisará según el servicio que ofrezcas cuando exista la postulación. Los archivos no se publican en el mapa.</p>
+                      <input id="reg-clinica-documentos" className="auth-input auth-file-input" type="file"
+                        accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple required
+                        onChange={(e) => setDocumentos(Array.from(e.target.files || []))} />
+                      <p className="auth-clinica-help">PDF, PNG o JPG · máximo 5 archivos de 5 MB cada uno.</p>
+                    </div>
 
                     <div className="auth-input-group">
                       <label htmlFor="reg-clinica-email" className="auth-label">

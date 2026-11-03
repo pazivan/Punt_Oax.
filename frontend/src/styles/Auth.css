@@ -411,6 +411,98 @@
   box-shadow: 0 0 0 1px #103328;
 }
 
+/* Secciones del registro institucional: alineadas con los campos de Figma. */
+.auth-clinica-section {
+  min-width: 0;
+  margin: 4px 0 0;
+  padding: 18px;
+  border: 1px solid #D6E6E0;
+  border-radius: 10px;
+  background: #F9FBFA;
+}
+
+.auth-clinica-legend {
+  padding: 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #103328;
+}
+
+.auth-clinica-help {
+  margin: 0 0 12px;
+  color: #596763;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.auth-clinica-help:last-child { margin: 12px 0 0; }
+
+.auth-service-list, .auth-days-list {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-service-card, .auth-day-row {
+  min-width: 0;
+  padding: 12px;
+  background: #FFFFFF;
+  border: 1px solid #DCE4DF;
+  border-radius: 8px;
+}
+
+.auth-service-card.is-selected, .auth-day-row.is-selected {
+  border-color: #417B66;
+  background: #F1F8F4;
+}
+
+.auth-service-option, .auth-day-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #103328;
+  cursor: pointer;
+}
+
+.auth-service-option input, .auth-day-option input {
+  accent-color: #103328;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.auth-service-card > .auth-label {
+  display: block;
+  margin: 12px 0 0;
+  color: #414845;
+}
+
+.auth-textarea {
+  display: block;
+  min-height: 86px;
+  height: auto;
+  margin-top: 8px;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.auth-time-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.auth-time-pair .auth-label { min-width: 0; color: #414845; }
+.auth-time-pair .auth-input { display: block; margin-top: 6px; padding: 0 8px; }
+.auth-file-input { height: auto; padding: 10px; margin-top: 8px; }
+
+@media (max-width: 420px) {
+  .auth-clinica-section { padding: 14px 10px; }
+}
+
 /* Botón principal */
 .auth-submit-btn {
   width: 100%;

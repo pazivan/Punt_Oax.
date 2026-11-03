@@ -3,6 +3,8 @@ const { randomUUID } = require('node:crypto');
 const { test } = require('node:test');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
+const { readFile, stat } = require('node:fs/promises');
+const path = require('node:path');
 
 // Rechazar cualquier ejecución accidental contra una base compartida.
 if (process.env.PUNTOAX_TEST_DB !== '1' ||
@@ -12,6 +14,9 @@ if (process.env.PUNTOAX_TEST_DB !== '1' ||
 }
 if (process.env.PGPORT === '55441' || process.env.PGPORT === '5432') {
   throw new Error('No uses los puertos de la base de desarrollo ni de Sprint 3 para las pruebas.');
+}
+if (!process.env.DOCUMENTS_PRIVATE_DIR?.startsWith('/tmp/opencode/')) {
+  throw new Error('Configura DOCUMENTS_PRIVATE_DIR dentro de /tmp/opencode/ para esta prueba aislada.');
 }
 
 const pool = new Pool();
@@ -23,13 +28,19 @@ if (!process.env.PUNTOAX_TEST_API_PORT || !Number.isInteger(puerto) ||
 const url = `http://127.0.0.1:${puerto}`;
 
 async function llamar(ruta, { datos, token } = {}) {
+  const clinica = ruta === '/api/auth/registro-clinica' && datos;
+  const formulario = clinica ? new FormData() : null;
+  if (formulario) {
+    formulario.append('ficha', JSON.stringify(datos));
+    formulario.append('documentos', new Blob(['%PDF-1.4\n%%EOF'], { type: 'application/pdf' }), 'respaldo.pdf');
+  }
   const respuesta = await fetch(`${url}${ruta}`, {
     method: datos ? 'POST' : 'GET',
     headers: {
-      ...(datos ? { 'Content-Type': 'application/json' } : {}),
+      ...(datos && !formulario ? { 'Content-Type': 'application/json' } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: datos ? JSON.stringify(datos) : undefined,
+    body: formulario || (datos ? JSON.stringify(datos) : undefined),
   });
   return { status: respuesta.status, cuerpo: await respuesta.json() };
 }
@@ -74,17 +85,33 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     // Registro de clínicas (Sprint 4)
     // ---------------------------------------------------------------
     const servicioPrueba = await pool.query(
-      `INSERT INTO servicios (nombre, categoria, activo) VALUES ($1, 'ITS', TRUE)
-       RETURNING id_servicio`,
-      [`Servicio de prueba ${randomUUID()}`]
+      "SELECT id_servicio FROM servicios WHERE nombre = 'Detección de ITS' AND activo = TRUE"
     );
+    assert.equal(servicioPrueba.rows.length, 1, 'aplicar la migración 004 solo en BD aislada');
     const idServicio = servicioPrueba.rows[0].id_servicio;
     const baseClinica = {
     nombre: 'Clínica Comunitaria San Jacinto', correo: correoClinicaNormalizado, password,
     tipo_institucion: 'ong', municipio: 'Oaxaca de Juárez', direccion: 'Calle Mina 310',
     telefono: '9511234567', codigo_postal: '68000', descripcion: 'Atención comunitaria',
-    servicios: [idServicio], horarios: [{ dia_semana: 1, apertura: '09:00', cierre: '17:00' }],
+    servicios: [{ categoria: 'its', detalle: 'Pruebas de VIH y sífilis' }],
+    horarios: [{ dia_semana: 1, apertura: '09:00', cierre: '17:00' }],
   };
+
+    // Sin respaldo, con MIME fingido o con tamaño excesivo no debe crearse cuenta.
+    for (const [nombrePrueba, documento] of [
+      ['sin documentos', null],
+      ['firma inválida', new Blob(['archivo no PDF'], { type: 'application/pdf' })],
+      ['demasiado grande', new Blob([new Uint8Array(5 * 1024 * 1024 + 1)], { type: 'application/pdf' })],
+    ]) {
+      const ficha = { ...baseClinica, correo: `${randomUUID()}@ejemplo.com` };
+      const form = new FormData();
+      form.append('ficha', JSON.stringify(ficha));
+      if (documento) form.append('documentos', documento, 'respaldo.pdf');
+      const respuesta = await fetch(`${url}/api/auth/registro-clinica`, { method: 'POST', body: form });
+      assert.equal(respuesta.status, 400, nombrePrueba);
+      const filas = await pool.query('SELECT 1 FROM clinicas WHERE correo_acceso = $1', [ficha.correo]);
+      assert.equal(filas.rowCount, 0, nombrePrueba);
+    }
 
     // Validaciones de entrada: 400 sin tocar la base.
     for (const datos of [
@@ -104,8 +131,12 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
       { ...baseClinica, codigo_postal: 'abcde' },
       { ...baseClinica, servicios: ['id-invalido'] },
       { ...baseClinica, servicios: [] },
+      { ...baseClinica, servicios: [{ categoria: 'its', detalle: '   ' }] },
+      { ...baseClinica, servicios: [{ categoria: 'otra', detalle: 'inventado' }] },
+      { ...baseClinica, servicios: [
+        { categoria: 'its', detalle: 'Pruebas' }, { categoria: 'its', detalle: 'Otra' },
+      ] },
       { ...baseClinica, horarios: [] },
-      { ...baseClinica, servicios: [randomUUID()] },
       { ...baseClinica, horarios: [{ dia_semana: 1, apertura: '17:00', cierre: '09:00' }] },
       { ...baseClinica, horarios: [
         { dia_semana: 1, apertura: '09:00', cierre: '13:00' },
@@ -161,9 +192,18 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     assert.equal(horariosDb.rows[0].hora_apertura, '09:00:00');
     assert.equal(horariosDb.rows[0].hora_cierre, '17:00:00');
     const serviciosDb = await pool.query(
-      'SELECT id_servicio FROM clinicas_servicios WHERE id_clinica = $1', [clinicaId]
+      'SELECT id_servicio, detalle_servicio FROM clinicas_servicios WHERE id_clinica = $1', [clinicaId]
     );
-    assert.deepEqual(serviciosDb.rows.map((row) => row.id_servicio), [idServicio]);
+    assert.deepEqual(serviciosDb.rows, [{ id_servicio: idServicio, detalle_servicio: 'Pruebas de VIH y sífilis' }]);
+    const documentosDb = await pool.query(
+      'SELECT clave_almacenamiento, nombre_original, mime, tamano_bytes FROM clinicas_documentos WHERE id_clinica = $1',
+      [clinicaId]
+    );
+    assert.equal(documentosDb.rows.length, 1);
+    assert.equal(documentosDb.rows[0].nombre_original, 'respaldo.pdf');
+    const rutaPrivada = path.join(process.env.DOCUMENTS_PRIVATE_DIR, documentosDb.rows[0].clave_almacenamiento);
+    assert.equal((await readFile(rutaPrivada)).toString(), '%PDF-1.4\n%%EOF');
+    assert.equal((await stat(rutaPrivada)).mode & 0o777, 0o600);
     const catalogo = await llamar('/api/servicios');
     assert.equal(catalogo.status, 200);
     assert.ok(Array.isArray(catalogo.cuerpo));
@@ -175,6 +215,10 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
       datos: { ...baseClinica, nombre: 'Otra clínica', correo: `  ${correoClinicaNormalizado.toUpperCase()}  ` },
     });
     assert.equal(duplicado.status, 409);
+    const archivosTrasDuplicado = await pool.query(
+      'SELECT COUNT(*)::int AS total FROM clinicas_documentos WHERE id_clinica = $1', [clinicaId]
+    );
+    assert.equal(archivosTrasDuplicado.rows[0].total, 1);
 
     // El cliente no puede inyectar rol ni estado de publicación.
     const intentoRol = await llamar('/api/auth/registro-clinica', {
@@ -214,19 +258,47 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     assert.equal((await llamar('/api/admin/panel-prueba', { token: clinica.cuerpo.token })).status, 403);
 
     // Catálogo público: solo aprobadas; la nueva cuenta sigue en borrador.
-    const directorioInicial = await llamar('/api/clinicas');
+    assert.equal((await llamar('/api/clinicas')).status, 401);
+    assert.equal((await llamar(`/api/clinicas/${clinicaId}`)).status, 401);
+    assert.equal((await llamar('/api/clinicas', { token: 'inválido' })).status, 403);
+    const directorioInicial = await llamar('/api/clinicas', { token: clinica.cuerpo.token });
     assert.equal(directorioInicial.status, 200);
     assert.ok(Array.isArray(directorioInicial.cuerpo));
     assert.equal(directorioInicial.cuerpo.some((c) => c.id_clinica === clinicaId), false);
 
     const aprobada = await pool.query(
-      `INSERT INTO clinicas (nombre, estado_publicacion) VALUES ($1, 'aprobada') RETURNING id_clinica`,
-      ['Clínica aprobada de prueba']
+      `INSERT INTO clinicas (nombre, municipio, estado_publicacion)
+       VALUES ($1, $2, 'aprobada') RETURNING id_clinica`,
+      ['Clínica aprobada de prueba', 'Oaxaca de Juárez']
     );
-    const directorio = await llamar('/api/clinicas');
+    await pool.query(
+      'INSERT INTO clinicas_servicios (id_clinica, id_servicio) VALUES ($1, $2)',
+      [aprobada.rows[0].id_clinica, idServicio]
+    );
+    const directorio = await llamar('/api/clinicas', { token: clinica.cuerpo.token });
     assert.equal(directorio.status, 200);
     assert.ok(directorio.cuerpo.some((c) => c.id_clinica === aprobada.rows[0].id_clinica));
     assert.equal(directorio.cuerpo.some((c) => c.id_clinica === clinicaId), false);
+
+    // Los filtros de Kelly se combinan sobre las aprobadas; no filtran borradores.
+    for (const ruta of [
+      '/api/clinicas?nombre=aprobada',
+      '/api/clinicas?municipio=oaxaca%20de%20ju%C3%A1rez',
+      '/api/clinicas?servicios=ITS',
+      '/api/clinicas?nombre=aprobada&municipio=Oaxaca%20de%20Ju%C3%A1rez&servicios=ITS,ILE',
+    ]) {
+      const filtrado = await llamar(ruta, { token: clinica.cuerpo.token });
+      assert.equal(filtrado.status, 200, ruta);
+      assert.ok(filtrado.cuerpo.some((c) => c.id_clinica === aprobada.rows[0].id_clinica), ruta);
+      assert.equal(filtrado.cuerpo.some((c) => c.id_clinica === clinicaId), false, ruta);
+    }
+    const sinCoincidencia = await llamar('/api/clinicas?nombre=sin-coincidencia', { token: clinica.cuerpo.token });
+    assert.equal(sinCoincidencia.status, 200);
+    assert.equal(sinCoincidencia.cuerpo.some((c) => c.id_clinica === aprobada.rows[0].id_clinica), false);
+    for (const ruta of ['/api/clinicas?nombre=A&nombre=B', '/api/clinicas?municipio=A&municipio=B',
+      '/api/clinicas?servicios=ITS&servicios=ILE', '/api/clinicas?servicios=,,,']) {
+      assert.equal((await llamar(ruta, { token: clinica.cuerpo.token })).status, 400, ruta);
+    }
 
     // ---------------------------------------------------------------
     // Acceso administrativo (Jonathan)

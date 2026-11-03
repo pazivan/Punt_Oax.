@@ -45,8 +45,17 @@ export function registrarUsuario(correo, password) {
   return enviarAuth('/api/auth/registro-usuario', { correo, password })
 }
 
-export function registrarClinica(datos) {
-  return enviarAuth('/api/auth/registro-clinica', datos)
+export async function registrarClinica(datos, documentos) {
+  const formulario = new FormData()
+  formulario.append('ficha', JSON.stringify(datos))
+  for (const documento of documentos) formulario.append('documentos', documento)
+  let respuesta
+  try {
+    respuesta = await fetch('/api/auth/registro-clinica', { method: 'POST', body: formulario })
+  } catch {
+    throw new Error('No se pudo conectar con el servidor.')
+  }
+  return leerRespuesta(respuesta)
 }
 
 export function iniciarSesion(correo, password) {

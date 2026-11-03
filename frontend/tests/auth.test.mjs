@@ -48,20 +48,23 @@ test('registro de clínica envía datos básicos y conserva estado borrador', as
     password: 'ContrasenaSegura123', tipo_institucion: 'ong',
     municipio: 'Oaxaca de Juárez', direccion: 'Calle Mina 310',
     telefono: '9511234567', codigo_postal: '68000', descripcion: null,
-    servicios: ['00000000-0000-4000-8000-000000000001'],
+    servicios: [{ categoria: 'its', detalle: 'Pruebas de VIH y sífilis' }],
     horarios: [{ dia_semana: 1, apertura: '09:00', cierre: '17:00' }],
   }
-  const respuesta = await registrarClinica(datos)
+  const documentos = [new File(['%PDF-1.4\n%%EOF'], 'respaldo.pdf', { type: 'application/pdf' })]
+  const respuesta = await registrarClinica(datos, documentos)
   assert.equal(llamadas[0].ruta, '/api/auth/registro-clinica')
   assert.equal(llamadas[0].opciones.method, 'POST')
-  assert.deepEqual(JSON.parse(llamadas[0].opciones.body), datos)
+  assert.deepEqual(JSON.parse(llamadas[0].opciones.body.get('ficha')), datos)
+  assert.equal(llamadas[0].opciones.body.get('documentos').name, 'respaldo.pdf')
+  assert.equal(llamadas[0].opciones.headers, undefined)
   assert.equal(respuesta.clinica.rol, 'clinica')
   assert.equal(respuesta.clinica.estado_publicacion, 'borrador')
   assert.equal(leerSesion(), null, 'el registro no inicia sesión automáticamente')
 
   simular(409, { error: 'El correo ya se encuentra registrado.' })
   await assert.rejects(
-    registrarClinica({ ...datos, nombre: 'Otra clínica' }),
+    registrarClinica({ ...datos, nombre: 'Otra clínica' }, documentos),
     /ya se encuentra registrado/,
   )
 })

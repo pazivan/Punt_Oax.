@@ -1,5 +1,9 @@
 const express = require("express");
 const cors = require("cors");
+const multer = require("multer");
+const fs = require("node:fs/promises");
+const path = require("node:path");
+const { randomUUID, createHash } = require("node:crypto");
 const pool = require("./db");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
 
@@ -8,6 +12,40 @@ const PUERTO = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+const recibirDocumentos = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 5, fields: 1, fieldSize: 32000, parts: 6 },
+}).array("documentos", 5);
+
+function prepararRegistro(req, res, next) {
+  if (!req.is("multipart/form-data")) {
+    return res.status(415).json({ error: "Envía la ficha y los documentos en un formulario multipart." });
+  }
+  recibirDocumentos(req, res, (error) => {
+    if (error) return res.status(400).json({ error: "Máximo cinco documentos de 5 MB cada uno; revisa el formulario." });
+    if (!Array.isArray(req.files) || req.files.length === 0) {
+      return res.status(400).json({ error: "Adjunta al menos un archivo de respaldo." });
+    }
+    try {
+      req.fichaClinica = JSON.parse(req.body.ficha);
+    } catch {
+      return res.status(400).json({ error: "La ficha de clínica no es válida." });
+    }
+    if (!req.fichaClinica || typeof req.fichaClinica !== "object" || Array.isArray(req.fichaClinica)) {
+      return res.status(400).json({ error: "La ficha de clínica no es válida." });
+    }
+    const firmas = req.files.every((archivo) => {
+      const bytes = archivo.buffer;
+      return bytes.length > 0 && archivo.originalname.length <= 255 &&
+        ((archivo.mimetype === "application/pdf" && bytes.subarray(0, 5).toString() === "%PDF-") ||
+        (archivo.mimetype === "image/png" && bytes.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex"))) ||
+        (archivo.mimetype === "image/jpeg" && bytes.subarray(0, 3).equals(Buffer.from("ffd8ff", "hex"))));
+    });
+    if (!firmas) return res.status(400).json({ error: "Solo se admiten PDF, PNG o JPG válidos de hasta 5 MB." });
+    next();
+  });
+}
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -26,7 +64,7 @@ app.get("/api/servicios", async (req, res) => {
   }
 });
 
-app.get("/api/clinicas", async (req, res) => {
+app.get("/api/clinicas", autenticarToken, async (req, res) => {
   try {
     const { nombre, municipio, servicios } = req.query;
 
@@ -54,7 +92,7 @@ app.get("/api/clinicas", async (req, res) => {
 
     // Filtro por uno o varios servicios.
     // Ejemplo: ?servicios=ITS
-    // Ejemplo: ?servicios=ITS,Aborto
+    // Ejemplo: ?servicios=ITS,ILE
     if (typeof servicios === "string" && servicios.trim()) {
       const listaServicios = servicios
         .split(",")
@@ -136,7 +174,7 @@ app.get("/api/clinicas", async (req, res) => {
 });
 
 // La ficha solo expone centros aprobados y usa el identificador real de la sede.
-app.get("/api/clinicas/:id", async (req, res) => {
+app.get("/api/clinicas/:id", autenticarToken, async (req, res) => {
   const { id } = req.params;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     return res.status(400).json({ error: "Identificador de clínica no válido" });
@@ -157,6 +195,7 @@ app.get("/api/clinicas/:id", async (req, res) => {
     const [servicios, horarios] = await Promise.all([
       pool.query(`
         SELECT cs.id_clinica_servicio, s.nombre, s.descripcion,
+          to_jsonb(cs)->>'detalle_servicio' AS detalle_servicio,
           cs.costo, cs.requisitos, cs.requiere_cita
         FROM clinicas_servicios cs JOIN servicios s ON s.id_servicio = cs.id_servicio
         WHERE cs.id_clinica = $1 AND cs.activo = TRUE AND s.activo = TRUE
@@ -253,9 +292,9 @@ app.post("/api/auth/registro-usuario", async (req, res) => {
 // Crea la cuenta de acceso de una clínica en estado "borrador".
 // No publica la clínica ni crea una solicitud administrativa (Sprint 7).
 // ==========================================
-app.post("/api/auth/registro-clinica", async (req, res) => {
+app.post("/api/auth/registro-clinica", prepararRegistro, async (req, res) => {
   const { nombre, correo, password, tipo_institucion, municipio, direccion, telefono,
-    codigo_postal, descripcion, servicios = [], horarios = [] } = req.body || {};
+    codigo_postal, descripcion, servicios = [], horarios = [] } = req.fichaClinica;
 
   if (typeof nombre !== "string" || !nombre.trim() ||
       typeof correo !== "string" || !correo.trim() ||
@@ -313,10 +352,16 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
     return res.status(400).json({ error: "Revisa municipio, dirección, teléfono, código postal y descripción." });
   }
 
-  const esUuid = (valor) => typeof valor === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor);
-  if (!Array.isArray(servicios) || servicios.length === 0 || servicios.length > 30 ||
-      servicios.some((id) => !esUuid(id)) || new Set(servicios).size !== servicios.length ||
+  const nombresPrincipales = {
+    its: "Detección de ITS",
+    ile: "Interrupción Legal del Embarazo (ILE)",
+  };
+  if (!Array.isArray(servicios) || servicios.length === 0 || servicios.length > 2 ||
+      servicios.some((servicio) => !servicio || typeof servicio !== "object" ||
+        !Object.hasOwn(nombresPrincipales, servicio.categoria) ||
+        typeof servicio.detalle !== "string" || !servicio.detalle.trim() ||
+        servicio.detalle.trim().length > 2000) ||
+      new Set(servicios.map((servicio) => servicio.categoria)).size !== servicios.length ||
       !Array.isArray(horarios) || horarios.length === 0 || horarios.length > 14 ||
       horarios.some((h) => !h || !Number.isInteger(h.dia_semana) ||
         h.dia_semana < 0 || h.dia_semana > 6 ||
@@ -324,7 +369,7 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
         !/^([01]\d|2[0-3]):[0-5]\d$/.test(h.apertura) ||
         !/^([01]\d|2[0-3]):[0-5]\d$/.test(h.cierre) ||
         h.apertura >= h.cierre)) {
-    return res.status(400).json({ error: "Selecciona al menos un servicio y un día con horario de atención válido." });
+    return res.status(400).json({ error: "Selecciona un área de atención, describe sus servicios y elige un día con horario válido." });
   }
   const horariosOrdenados = [...horarios].sort((a, b) => a.dia_semana - b.dia_semana ||
     a.apertura.localeCompare(b.apertura));
@@ -335,18 +380,40 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
   }
 
   let client;
+  const archivosGuardados = [];
   try {
+    const carpeta = process.env.DOCUMENTS_PRIVATE_DIR;
+    if (!carpeta || !path.isAbsolute(carpeta) ||
+        path.resolve(carpeta).startsWith(path.resolve(__dirname, "../frontend") + path.sep)) {
+      return res.status(503).json({ error: "El almacenamiento privado de documentos no está configurado." });
+    }
+    await fs.mkdir(carpeta, { recursive: true, mode: 0o700 });
+    const infoCarpeta = await fs.lstat(carpeta);
+    if (!infoCarpeta.isDirectory() || infoCarpeta.mode & 0o077) {
+      return res.status(503).json({ error: "El almacenamiento privado de documentos no es seguro." });
+    }
     const hash = await hashearPassword(password);
 
     client = await pool.connect();
     await client.query("BEGIN");
     const { rows: serviciosActivos } = await client.query(
-      "SELECT id_servicio FROM servicios WHERE activo = TRUE AND id_servicio = ANY($1::uuid[])",
-      [servicios]
+      "SELECT id_servicio, nombre FROM servicios WHERE activo = TRUE AND nombre = ANY($1::text[])",
+      [servicios.map(({ categoria }) => nombresPrincipales[categoria])]
     );
     if (serviciosActivos.length !== servicios.length) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Selecciona solo servicios disponibles en el catálogo." });
+      return res.status(503).json({ error: "Las áreas de atención aún no están disponibles en el servidor." });
+    }
+    const { rows: columnas } = await client.query(
+      `SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'clinicas_servicios' AND column_name = 'detalle_servicio'
+      ) AS disponible`
+    );
+    if (!columnas[0].disponible) {
+      await client.query("ROLLBACK");
+      return res.status(503).json({ error: "El registro de servicios específicos aún no está habilitado en el servidor." });
     }
 
     // El estado se fija en el servidor: el cliente no puede publicar la clínica.
@@ -361,10 +428,11 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
     );
 
     const clinica = rows[0];
-    for (const idServicio of servicios) {
+    for (const servicio of servicios) {
+      const idServicio = serviciosActivos.find((item) => item.nombre === nombresPrincipales[servicio.categoria]).id_servicio;
       await client.query(
-        "INSERT INTO clinicas_servicios (id_clinica, id_servicio) VALUES ($1, $2)",
-        [clinica.id_clinica, idServicio]
+        "INSERT INTO clinicas_servicios (id_clinica, id_servicio, detalle_servicio) VALUES ($1, $2, $3)",
+        [clinica.id_clinica, idServicio, servicio.detalle.trim()]
       );
     }
     for (const horario of horariosOrdenados) {
@@ -372,6 +440,19 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
         `INSERT INTO horarios_atencion (id_clinica, dia_semana, hora_apertura, hora_cierre)
          VALUES ($1, $2, $3, $4)`,
         [clinica.id_clinica, horario.dia_semana, horario.apertura, horario.cierre]
+      );
+    }
+    for (const archivo of req.files) {
+      const clave = randomUUID();
+      const ruta = path.join(carpeta, clave);
+      archivosGuardados.push(ruta);
+      await fs.writeFile(ruta, archivo.buffer, { flag: "wx", mode: 0o600 });
+      await client.query(
+        `INSERT INTO clinicas_documentos
+          (id_clinica, clave_almacenamiento, nombre_original, mime, tamano_bytes, sha256)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [clinica.id_clinica, clave, path.basename(archivo.originalname), archivo.mimetype,
+          archivo.size, createHash("sha256").update(archivo.buffer).digest("hex")]
       );
     }
     await client.query("COMMIT");
@@ -391,6 +472,7 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
     if (client) {
       try { await client.query("ROLLBACK"); } catch { /* Conservar el error original. */ }
     }
+    await Promise.allSettled(archivosGuardados.map((ruta) => fs.unlink(ruta)));
     if (error.code === "23505") {
       return res.status(409).json({
         error: "El correo ya se encuentra registrado.",

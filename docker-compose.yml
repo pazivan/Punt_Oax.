@@ -32,6 +32,9 @@ services:
       - PGDATABASE=puntoax_bd
       - PORT=3000
       - JWT_SECRET=${JWT_SECRET:?Configura JWT_SECRET en el entorno antes de iniciar la API}
+      - DOCUMENTS_PRIVATE_DIR=/var/lib/puntoax/documentos
+    volumes:
+      - puntoax_documentos:/var/lib/puntoax
     depends_on:
       - db
 
@@ -45,3 +48,4 @@ services:
 
 volumes:
   sprint4_pgdata:
+  puntoax_documentos:
