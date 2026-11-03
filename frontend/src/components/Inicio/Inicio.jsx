@@ -37,9 +37,9 @@ export default function Inicio({ sesion, onSalir }) {
               <Link to="/cuenta" className="inicio-nav-link active">
                 <span className="inicio-nav-link-active-text">Inicio</span>
               </Link>
-              <a href="#conocenos" className="inicio-nav-link">
+              <Link to="/conocenos" className="inicio-nav-link">
                 Conócenos
-              </a>
+              </Link>
             </nav>
           </div>
 

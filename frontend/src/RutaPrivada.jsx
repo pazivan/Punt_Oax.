@@ -9,11 +9,11 @@ export function RutaPrivada({ sesion, perfil, verificando, error, rolesPermitido
   }
 
   if (!perfil) {
-    return <p role="alert">{error || 'No se pudo verificar tu sesión.'} <Link to="/">Volver al directorio</Link></p>
+    return <p role="alert">{error || 'No se pudo verificar tu sesión.'} <Link to="/conocenos">Volver a Conócenos</Link></p>
   }
 
   if (!rolesPermitidos.includes(perfil.rol)) {
-    return <p role="alert">No tienes permiso para ver esta página. <Link to="/">Volver al directorio</Link></p>
+    return <p role="alert">No tienes permiso para ver esta página. <Link to="/conocenos">Volver a Conócenos</Link></p>
   }
 
   return children

@@ -1,0 +1,21 @@
+.conocenos-page { min-height: 100vh; background: #f9f9f8; color: #191c1c; font-family: 'Nimbus Sans', Arial, sans-serif; }
+.conocenos-header { max-width: 1200px; margin: auto; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.conocenos-logo { font: bold 24px Georgia, serif; color: #001d14; text-decoration: none; }
+.conocenos-logo span { color: #43a882; }
+.conocenos-header nav { display: flex; gap: 20px; align-items: center; }
+.conocenos-header a { color: #001d14; }
+.conocenos-register, .conocenos-cta { background: #103328; color: #fff !important; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; }
+.conocenos-hero { max-width: 1200px; margin: 20px auto 0; padding: 64px 48px; border-radius: 18px; background: #001d14; color: #fff; display: grid; grid-template-columns: 1.3fr 1fr; align-items: center; gap: 40px; }
+.conocenos-eyebrow { color: #a0f3d2; font-size: 12px; letter-spacing: .13em; font-weight: 700; }
+.conocenos-hero h1 { font: 600 clamp(32px, 4vw, 52px)/1.12 Georgia, serif; margin: 18px 0; }
+.conocenos-hero p { color: #c5ebda; max-width: 570px; line-height: 1.65; margin-bottom: 34px; }
+.conocenos-cta { display: inline-flex; align-items: center; gap: 12px; background: #d6e6e0; color: #001d14 !important; }
+.conocenos-preview { min-height: 260px; border: 1px solid #467061; border-radius: 14px; background: radial-gradient(circle at 60% 50%, #245c47, #103328); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; font: 600 22px Georgia, serif; }
+.conocenos-details { max-width: 1200px; margin: 28px auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.conocenos-details article { background: #fff; border: 1px solid #d6e6e0; border-radius: 12px; padding: 26px; }
+.conocenos-details svg { color: #103328; }
+.conocenos-details h2 { font-size: 19px; margin: 12px 0; }
+.conocenos-details p, .conocenos-note { color: #596763; line-height: 1.6; }
+.conocenos-note { max-width: 1200px; margin: 0 auto; padding: 0 24px 40px; font-size: 13px; }
+@media (max-width: 800px) { .conocenos-hero { margin: 10px 16px; padding: 36px 24px; grid-template-columns: 1fr; } .conocenos-preview { min-height: 130px; } .conocenos-details { margin: 18px 16px; grid-template-columns: 1fr; } }
+@media (max-width: 420px) { .conocenos-header { padding: 16px; } .conocenos-header nav { gap: 10px; font-size: 13px; } .conocenos-register { padding: 10px; } }

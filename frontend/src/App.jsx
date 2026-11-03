@@ -8,6 +8,7 @@ import MapaCentros from './components/Inicio/MapaCentros.jsx'
 import InformacionUtil from './components/Inicio/InformacionUtil.jsx'
 import ModalConfirmacion from './components/Inicio/ModalConfirmacion.jsx'
 import DirectorioMapa from './components/DirectorioMapa.jsx'
+import Conocenos from './components/Conocenos.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
 import './App.css'
@@ -28,15 +29,18 @@ function App() {
   const [mostrarConfirmacionSalir, setMostrarConfirmacionSalir] = useState(false)
 
   useEffect(() => {
-    // El directorio público carga sus datos y permite reintentar por separado.
-    if (pathname !== '/mapa' && pathname !== '/directorio') return
+    // Solo consultar el directorio después de verificar la sesión.
+    if ((pathname !== '/mapa' && pathname !== '/directorio') || !sesion || !perfil || verificandoPerfil) return
     const controlador = new AbortController()
     async function cargarClinicas() {
       setCargando(true)
       setError('')
       setClinicas([])
       try {
-        const respuesta = await fetch('/api/clinicas', { signal: controlador.signal })
+        const respuesta = await fetch('/api/clinicas', {
+          signal: controlador.signal,
+          headers: { Authorization: `Bearer ${sesion.token}` },
+        })
 
         if (!respuesta.ok) {
           throw new Error(`El servidor respondió con estado ${respuesta.status}`)
@@ -56,7 +60,7 @@ function App() {
 
     cargarClinicas()
     return () => controlador.abort()
-  }, [pathname])
+  }, [pathname, sesion, perfil, verificandoPerfil])
 
   useEffect(() => {
     if (!sesion) return
@@ -120,7 +124,7 @@ function App() {
         setTipoRegistro(tipo === 'clinica' ? 'clinica' : 'usuario')
         navigate('/registro')
       }}
-      onBackToPublic={() => navigate('/')}
+      onBackToPublic={() => navigate('/conocenos')}
       onLogin={(nuevaSesion) => {
         setPerfil(null)
         setVerificandoPerfil(true)
@@ -142,8 +146,12 @@ function App() {
         setTipoRegistro(tipo === 'clinica' ? 'clinica' : 'usuario')
         navigate('/login')
       }}
-      onBackToPublic={() => navigate('/')}
+      onBackToPublic={() => navigate('/conocenos')}
     />
+  }
+
+  if (pathname === '/conocenos' || (pathname === '/' && !sesion)) {
+    return <Conocenos />
   }
 
   if (pathname === '/mapa') {
@@ -212,7 +220,15 @@ function App() {
   if (pathname === '/' || /^\/centro\/[^/]+$/.test(pathname)) {
     return (
       <>
-        <DirectorioMapa sesion={sesion} perfil={perfil} errorPerfil={errorPerfil} onSalir={salir} />
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          rolesPermitidos={['usuario', 'clinica', 'administrador']}
+        >
+          <DirectorioMapa sesion={sesion} perfil={perfil} errorPerfil={errorPerfil} onSalir={salir} />
+        </RutaPrivada>
         {modalConfirmacionSalir}
       </>
     )
@@ -220,7 +236,13 @@ function App() {
 
   if (pathname !== '/directorio') return <Navigate to="/" replace />
 
-  return (
+  return <RutaPrivada
+    sesion={sesion}
+    perfil={perfil}
+    verificando={verificandoPerfil}
+    error={errorPerfil}
+    rolesPermitidos={['usuario', 'clinica', 'administrador']}
+  >{(
     <div className="app-container">
       <header className="app-header">
         <p role="note">Catálogo en pruebas: los centros mostrados pueden ser ejemplos; confirma sus datos antes de acudir.</p>
@@ -332,7 +354,7 @@ function App() {
       </main>
       {modalConfirmacionSalir}
     </div>
-  )
+  )}</RutaPrivada>
 }
 
 export default App

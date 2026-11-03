@@ -24,6 +24,7 @@ function Campo({ titulo, children }) {
 function Servicio({ servicio }) {
   return <article className="puntoax-ficha-servicio">
     <h4>{servicio.nombre}</h4>
+    {servicio.detalle_servicio && <p>{servicio.detalle_servicio}</p>}
     {servicio.descripcion && <p>{servicio.descripcion}</p>}
     <dl>
       <Campo titulo="Requisitos">{textoPendiente(servicio.requisitos, 'Sin requisitos documentados; consulta directamente')}</Campo>
@@ -33,7 +34,7 @@ function Servicio({ servicio }) {
   </article>
 }
 
-export default function FichaCentroMapa({ id, onCerrar }) {
+export default function FichaCentroMapa({ id, token, onCerrar }) {
   const [estado, setEstado] = useState('cargando')
   const [centro, setCentro] = useState(null)
   const [intento, setIntento] = useState(0)
@@ -42,7 +43,10 @@ export default function FichaCentroMapa({ id, onCerrar }) {
   useEffect(() => {
     const abortar = new AbortController()
     // Se realiza una petición nueva cada vez que cambia el ID o se reintenta.
-    fetch(`/api/clinicas/${encodeURIComponent(id)}`, { signal: abortar.signal })
+    fetch(`/api/clinicas/${encodeURIComponent(id)}`, {
+      signal: abortar.signal,
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then(async r => {
         if (r.status === 404 || r.status === 400) { setEstado('no-encontrado'); return null }
         if (!r.ok) throw new Error('No se pudo cargar la ficha del centro')
@@ -55,7 +59,7 @@ export default function FichaCentroMapa({ id, onCerrar }) {
       })
       .catch(err => { if (err.name !== 'AbortError') setEstado('error') })
     return () => abortar.abort()
-  }, [id, intento])
+  }, [id, intento, token])
 
   useEffect(() => {
     cerrarRef.current?.focus()

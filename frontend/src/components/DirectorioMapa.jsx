@@ -41,12 +41,15 @@ export default function DirectorioMapa({ sesion, perfil, errorPerfil, onSalir })
 
   useEffect(() => {
     const controlador = new AbortController()
-    fetch('/api/clinicas', { signal: controlador.signal })
+    fetch('/api/clinicas', {
+      signal: controlador.signal,
+      headers: { Authorization: `Bearer ${sesion.token}` },
+    })
       .then(async res => { if (!res.ok) throw new Error('API no disponible'); return res.json() })
       .then(datos => { if (!controlador.signal.aborted) { setCentros(Array.isArray(datos) ? datos : []); setEstado('exito') } })
       .catch(err => { if (err.name !== 'AbortError') setEstado('error') })
     return () => controlador.abort()
-  }, [reintento])
+  }, [reintento, sesion.token])
 
   const municipios = useMemo(() => [...new Set(centros.map(c => c.municipio).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')), [centros])
   const servicios = useMemo(() => [...new Set(centros.flatMap(c => Array.isArray(c.servicios) ? c.servicios : []))].sort((a, b) => a.localeCompare(b, 'es')), [centros])
@@ -113,6 +116,6 @@ export default function DirectorioMapa({ sesion, perfil, errorPerfil, onSalir })
         <div className="puntoax-mapa-pie">Mapa © OpenStreetMap · Solo se muestran ubicaciones registradas en la base de datos</div>
       </main>
     </div>
-    {idDetalle && <FichaCentroMapa key={idDetalle} id={idDetalle} onCerrar={cerrarFicha} />}
+    {idDetalle && <FichaCentroMapa key={idDetalle} id={idDetalle} token={sesion.token} onCerrar={cerrarFicha} />}
   </div>
 }
