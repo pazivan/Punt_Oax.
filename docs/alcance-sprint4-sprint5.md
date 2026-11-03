@@ -84,6 +84,11 @@ El frontend distingue respuesta vacía de error de conexión. **Una respuesta
 vacía no demuestra que la BD carezca de datos reales si la API no responde.**
 En la revisión local, la consulta de solo lectura a la BD configurada
 (`127.0.0.1:55441`) devolvió `ECONNREFUSED`; no se verificó ningún registro.
+La aportación posterior de Citlalli elimina de `docker-compose.yml` la
+publicación de ese puerto al host. La API dentro de Compose sigue conectando
+por `db:5432`; para inspecciones desde el host se requiere un acceso local
+explícito y autorizado, no asumir que `55441` sigue abierto. Esto no cambia
+el volumen ni ejecuta migraciones sobre los datos existentes.
 Por decisión del equipo, las clínicas aprobadas usadas ahora son **ejemplos de
 prueba**, no se afirman como sedes reales verificadas. La migración 002 contiene
 ejemplos marcados `aprobada` y está deshabilitada
