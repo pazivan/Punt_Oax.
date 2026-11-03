@@ -1,5 +1,7 @@
 # Auditoría de `miguel/integracion-sprint4` frente a `origin/main`
 
+> **Actualización 27/10/2026:** el registro de clínicas ya está implementado en la rama `miguel/registro-clinicas-sprint4` (endpoint `POST /api/auth/registro-clinica`, estado `borrador`, sin publicación). Ver `docs/registro-clinicas-sprint4.md`. El resto de este documento conserva el estado histórico auditado el 24/10/2026.
+
 Fecha: 24 de octubre de 2026. Base revisada: `origin/main` (`8730cd8`); integración inicial: `f84f7c2`. También se compararon `origin/ivan/modelo-datos`, `origin/kelly/backend-modelo-datos`, `origin/jonathan/auth-jwt-roles`, `origin/Yareli` y `origin/citlalli/validaciones-auntenticaciones`. Tras la primera auditoría se prepararon en un worktree separado fusiones reales de las cinco ramas sobre la integración, resolviendo sus conflictos y sin fusionar nada a `main`.
 
 ## Resultado y alcance aprobado
