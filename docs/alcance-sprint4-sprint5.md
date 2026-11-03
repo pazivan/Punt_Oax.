@@ -9,40 +9,48 @@ versión reducida del formulario. Hoy no hay endpoint para enviar solicitudes;
 por tanto, el flujo completo de aprobación **aún no está terminado**.
 
 `POST /api/auth/registro-clinica` guarda una cuenta y los datos de su sede
-en `clinicas`, **siempre en estado `borrador`**. Exige IDs del catálogo
-activo a `clinicas_servicios` y franjas normales a `horarios_atencion` en la
+en `clinicas`, **siempre en estado `borrador`**. Exige una o ambas áreas
+principales (ITS/ILE) con texto específico por clínica en `clinicas_servicios`,
+y franjas normales en `horarios_atencion` en la
 misma transacción (al menos uno de cada). No crea una solicitud de aprobación ni marcadores. La contraseña se guarda como hash; el correo de acceso
 no se publica automáticamente como correo de contacto.
 
-| Dato de alta | Formulario/API | Esquema actual v1.3 | Acuerdo de Iván / migración 004 |
+| Dato de alta | Formulario/API | Esquema v1.3 + 004 unificada (pendiente en BD habitual) | Alcance |
 | --- | --- | --- | --- |
 | Nombre, correo de acceso, contraseña | Sí | `clinicas.nombre`, `correo_acceso`, `password_hash` | Se conservan |
 | Tipo, municipio, dirección, teléfono | Sí | `tipo_institucion`, `municipio`, `direccion`, `telefono` | Coinciden con la matriz de mapeo |
 | Código postal, descripción | Opcionales | `codigo_postal`, `descripcion` | El CP se puede extraer del Excel; no se hace en este formulario |
-| Servicios | Al menos un ID activo vía `GET /api/servicios`; guardado transaccional | `servicios`, `clinicas_servicios` | Falta acordar catálogo canónico y edición; no se crean servicios desde el formulario |
-| Requisitos, costo, cita | No | `clinicas_servicios` tiene `requisitos`, `costo`, `requiere_cita` | El valor predeterminado de `requiere_cita` es `TRUE`: revisar antes de publicar; `costo_texto` y `detalle_servicio` dependen de 004 |
-| Días y horario regular | Al menos una franja, apertura anterior al cierre, sin solapamientos | `horarios_atencion` | 24 h y cruces de medianoche requieren revisar 004; `horario_texto` tampoco existe aún |
-| Documentos de respaldo | No hay subida de archivos | `clinicas.documentos_rutas TEXT[]` solo guarda cadenas | Falta almacenamiento privado, API multipart, metadatos, control de acceso y revisión |
-| Región, nivel de atención, enlace a Maps, estado de verificación | No | No existen en v1.3 | Dependen de 004; la región debe verificarse, no inferirse ciegamente |
+| Servicios | Elegir ITS y/o ILE, con descripción específica obligatoria por área; guardado transaccional | `servicios` (áreas compartidas) y `clinicas_servicios.detalle_servicio` (004) | Se usan los nombres canónicos de Iván; no se crean categorías arbitrarias |
+| Requisitos, costo, cita | No | `clinicas_servicios` tiene `requisitos`, `costo`, `requiere_cita`; 004 añade `costo_texto` | `requiere_cita` predetermina `TRUE`: revisar antes de publicar |
+| Días y horario regular | Al menos una franja, apertura anterior al cierre, sin solapamientos | `horarios_atencion`; 004 permite 24 h, cruces de medianoche y `texto_horario` | El formulario de alta solo captura franjas diurnas regulares |
+| Documentos de respaldo | Al menos un respaldo PDF/PNG/JPG, máximo cinco de 5 MB, en la misma petición multipart | `clinicas_documentos` (004); los bytes van al volumen Docker privado | No se expone descarga pública. La revisión y descarga autorizada son Sprint 7 |
+| Región, nivel de atención, enlace a Maps, estado de verificación | No | 004 añade `region`, `nivel_atencion`, `ubicacion_maps_url`, `situacion_ubicacion`, `verificacion_datos`, `datos_por_confirmar` | La ubicación inicia `pendiente` y la verificación `por_confirmar`; no se infiere la región |
 | Coordenadas | No | `clinicas.ubicacion_geo` existe | Falta geocodificación/validación; una dirección o URL no equivale a coordenadas verificadas |
-| Id de la hoja, fuente, enlaces | No | No existen en v1.3 | `id_origen`, `fuente_origen`, `links_relacionados` dependen de 004; corresponden al importador, no al alta manual |
+| Id de la hoja, fuente, enlaces | No | 004 añade `clinicas.id_origen`, `fuente_origen`, `links_relacionados` y `clinicas_servicios.id_origen` | Para el importador, no para el alta manual; `id_origen` no es único |
 
-**Revisión de la propuesta 004 de Iván antes de aplicarla:** el predeterminado
-`situacion_ubicacion='fija'` no debe asignarse a sedes no verificadas; el DOWN
-restaura la restricción antigua de horarios y puede fallar si ya existen turnos
-nocturnos. El catálogo 002 contiene más servicios que los dos nuevos canónicos;
-004 no migra las relaciones anteriores ni hace único `id_origen`. Su UPSERT
-modifica servicios existentes si coinciden por nombre. Probar UP y DOWN en una
-**base aislada** y acordar el mapeo antes de aplicar nada a datos del equipo.
+**Una sola migración `db/migrations/004_base_clinicas_unificada.{up,down}.sql`.**
+Reúne la ficha de Sprint 4 con los campos de mapeo de Iván sin repetir
+`detalle_servicio`. Inserta los nombres canónicos «Detección de ITS» e
+«Interrupción Legal del Embarazo (ILE)» sin modificar servicios preexistentes.
+No cambia relaciones anteriores ni impone unicidad a `id_origen`; la
+equivalencia del catálogo semilla 002 se debe revisar antes de importar datos.
+La reversión **se niega** si hay documentos, textos particulares, costos,
+procedencia, datos de verificación o horarios especiales que se perderían.
+Con filas anteriores y horarios especiales se probó UP y rechazo de DOWN en
+PostGIS temporal; con filas anteriores regulares se probó UP/DOWN. La 004
+**no se aplicó a la BD habitual**; el formulario de vista previa no puede
+completar el alta allí todavía.
 
-Para documentos recomendamos una tabla `clinicas_documentos` (clínica, tipo,
-clave de almacenamiento privado, MIME, tamaño, hash, fecha y estado de revisión),
-con subida autenticada limitada a la propia clínica, validación de tipo/tamaño,
-antimalware, descarga autorizada y limpieza de archivos huérfanos. No poner
-rutas públicas o archivos binarios en `documentos_rutas` ni aceptar URLs enviadas
-por el cliente como prueba. Definir además el endpoint autenticado de edición,
-la revisión administrativa y el significado de días sin horario. No se aplicó
-la migración ni se insertaron datos.
+Los documentos se guardan mediante nombres UUID bajo `DOCUMENTS_PRIVATE_DIR`
+(en Compose, un volumen fuera de la carpeta del frontend). La API valida límite
+y firma de PDF/PNG/JPG, restringe permisos de carpeta/archivo y elimina los
+archivos escritos si falla la transacción. La tabla almacena nombre, MIME,
+tamaño y SHA-256, no rutas públicas ni binarios. **No hay antivirus ni descarga
+autorizada todavía**: no usar estos archivos para mostrarlos públicamente;
+planear inspección antimalware, respaldos, política de retención y limpieza de
+huérfanos por fallos del proceso antes del despliegue real. El registro crea
+cuenta y documentos a la vez; no es una carga autenticada posterior. Definir
+el endpoint de edición y la revisión administrativa en Sprint 7.
 
 ### Documentos: propuesta para el mismo registro y futura solicitud
 
@@ -63,22 +71,25 @@ no pide un segundo formulario. Para que la revisión sea fiable, bloquear la
 edición o crear versiones mientras esté pendiente y volver a revisión si se
 cambian datos aprobados. Documentos y datos privados nunca deben servirse en
 `GET /api/clinicas` ni `GET /api/clinicas/:id`.
-**Hoy aún no existe la ficha completa con documentos**, por lo que registrar
-una clínica no equivale a poder postularla; no se debe anunciar como flujo
-terminado ni añadir un botón de postulación hasta contar con la subida privada.
+El registro con archivos y la 004 unificada se probaron en BD aislada; faltan
+la prueba completa en navegador y una decisión autorizada de respaldo/aplicación
+en la BD habitual. Registrar una clínica **no equivale a postularla**: no
+añadir botón de postulación hasta Sprint 7.
 
 Fuentes oficiales consultadas (noviembre de 2026):
 - [COFEPRIS: avisos para establecimientos de servicios de salud](https://www.gob.mx/cofepris/acciones-y-programas/aviso-de-funcionamiento-responsable-sanitario-y-otros-para-establecimientos-que-ofrecen-servicios-de-salud).
 - [COFEPRIS: licencias sanitarias de servicios de salud](https://www.gob.mx/cofepris/acciones-y-programas/licencias-sanitarias-de-servicios-de-salud): distingue, entre otros, los establecimientos con actos quirúrgicos u obstétricos.
 - [Oaxaca: creación de Coepriso](https://www.oaxaca.gob.mx/comunicacion/fortalecen-vigilancia-sanitaria-en-oaxaca-con-creacion-de-coepriso): autoridad local de regulación sanitaria. Confirmar con ella los trámites según giro; no confundir un aviso de *productos y servicios* con uno de *servicios de salud*.
 
-## Sprint 5: directorio público
+## Sprint 5: directorio para sesiones verificadas
 
-`GET /api/clinicas` y `GET /api/clinicas/:id` solo consultan sedes con
-`estado_publicacion = 'aprobada'`. `/` usa OpenStreetMap y muestra únicamente
-marcadores con coordenadas válidas; `/centro/:id` consulta la ficha y los
-servicios activos. `/mapa` conserva el buscador y los filtros de Yareli, ahora
-con mapa Leaflet real. No recurre automáticamente a `clinicasDemo.js`.
+`GET /api/clinicas` y `GET /api/clinicas/:id` exigen JWT y solo consultan sedes
+con `estado_publicacion = 'aprobada'`. Sin sesión `/` y `/conocenos` muestran
+información del proyecto, no el mapa. Con sesión verificada `/` usa
+OpenStreetMap y muestra únicamente marcadores con coordenadas válidas;
+`/centro/:id` consulta la ficha y los servicios activos. `/mapa` conserva el
+buscador y los filtros de Yareli, ahora con mapa Leaflet real. `/directorio`
+también exige sesión. No recurre automáticamente a `clinicasDemo.js`.
 
 El frontend distingue respuesta vacía de error de conexión. **Una respuesta
 vacía no demuestra que la BD carezca de datos reales si la API no responde.**
@@ -107,19 +118,20 @@ ficha visual con datos simulados: no debe sustituir la ficha conectada a la API.
 
 ## Entrega al equipo: pendientes separados por tipo
 
-**Ya integrado localmente:** alta de clínica con cuenta, servicios activos y
-horarios regulares en una transacción (borrador); login por rol; endpoints de
+**Ya integrado localmente:** alta de clínica con cuenta, servicios activos,
+horarios regulares y respaldo privado en una transacción (borrador), probados
+contra la 004 unificada en BD aislada; login por rol; endpoints de
 catálogo aprobados y filtros de Kelly; inicio y vistas de Yareli; mapa y ficha
-conectados a API de Citlalli; análisis del mapeo y propuesta 004 de Iván **sin
-aplicar la migración**. Los ejemplos aprobados sirven solo para pruebas.
+conectados a API de Citlalli; campos de la propuesta 004 de Iván incorporados
+**sin aplicar la migración a la BD habitual**. Los ejemplos aprobados sirven solo para pruebas.
 
 ### Implementación pendiente
 
 | Responsable sugerido | Sprint | Tarea | Resultado esperado |
 | --- | --- | --- | --- |
-| Iván + backend | 4 | Definir almacenamiento privado de documentos, metadatos y reglas por tipo de actividad con la autoridad; diseñar migración sin duplicar `clinicas` | Misma ficha de registro con documentos persistidos y acceso controlado; ninguna ruta pública ni documento universal inventado |
-| Iván | 5 | Revisar 004 y equivalencias con servicios existentes, ubicación y rollback en entorno aislado; no aplicarla a datos compartidos sin acuerdo | Propuesta de esquema y catálogo compatible con v1.3, sin afectar datos de prueba o del equipo |
-| Kelly + frontend | 4 | Integrar subida privada al mismo registro cuando exista backend seguro; acordar tratamiento de fallos parciales | Alta íntegra o rechazo controlado, sin botón de subida aparente |
+| Coordinación + backend | 4 | Acordar respaldo y aplicación de la 004 unificada antes del despliegue; definir política de documentos por actividad y antimalware | Archivos privados y criterios revisables, sin documento legal universal inventado |
+| Iván | 5 | Revisar equivalencias de servicios existentes y procedencia al importar; no tocar datos compartidos sin acuerdo | Mapeo compatible con v1.3 sin reemplazar relaciones existentes |
+| Kelly + frontend | 4 | Probar en navegador la subida privada del registro contra API y BD aisladas, incluidos tamaños y tipos incorrectos | Alta íntegra o rechazo controlado; no aparecen documentos en rutas públicas |
 | Kelly + Yareli | 5 | Ajustar filtros y listados con el catálogo canónico y estados vacíos/errores | Solo aprobadas en búsquedas y listados; errores distinguibles de cero resultados |
 | Citlalli | 5 | Revisar ficha y mapa contra contrato API real; conservar adaptación móvil | Sin información inventada ni filtración de documentos; acceso directo `/centro/:id` funcional |
 | Equipo de producto | 7 | Perfil privado, botón «Postularme», revisión administrativa y política de cambios | Administrador revisa la **misma ficha y documentos** del alta; solo aprobación publica en mapa |
@@ -128,8 +140,8 @@ aplicar la migración**. Los ejemplos aprobados sirven solo para pruebas.
 
 | Responsable sugerido | Sprint | Prueba | Resultado esperado |
 | --- | --- | --- | --- |
-| Kelly + Iván | 4 | API y transacción en BD PostgreSQL/PostGIS **aislada** con catálogo activo, IDs inválidos, error intermedio y duplicados | Persisten clínica, servicios y horarios juntos o no persiste ninguno; `borrador` sin solicitud y no visible en catálogo |
-| Iván | 5 | UP/DOWN de 004 solo en BD aislada, incluidos horarios nocturnos y datos existentes | No hay pérdida silenciosa ni rollback imposible; decisión documentada antes de migrar |
+| Kelly + Iván | 4 | Repetir en navegador el alta contra API y BD **aisladas**, incluidos archivos inválidos y fallos de red | Persisten clínica, servicios, horarios y documentos juntos o no persiste ninguno; `borrador` sin solicitud |
+| Iván | 5 | Revisar importación de datos y equivalencias de catálogo con la 004 ya probada en BD aislada | No hay pérdida silenciosa ni etiquetas duplicadas; decidir tratamiento de importaciones |
 | Yareli | 4–5 | Registro/login y estados de error en navegador, teclado y móvil | Flujo usable con al menos un servicio y un día; mensaje claro si catálogo vacío o API caída |
 | Citlalli + Kelly | 5 | Mapa, filtros y ficha en navegador con API y BD aisladas; enlaces directos y red interrumpida | Marcadores solo para sedes aprobadas con coordenadas; sin fallback demo ni datos privados |
 | Coordinación | 5 | Revisar origen de ejemplos aprobados en entorno de prueba | Ejemplos identificados como tales antes de exponer un catálogo real |
@@ -137,4 +149,4 @@ aplicar la migración**. Los ejemplos aprobados sirven solo para pruebas.
 No ejecutar `backend/npm test`, migrador ni `test:integration` apuntando a la
 BD configurada del equipo: esas tareas pueden consultar o modificar datos.
 La prueba de integración requiere base y API locales **aisladas** configuradas
-explícitamente; hasta ejecutarla no se considera verificada la persistencia.
+explícitamente; sus resultados no validan la BD habitual ni sustituyen pruebas de navegador.
