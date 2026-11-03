@@ -118,6 +118,21 @@ ficha visual con datos simulados: no debe sustituir la ficha conectada a la API.
 
 ## Entrega al equipo: pendientes separados por tipo
 
+Al integrar este código en `main`, cada integrante puede partir de esa rama
+para su siguiente trabajo. **Esto no ejecuta migraciones ni activa el alta
+completa en la BD habitual.** Para coordinar lo que falta:
+
+- **Iván:** revisar las equivalencias del catálogo y la importación con la
+  única 004; acordar con el equipo cuándo actualizar la BD habitual y conservar
+  una copia previa de sus datos. No ejecutar la migración por cuenta propia.
+- **Kelly y Yareli:** probar en navegador el registro de clínica con servicios,
+  horarios y documentos contra una BD aislada; revisar móvil, teclado y errores.
+- **Citlalli y Kelly:** comprobar mapa, filtros y ficha con sesión y datos
+  aprobados en entorno aislado, sin documentos ni clínicas borrador expuestos.
+- **Coordinación:** identificar los ejemplos del catálogo antes de publicar
+  datos reales y definir revisión, seguridad y conservación de documentos.
+  Perfil privado, postulación y administración quedan para Sprint 7.
+
 **Ya integrado localmente:** alta de clínica con cuenta, servicios activos,
 horarios regulares y respaldo privado en una transacción (borrador), probados
 contra la 004 unificada en BD aislada; login por rol; endpoints de
