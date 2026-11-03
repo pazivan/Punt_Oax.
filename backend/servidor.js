@@ -106,6 +106,98 @@ app.get("/api/clinicas", async (req, res) => {
     });
   }
 });
+
+app.get("/api/clinicas/:id", async (req, res) => {
+  const { id } = req.params;
+
+  const uuidValido =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  if (!uuidValido) {
+    return res.status(400).json({
+      error: "Identificador de clínica no válido.",
+    });
+  }
+
+  try {
+    const resultadoClinica = await pool.query(
+      `
+      SELECT
+        c.id_clinica,
+        c.nombre,
+        c.descripcion,
+        c.tipo_institucion,
+        c.telefono,
+        c.correo_contacto,
+        c.sitio_web,
+        c.imagen_portada_url,
+        c.municipio,
+        c.localidad,
+        c.direccion,
+        c.codigo_postal,
+        ST_Y(c.ubicacion_geo::geometry) AS latitud,
+        ST_X(c.ubicacion_geo::geometry) AS longitud
+      FROM clinicas c
+      WHERE c.id_clinica = $1
+        AND c.estado_publicacion = 'aprobada';
+      `,
+      [id]
+    );
+
+    if (resultadoClinica.rows.length === 0) {
+      return res.status(404).json({
+        error: "Clínica no encontrada.",
+      });
+    }
+
+    const resultadoServicios = await pool.query(
+      `
+      SELECT
+        cs.id_clinica_servicio,
+        s.nombre,
+        s.descripcion,
+        s.categoria,
+        cs.costo,
+        cs.requisitos,
+        cs.requiere_cita
+      FROM clinicas_servicios cs
+      INNER JOIN servicios s
+        ON s.id_servicio = cs.id_servicio
+      WHERE cs.id_clinica = $1
+        AND cs.activo = TRUE
+        AND s.activo = TRUE
+      ORDER BY s.nombre;
+      `,
+      [id]
+    );
+
+    const resultadoHorarios = await pool.query(
+      `
+      SELECT
+        dia_semana,
+        TO_CHAR(hora_apertura, 'HH24:MI') AS apertura,
+        TO_CHAR(hora_cierre, 'HH24:MI') AS cierre
+      FROM horarios_atencion
+      WHERE id_clinica = $1
+      ORDER BY dia_semana, hora_apertura;
+      `,
+      [id]
+    );
+
+    return res.json({
+      ...resultadoClinica.rows[0],
+      servicios: resultadoServicios.rows,
+      horarios: resultadoHorarios.rows,
+    });
+  } catch (error) {
+    console.error("Error al consultar ficha de clínica:", error.message);
+
+    return res.status(500).json({
+      error: "No se pudo obtener la ficha de la clínica.",
+    });
+  }
+});
+
 app.post("/api/auth/registro-usuario", async (req, res) => {
   const { nombre, apellidos, correo, password, telefono } = req.body || {};
 
