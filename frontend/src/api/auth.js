@@ -15,9 +15,14 @@ async function leerRespuesta(respuesta) {
   }
 
   if (!respuesta.ok) {
-    throw new Error(typeof contenido?.error === 'string' && contenido.error.trim()
+    const error = new Error(typeof contenido?.error === 'string' && contenido.error.trim()
       ? contenido.error
       : mensajeError(respuesta.status))
+    if (contenido && typeof contenido === 'object') {
+      error.campos = contenido.campos
+      error.faltantes = contenido.faltantes
+    }
+    throw error
   }
   if (!contenido || typeof contenido !== 'object' || Array.isArray(contenido)) {
     throw new Error('El servidor devolvió una respuesta no válida. Inténtalo de nuevo.')
@@ -45,17 +50,10 @@ export function registrarUsuario(correo, password) {
   return enviarAuth('/api/auth/registro-usuario', { correo, password })
 }
 
-export async function registrarClinica(datos, documentos) {
-  const formulario = new FormData()
-  formulario.append('ficha', JSON.stringify(datos))
-  for (const documento of documentos) formulario.append('documentos', documento)
-  let respuesta
-  try {
-    respuesta = await fetch('/api/auth/registro-clinica', { method: 'POST', body: formulario })
-  } catch {
-    throw new Error('No se pudo conectar con el servidor.')
-  }
-  return leerRespuesta(respuesta)
+// El registro de clínica solo crea la cuenta de acceso.
+// Los datos institucionales se capturan después en /mi-clinica.
+export function registrarClinica(datos) {
+  return enviarAuth('/api/auth/registro-clinica', datos)
 }
 
 export function iniciarSesion(correo, password) {
@@ -104,14 +102,19 @@ export function cerrarSesion() {
   sessionStorage.removeItem(CLAVE_SESION)
 }
 
-export async function consultarPerfil() {
+async function enviarConSesion(ruta, opciones = {}) {
   const token = leerSesion()?.token
-  if (!token) throw new Error('Inicia sesión para consultar tu perfil.')
+  if (!token) throw new Error('Inicia sesión para continuar.')
 
   let respuesta
   try {
-    respuesta = await fetch('/api/auth/perfil', {
-      headers: { Authorization: `Bearer ${token}` },
+    respuesta = await fetch(ruta, {
+      ...opciones,
+      method: opciones.method || 'GET',
+      headers: {
+        ...(opciones.headers || {}),
+        Authorization: `Bearer ${token}`,
+      },
     })
   } catch {
     throw new Error('No se pudo conectar con el servidor.')
@@ -121,4 +124,43 @@ export async function consultarPerfil() {
     cerrarSesion()
   }
   return leerRespuesta(respuesta)
+}
+
+export async function consultarPerfil() {
+  return enviarConSesion('/api/auth/perfil')
+}
+
+export function consultarMiFicha() {
+  return enviarConSesion('/api/clinicas/mi-ficha')
+}
+
+export function guardarBorradorClinica(datos) {
+  return enviarConSesion('/api/clinicas/mi-ficha', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(datos),
+  })
+}
+
+export async function subirDocumentosClinica(archivos) {
+  const formulario = new FormData()
+  for (const archivo of archivos) formulario.append('documentos', archivo)
+  return enviarConSesion('/api/clinicas/mi-ficha/documentos', {
+    method: 'POST',
+    body: formulario,
+  })
+}
+
+export function eliminarDocumentoClinica(idDocumento) {
+  return enviarConSesion(`/api/clinicas/mi-ficha/documentos/${idDocumento}`, {
+    method: 'DELETE',
+  })
+}
+
+export function enviarPostulacionClinica() {
+  return enviarConSesion('/api/clinicas/mi-ficha/postulacion', { method: 'POST' })
+}
+
+export function consultarMiPostulacion() {
+  return enviarConSesion('/api/clinicas/mi-postulacion')
 }

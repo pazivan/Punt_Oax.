@@ -9,6 +9,7 @@ import InformacionUtil from './components/Inicio/InformacionUtil.jsx'
 import ModalConfirmacion from './components/Inicio/ModalConfirmacion.jsx'
 import DirectorioMapa from './components/DirectorioMapa.jsx'
 import Conocenos from './components/Conocenos.jsx'
+import FichaClinica from './components/Clinica/FichaClinica.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
 import './App.css'
@@ -131,7 +132,8 @@ function App() {
         setSesion(nuevaSesion)
         setErrorPerfil('')
         setMensajeAuth('')
-        navigate('/cuenta')
+        // La ficha se consulta de nuevo en el servidor dentro de /mi-clinica.
+        navigate(nuevaSesion?.tipo === 'clinica' ? '/mi-clinica' : '/cuenta')
       }}
       mensaje={mensajeAuth}
     />
@@ -188,6 +190,28 @@ function App() {
         {modalConfirmacionSalir}
       </>
     )
+  }
+
+  if (pathname === '/mi-clinica') {
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          rolesPermitidos={['clinica']}
+        >
+          <FichaClinica onSalir={salir} />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
+  }
+
+  // Una clínica no usa la vista genérica de "Mi cuenta": su destino es la ficha.
+  if (pathname === '/cuenta' && perfil?.rol === 'clinica') {
+    return <Navigate to="/mi-clinica" replace />
   }
 
   if (pathname === '/cuenta' || pathname === '/admin') {
