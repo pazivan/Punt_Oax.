@@ -1,19 +1,30 @@
 # Alcance local: Sprint 4 (alta) y Sprint 5 (catálogo)
 
-## Sprint 4: alta de cuenta institucional
+## Actualización: tres procesos separados
 
-**Un solo formulario y una sola ficha de clínica.** Los datos capturados al
-registrarse son los mismos que debe revisar el administrador cuando exista el
-botón «Enviar solicitud». `borrador` solo indica estado de la ficha, no una
-versión reducida del formulario. Hoy no hay endpoint para enviar solicitudes;
-por tanto, el flujo completo de aprobación **aún no está terminado**.
+El registro institucional dejó de ser un formulario único. Ahora existen tres
+procesos independientes:
 
-`POST /api/auth/registro-clinica` guarda una cuenta y los datos de su sede
-en `clinicas`, **siempre en estado `borrador`**. Exige una o ambas áreas
-principales (ITS/ILE) con texto específico por clínica en `clinicas_servicios`,
-y franjas normales en `horarios_atencion` en la
-misma transacción (al menos uno de cada). No crea una solicitud de aprobación ni marcadores. La contraseña se guarda como hash; el correo de acceso
-no se publica automáticamente como correo de contacto.
+1. **Crear cuenta** (`/registro`): solo nombre de la clínica, correo de acceso y
+   contraseña. `POST /api/auth/registro-clinica` guarda la identidad en
+   `clinicas` con `estado_publicacion = 'borrador'`; no exige servicios,
+   horarios, documentos ni información complementaria.
+2. **Completar la ficha** (`/mi-clinica`): la clínica autenticada consulta y
+   guarda su propia ficha por secciones. Puede guardar borradores incompletos,
+   subir documentos privados y recuperar su avance desde PostgreSQL.
+3. **Enviar postulación**: valida la ficha completa, registra una solicitud
+   `pendiente` en `solicitudes_clinicas` con una instantánea de los datos y deja
+   la clínica en `estado_publicacion = 'pendiente'`. **Postular no aprueba ni
+   publica**: solo `aprobada` aparece en mapa y directorio.
+
+El detalle de rutas, endpoints, estados, migración 005, pruebas y pendientes está
+en [`docs/flujo-registro-postulacion-clinica.md`](./flujo-registro-postulacion-clinica.md).
+
+La descripción histórica de Sprint 4 que sigue se conserva como referencia del
+modelo de datos. El contrato anterior de `POST /api/auth/registro-clinica`
+(multipart con ficha completa y documentos) fue sustituido por un JSON de tres
+campos; la cuenta y la ficha ya no se crean en la misma petición. La ficha se
+captura después mediante los endpoints autenticados de `/api/clinicas/mi-ficha`.
 
 | Dato de alta | Formulario/API | Esquema v1.3 + 004 unificada (pendiente en BD habitual) | Alcance |
 | --- | --- | --- | --- |
