@@ -70,8 +70,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
       return;
     }
 
-    // La confirmación se conserva solo en el registro de usuarios comunes.
-    if (accountType === 'usuario' && password !== confirmPassword) {
+    if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden. Por favor verifícalas.');
       return;
     }
@@ -126,6 +125,24 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
           {mostrarPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
         </button>
       </div>
+    </div>
+  );
+
+  const inputConfirmPassword = (
+    <div className="auth-input-group">
+      <label htmlFor={accountType === 'clinica' ? 'reg-clinica-confirm' : 'reg-confirm'} className="auth-label">
+        Confirmar contraseña
+      </label>
+      <input
+        id={accountType === 'clinica' ? 'reg-clinica-confirm' : 'reg-confirm'}
+        type={mostrarPassword ? 'text' : 'password'}
+        required
+        autoComplete="new-password"
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+        placeholder="••••••••••"
+        className="auth-input"
+      />
     </div>
   );
 
@@ -336,6 +353,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
                     </div>
 
                     {inputPassword}
+                    {inputConfirmPassword}
 
                     <button
                       type="submit"
@@ -372,22 +390,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
                     </div>
 
                     {inputPassword}
-
-                    <div className="auth-input-group">
-                      <label htmlFor="reg-confirm" className="auth-label">
-                        Confirmar contraseña
-                      </label>
-                      <input
-                        id="reg-confirm"
-                        type={mostrarPassword ? 'text' : 'password'}
-                        required
-                        autoComplete="new-password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="••••••••••"
-                        className="auth-input"
-                      />
-                    </div>
+                    {inputConfirmPassword}
 
                     <button
                       type="submit"

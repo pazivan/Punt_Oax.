@@ -49,8 +49,8 @@ Reglas:
 - El registro independiente de usuarios (`POST /api/auth/registro-usuario`) no cambió.
 
 La interfaz conserva la validación de contraseña y añade un botón para mostrarla
-u ocultarla. La confirmación de contraseña se eliminó solo del registro de
-clínica; el registro de usuarios comunes la conserva.
+u ocultarla. Tanto el registro de clínica como el de usuarios comunes piden
+confirmar la contraseña y rechazan el envío si los dos valores no coinciden.
 
 ## Inicio de sesión y redirección
 
@@ -178,8 +178,8 @@ requiere 004 y 005.
 
 Archivos principales:
 
-- `frontend/src/components/Auth/Register.jsx`: registro de clínica con tres campos,
-  sin confirmación y con mostrar/ocultar contraseña.
+- `frontend/src/components/Auth/Register.jsx`: registro de clínica con tres datos,
+  confirmación de contraseña y mostrar/ocultar.
 - `frontend/src/components/Clinica/FichaClinica.jsx`: pantalla privada
   «Completa los datos de tu clínica».
 - `frontend/src/components/Clinica/FichaClinica.css`: estilos responsive con el
@@ -246,8 +246,8 @@ Se ejecutó un smoke test con Chrome 154 headless controlado por CDP contra Vite
 en `127.0.0.1:5173`, la API en `3000` y otra base temporal aislada
 (`puntoax_flujo_test_browser`, puerto 55445). Resultados reales:
 
-- `/registro` en la pestaña «Soy clínica» mostró exactamente tres campos
-  (`nombre`, `correo`, `contraseña`), sin confirmación de contraseña ni
+- `/registro` en la pestaña «Soy clínica» mostró los tres datos
+  (`nombre`, `correo`, `contraseña`), la confirmación de contraseña y ningún
   desplazamiento horizontal a 1440 px.
 - El registro creó la cuenta y el login redirigió a `/mi-clinica`.
 - La ficha se cargó desde la API con las cinco secciones y nueve pendientes
