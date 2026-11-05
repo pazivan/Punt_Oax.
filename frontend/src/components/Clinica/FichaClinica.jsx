@@ -181,6 +181,7 @@ function CabeceraClinica({ onSalir }) {
         </div>
         <div className="ficha-header-actions">
           <Link to="/directorio" className="ficha-header-link">Directorio</Link>
+          <Link to="/mi-clinica/citas" className="ficha-header-link">Mis citas</Link>
           <button type="button" className="ficha-header-outline" onClick={onSalir}>Cerrar sesión</button>
         </div>
       </div>
