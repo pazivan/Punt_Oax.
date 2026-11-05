@@ -1,5 +1,13 @@
 # Registro de cuentas de clínica — Sprint 4
 
+> **Actualización (3 de noviembre de 2026).** Este documento describe el
+> contrato histórico de Sprint 4. El flujo vigente separa registro, llenado de
+> ficha y postulación; `POST /api/auth/registro-clinica` ahora recibe solo
+> nombre, correo y contraseña en JSON. Consulta
+> [`docs/flujo-registro-postulacion-clinica.md`](./flujo-registro-postulacion-clinica.md)
+> para el contrato actual, los endpoints de `/api/clinicas/mi-ficha` y la
+> migración 005.
+
 Fecha: 27 de octubre de 2026. Rama de integración: `miguel/registro-clinicas-sprint4`, creada desde `main` (`816c78e`). Este documento describe la integración del registro institucional sin publicar clínicas ni adelantar el Sprint 7.
 
 ## Alcance y decisión funcional
