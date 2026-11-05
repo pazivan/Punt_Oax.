@@ -130,6 +130,11 @@ export async function consultarPerfil() {
   return enviarConSesion('/api/auth/perfil')
 }
 
+// Las citas se filtran en el servidor con el id de la clínica autenticada.
+export function consultarCitasClinica() {
+  return enviarConSesion('/api/clinicas/mi-citas')
+}
+
 export function consultarMiFicha() {
   return enviarConSesion('/api/clinicas/mi-ficha')
 }
