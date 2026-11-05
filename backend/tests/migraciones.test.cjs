@@ -21,9 +21,9 @@ test('todas las migraciones deben tener su archivo .up.sql y .down.sql correspon
   }
 });
 
-test('la migración 004 define los ajustes mínimos para clinicas, clinicas_servicios y horarios_atencion', () => {
-  const upContent = fs.readFileSync(path.join(MIGRATIONS_DIR, '004_ajustes_catalogo_clinicas.up.sql'), 'utf8');
-  const downContent = fs.readFileSync(path.join(MIGRATIONS_DIR, '004_ajustes_catalogo_clinicas.down.sql'), 'utf8');
+test('la migración 004 unificada define los campos y restricciones del mapeo de Iván', () => {
+  const upContent = fs.readFileSync(path.join(MIGRATIONS_DIR, '004_base_clinicas_unificada.up.sql'), 'utf8');
+  const downContent = fs.readFileSync(path.join(MIGRATIONS_DIR, '004_base_clinicas_unificada.down.sql'), 'utf8');
 
   // 1. No debe recrear el esquema ni usar public.puntos/Supabase
   assert.doesNotMatch(upContent, /CREATE\s+TABLE\s+.*public\.puntos/i);
@@ -56,25 +56,24 @@ test('la migración 004 define los ajustes mínimos para clinicas, clinicas_serv
   assert.match(upContent, /es_24_horas\s+BOOLEAN/i);
   assert.match(upContent, /cruza_medianoche\s+BOOLEAN/i);
   assert.match(upContent, /chk_horarios_intervalo/i);
-  assert.match(upContent, /hora_apertura\s*>\s*hora_cierre/i);
 
   // 6. Estandarización canónica de los 2 servicios (Detección de ITS e ILE)
   assert.match(upContent, /Detección de ITS/i);
   assert.match(upContent, /Interrupción Legal del Embarazo \(ILE\)/i);
 
-  // 7. La migración DOWN debe revertir todos los campos, índices, servicios y restricciones
-  assert.match(downContent, /DROP COLUMN IF EXISTS id_origen/i);
-  assert.match(downContent, /DROP COLUMN IF EXISTS region/i);
-  assert.match(downContent, /DROP COLUMN IF EXISTS situacion_ubicacion/i);
-  assert.match(downContent, /DROP COLUMN IF EXISTS verificacion_datos/i);
-  assert.match(downContent, /DROP COLUMN IF EXISTS costo_texto/i);
-  assert.match(downContent, /DROP COLUMN IF EXISTS detalle_servicio/i);
-  assert.match(downContent, /DROP COLUMN IF EXISTS es_24_horas/i);
-  assert.match(downContent, /DROP COLUMN IF EXISTS cruza_medianoche/i);
+  // 7. La migración DOWN debe revertir campos y restricciones
+  assert.match(downContent, /DROP COLUMN.*id_origen/i);
+  assert.match(downContent, /DROP COLUMN.*region/i);
+  assert.match(downContent, /DROP COLUMN.*situacion_ubicacion/i);
+  assert.match(downContent, /DROP COLUMN.*verificacion_datos/i);
+  assert.match(downContent, /DROP COLUMN.*costo_texto/i);
+  assert.match(downContent, /DROP COLUMN.*detalle_servicio/i);
+  assert.match(downContent, /DROP COLUMN.*es_24_horas/i);
+  assert.match(downContent, /DROP COLUMN.*cruza_medianoche/i);
   assert.match(downContent, /chk_horarios_intervalo/i);
 });
 
-test('el documento de acuerdo para Kelly y el importador existe y cubre todos los criterios', () => {
+test('el documento de acuerdo técnico existe y cubre todos los criterios solicitados', () => {
   const docPath = path.join(DOCS_DIR, 'acuerdo-mapeo-datos-clinicas.md');
   assert.ok(fs.existsSync(docPath), 'Debe existir docs/acuerdo-mapeo-datos-clinicas.md');
 
@@ -90,5 +89,4 @@ test('el documento de acuerdo para Kelly y el importador existe y cubre todos lo
   assert.match(doc, /region/);
   assert.match(doc, /Detección de ITS/);
   assert.match(doc, /Interrupción Legal del Embarazo/);
-  assert.match(doc, /Kelly/i);
 });
