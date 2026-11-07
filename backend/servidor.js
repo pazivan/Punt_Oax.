@@ -6,6 +6,7 @@ const path = require("node:path");
 const { randomUUID, createHash } = require("node:crypto");
 const pool = require("./db");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
+const { registrarRutasCitas } = require("./citas");
 
 const app = express();
 const PUERTO = process.env.PORT || 3000;
@@ -1212,6 +1213,11 @@ app.get(
   }
 );
 
+   // Rutas de citas (Sprint 6 · issue #56). Ver backend/citas.js
+   registrarRutasCitas(app, { pool, autenticarToken, requerirRol });
+   
 app.listen(PUERTO, () => {
   console.log(`Servidor listo en http://localhost:${PUERTO}`);
 });
+
+
