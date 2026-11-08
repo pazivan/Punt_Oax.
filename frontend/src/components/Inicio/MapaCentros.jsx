@@ -4,6 +4,7 @@ import { Search, User } from 'lucide-react';
 import ListadoClinicas from './ListadoClinicas.jsx';
 import EspacioMapa from './EspacioMapa.jsx';
 import DetalleCentro from './DetalleCentro.jsx';
+import AgendarCitaDatos from './AgendarCitaDatos.jsx';
 import MapaLeaflet from './MapaLeaflet.jsx';
 import '../../styles/Inicio.css';
 
@@ -37,6 +38,7 @@ export default function MapaCentros({
     () => clinicas[0]?.id_clinica ?? 'coesdia 1'
   );
   const [clinicaEnDetalle, setClinicaEnDetalle] = useState(null);
+  const [clinicaEnAgendar, setClinicaEnAgendar] = useState(null);
 
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
 
@@ -131,6 +133,19 @@ export default function MapaCentros({
     setFiltroNivel('todos');
   };
 
+  // Si el usuario pulsó "Agendar cita" desde DetalleCentro, mostramos la ventana Agendar cita (Datos) - PuntoOax
+  if (clinicaEnAgendar) {
+    return (
+      <AgendarCitaDatos
+        clinica={clinicaEnAgendar}
+        clinicas={clinicas}
+        sesion={sesion}
+        onSalir={onSalir}
+        onVolverAlCentro={() => setClinicaEnAgendar(null)}
+      />
+    );
+  }
+
   // Si el usuario pulsó "Ver detalles", mostramos la ventana Detalle de centro - PuntoOax
   if (clinicaEnDetalle) {
     return (
@@ -139,6 +154,7 @@ export default function MapaCentros({
         sesion={sesion}
         onSalir={onSalir}
         onVolverAlMapa={() => setClinicaEnDetalle(null)}
+        onAgendarCita={(sede) => setClinicaEnAgendar(sede)}
       />
     );
   }
@@ -155,12 +171,15 @@ export default function MapaCentros({
               </Link>
             </div>
 
-            <nav className="inicio-nav mapa-nav" aria-label="Navegación principal">
+            <nav className="inicio-nav mapa-nav agendar-header-nav" aria-label="Navegación principal">
               <Link to="/cuenta" className="inicio-nav-link">
                 Inicio
               </Link>
               <Link to="/mapa" className="inicio-nav-link active mapa-nav-active">
                 <span className="inicio-nav-link-active-text">Mapa de centros</span>
+              </Link>
+              <Link to="/agendar-cita" className="inicio-nav-link">
+                Agendar cita
               </Link>
               <Link to="/informacion-util" className="inicio-nav-link">
                 Información útil
