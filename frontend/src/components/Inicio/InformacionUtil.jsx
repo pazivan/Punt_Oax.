@@ -105,12 +105,15 @@ export default function InformacionUtil({ sesion, onSalir }) {
               </Link>
             </div>
 
-            <nav className="inicio-nav" aria-label="Navegación principal">
+            <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
               <Link to="/cuenta" className="inicio-nav-link">
                 Inicio
               </Link>
               <Link to="/mapa" className="inicio-nav-link">
                 Mapa de centros
+              </Link>
+              <Link to="/agendar-cita" className="inicio-nav-link">
+                Agendar cita
               </Link>
               <Link to="/informacion-util" className="inicio-nav-link active">
                 <span className="inicio-nav-link-active-text">Información útil</span>

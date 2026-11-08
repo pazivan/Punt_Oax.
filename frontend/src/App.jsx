@@ -6,6 +6,7 @@ import Register from './components/Auth/Register.jsx'
 import Inicio from './components/Inicio/Inicio.jsx'
 import MapaCentros from './components/Inicio/MapaCentros.jsx'
 import InformacionUtil from './components/Inicio/InformacionUtil.jsx'
+import AgendarCitaDatos from './components/Inicio/AgendarCitaDatos.jsx'
 import ModalConfirmacion from './components/Inicio/ModalConfirmacion.jsx'
 import DirectorioMapa from './components/DirectorioMapa.jsx'
 import Conocenos from './components/Conocenos.jsx'
@@ -31,7 +32,7 @@ function App() {
 
   useEffect(() => {
     // Solo consultar el directorio después de verificar la sesión.
-    if ((pathname !== '/mapa' && pathname !== '/directorio') || !sesion || !perfil || verificandoPerfil) return
+    if ((pathname !== '/mapa' && pathname !== '/directorio' && pathname !== '/agendar-cita') || !sesion || !perfil || verificandoPerfil) return
     const controlador = new AbortController()
     async function cargarClinicas() {
       setCargando(true)
@@ -169,6 +170,29 @@ function App() {
           {error ? <main role="alert">{error} No se mostrarán datos de demostración.</main> : (
             <MapaCentros sesion={sesion} onSalir={salir} clinicas={clinicas} cargando={cargando} />
           )}
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
+  }
+
+  if (pathname === '/agendar-cita') {
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          rolesPermitidos={['usuario', 'clinica', 'administrador']}
+        >
+          <AgendarCitaDatos
+            clinica={clinicas[0] || null}
+            clinicas={clinicas}
+            sesion={sesion}
+            onSalir={salir}
+            onVolverAlCentro={() => navigate('/mapa')}
+          />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
