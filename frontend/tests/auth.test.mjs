@@ -32,7 +32,7 @@ test('registro solo envía correo y password, nunca nombre ni confirmación', as
   assert.deepEqual(JSON.parse(llamadas[0].opciones.body), { correo: 'a@ejemplo.com', password: 'contraseña' })
 })
 
-test('registro de clínica envía datos básicos y conserva estado borrador', async () => {
+test('registro de clínica envía solo los tres datos de la cuenta y conserva estado borrador', async () => {
   const llamadas = simular(201, {
     mensaje: 'Cuenta de clínica creada correctamente.',
     clinica: {
@@ -45,26 +45,20 @@ test('registro de clínica envía datos básicos y conserva estado borrador', as
   })
   const datos = {
     nombre: 'Clínica Comunitaria San Jacinto', correo: 'contacto@ejemplo.com',
-    password: 'ContrasenaSegura123', tipo_institucion: 'ong',
-    municipio: 'Oaxaca de Juárez', direccion: 'Calle Mina 310',
-    telefono: '9511234567', codigo_postal: '68000', descripcion: null,
-    servicios: [{ categoria: 'its', detalle: 'Pruebas de VIH y sífilis' }],
-    horarios: [{ dia_semana: 1, apertura: '09:00', cierre: '17:00' }],
+    password: 'ContrasenaSegura123',
   }
-  const documentos = [new File(['%PDF-1.4\n%%EOF'], 'respaldo.pdf', { type: 'application/pdf' })]
-  const respuesta = await registrarClinica(datos, documentos)
+  const respuesta = await registrarClinica(datos)
   assert.equal(llamadas[0].ruta, '/api/auth/registro-clinica')
   assert.equal(llamadas[0].opciones.method, 'POST')
-  assert.deepEqual(JSON.parse(llamadas[0].opciones.body.get('ficha')), datos)
-  assert.equal(llamadas[0].opciones.body.get('documentos').name, 'respaldo.pdf')
-  assert.equal(llamadas[0].opciones.headers, undefined)
+  assert.deepEqual(JSON.parse(llamadas[0].opciones.body), datos)
+  assert.equal(llamadas[0].opciones.headers['Content-Type'], 'application/json')
   assert.equal(respuesta.clinica.rol, 'clinica')
   assert.equal(respuesta.clinica.estado_publicacion, 'borrador')
   assert.equal(leerSesion(), null, 'el registro no inicia sesión automáticamente')
 
   simular(409, { error: 'El correo ya se encuentra registrado.' })
   await assert.rejects(
-    registrarClinica({ ...datos, nombre: 'Otra clínica' }, documentos),
+    registrarClinica({ ...datos, nombre: 'Otra clínica' }),
     /ya se encuentra registrado/,
   )
 })
