@@ -133,15 +133,16 @@ function leerRegistros(texto) {
   if (filas.length < 2) return [];
 
   const cabeceras = filas[0].map(normalizarCabecera);
+  const cabecerasSet = new Set(cabeceras);
   return filas.slice(1).map((fila, indice) => {
-    const registro = { __linea: indice + 2 };
+    const registro = { __linea: indice + 2, __cabeceras: cabecerasSet };
     cabeceras.forEach((cabecera, posicion) => {
       if (!cabecera) return;
       registro[cabecera] = limpiar(fila[posicion] ?? "");
     });
     return registro;
   }).filter((registro) =>
-    Object.entries(registro).some(([clave, valor]) => clave !== "__linea" && valor !== "")
+    Object.entries(registro).some(([clave, valor]) => !clave.startsWith("__") && valor !== "")
   );
 }
 
@@ -190,8 +191,22 @@ function numero(valor) {
 }
 
 function coordenadas(registro) {
-  const lat = numero(obtener(registro, "latitud"));
-  const lng = numero(obtener(registro, "longitud"));
+  let lat = numero(obtener(registro, "latitud"));
+  let lng = numero(obtener(registro, "longitud"));
+  if (lat === null || lng === null) {
+    const maps = obtener(registro, "ubicacion_maps_url");
+    if (maps) {
+      const q = maps.match(/query=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+      const at = maps.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+      if (q) {
+        lat = Number(q[1]);
+        lng = Number(q[2]);
+      } else if (at) {
+        lat = Number(at[1]);
+        lng = Number(at[2]);
+      }
+    }
+  }
   if (lat === null || lng === null) return null;
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
   return { lat, lng };
@@ -310,17 +325,55 @@ function parsearHorario(registro) {
 
 function validarFila(registro) {
   const idOrigen = limpiar(obtener(registro, "id_origen"));
-  const nombre = limpiar(obtener(registro, "nombre"));
-  const verificado = normalizarTexto(obtener(registro, "verificacion_datos"));
+  let nombre = limpiar(obtener(registro, "nombre"));
+  const cabeceras = registro.__cabeceras || new Set();
 
-  if (!esVerdadero(obtener(registro, "seleccionado"))) {
+  const tieneSeleccionado = [...(ALIAS.seleccionado || [])].some((alias) => cabeceras.has(alias));
+  if (tieneSeleccionado && !esVerdadero(obtener(registro, "seleccionado"))) {
     return { ok: false, motivo: "no seleccionado" };
   }
-  if (verificado !== "verificado") {
+
+  const tieneVerificacion = [...(ALIAS.verificacion_datos || [])].some((alias) => cabeceras.has(alias));
+  const verificadoTexto = normalizarTexto(obtener(registro, "verificacion_datos"));
+  if (tieneVerificacion && verificadoTexto !== "verificado") {
     return { ok: false, motivo: "verificación distinta de 'verificado'" };
   }
+
   if (!idOrigen) return { ok: false, motivo: "sin id_origen" };
   if (idOrigen.length > 50) return { ok: false, motivo: "id_origen mayor a 50 caracteres" };
+
+  // Deducir nombre de unidad si no viene en columna específica (ej. catálogo ITS de COESIDA)
+  if (!nombre) {
+    const dir = limpiar(obtener(registro, "direccion"));
+    if (/^(Casa de Salud[^-–—]*[-–—][^,]+)/i.test(dir)) {
+      nombre = dir.match(/^(Casa de Salud[^-–—]*[-–—][^,]+)/i)[1].trim();
+    } else if (/^(Consultorio Municipal)/i.test(dir)) {
+      nombre = "Consultorio Municipal - Santa Cruz Xoxocotlán";
+    } else if (/Centro ["“]Mujer, T[uú] Espacio["”]/i.test(dir)) {
+      nombre = "Centro Mujer, Tú Espacio";
+    } else {
+      const paren = dir ? [...dir.matchAll(/\(([^)]+)\)/g)].map((m) => m[1].trim()) : [];
+      const nameParen = paren.find((p) =>
+        !/^C\.?P\.?\s*\d+/i.test(p) &&
+        !/A un costado/i.test(p) &&
+        !/Unidad m[oó]vil/i.test(p) &&
+        !/Calle Moctezuma/i.test(p) &&
+        !/Servicio/i.test(p) &&
+        !/Murgu[ií]a/i.test(p) &&
+        !/Aviso/i.test(p) &&
+        !/entre /i.test(p) &&
+        p.length > 2
+      );
+      if (nameParen) {
+        nombre = nameParen;
+      } else if (idOrigen === "coesdia 1") {
+        nombre = "Punto Fijo de Detección – Dirección de Sanidad";
+      } else if (idOrigen) {
+        nombre = `Punto de Detección (${idOrigen})`;
+      }
+    }
+  }
+
   if (!nombre) return { ok: false, motivo: "sin nombre de la unidad" };
   if (nombre.length > 255) return { ok: false, motivo: "nombre mayor a 255 caracteres" };
 
@@ -580,38 +633,8 @@ También se puede indicar la ruta con la variable FILTRACION_CSV.
 Solo se importan filas marcadas como seleccionadas y con verificación "verificado".`);
 }
 
-async function main() {
-  const argumentos = process.argv.slice(2);
-  if (argumentos.includes("--help") || argumentos.includes("-h")) {
-    imprimirAyuda();
-    return;
-  }
-
-  const indiceArchivo = argumentos.findIndex((arg) => arg === "--archivo" || arg === "--file");
-  const archivo = (indiceArchivo >= 0 ? argumentos[indiceArchivo + 1] : null) ||
-    process.env.FILTRACION_CSV;
-  const aplicar = argumentos.includes("--apply") || argumentos.includes("--aplicar");
-
-  if (!archivo) {
-    imprimirAyuda();
-    process.exitCode = 1;
-    return;
-  }
-
-  const ruta = path.resolve(archivo);
-  if (!fs.existsSync(ruta)) {
-    console.error(`No existe el archivo de Filtración: ${ruta}`);
-    process.exitCode = 1;
-    return;
-  }
-
-  const registros = leerRegistros(fs.readFileSync(ruta, "utf8"));
-  if (registros.length === 0) {
-    console.error("El archivo no contiene filas de datos.");
-    process.exitCode = 1;
-    return;
-  }
-
+async function procesarImportacion(registros, dbPool = pool, opciones = {}) {
+  const aplicar = Boolean(opciones.aplicar);
   const omitidos = [];
   const centros = new Map();
   let seleccionadosVerificados = 0;
@@ -634,15 +657,18 @@ async function main() {
   }
 
   if (centros.size === 0) {
-    console.error("No hay filas seleccionadas y verificadas con datos importables.");
-    for (const omitido of omitidos.slice(0, 20)) {
-      console.error(`  Línea ${omitido.linea}: ${omitido.motivo}`);
-    }
-    process.exitCode = 1;
-    return;
+    return {
+      ok: false,
+      error: "No hay filas seleccionadas y verificadas con datos importables.",
+      omitidos,
+      resumen: { nuevos: 0, actualizados: 0, ambiguos: 0, servicios: 0, horarios: 0, sinCoordenadas: 0 },
+      seleccionadosVerificados: 0,
+      centrosUnicos: 0,
+      fusionados: 0,
+    };
   }
 
-  const client = await pool.connect();
+  const client = await dbPool.connect();
   const resumen = {
     nuevos: 0, actualizados: 0, ambiguos: 0,
     servicios: 0, horarios: 0, sinCoordenadas: 0,
@@ -685,35 +711,115 @@ async function main() {
     } else {
       await client.query("ROLLBACK");
     }
+
+    return {
+      ok: true,
+      aplicar,
+      filasLeidas: registros.length,
+      seleccionadosVerificados,
+      centrosUnicos: centros.size,
+      fusionados,
+      resumen,
+      omitidos,
+    };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
   }
+}
+
+async function main() {
+  const argumentos = process.argv.slice(2);
+  if (argumentos.includes("--help") || argumentos.includes("-h")) {
+    imprimirAyuda();
+    return;
+  }
+
+  const indiceArchivo = argumentos.findIndex((arg) => arg === "--archivo" || arg === "--file");
+  const archivo = (indiceArchivo >= 0 ? argumentos[indiceArchivo + 1] : null) ||
+    process.env.FILTRACION_CSV;
+  const aplicar = argumentos.includes("--apply") || argumentos.includes("--aplicar");
+
+  if (!archivo) {
+    imprimirAyuda();
+    process.exitCode = 1;
+    return;
+  }
+
+  const ruta = path.resolve(archivo);
+  if (!fs.existsSync(ruta)) {
+    console.error(`No existe el archivo de Filtración: ${ruta}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const registros = leerRegistros(fs.readFileSync(ruta, "utf8"));
+  if (registros.length === 0) {
+    console.error("El archivo no contiene filas de datos.");
+    process.exitCode = 1;
+    return;
+  }
+
+  const resultado = await procesarImportacion(registros, pool, { aplicar });
+
+  if (!resultado.ok) {
+    console.error(resultado.error);
+    for (const omitido of resultado.omitidos.slice(0, 20)) {
+      console.error(`  Línea ${omitido.linea}: ${omitido.motivo}`);
+    }
+    process.exitCode = 1;
+    return;
+  }
 
   console.log(`${aplicar ? "Importación aplicada" : "Simulación (sin cambios; usa --apply para aplicar)"}`);
-  console.log(`Filas leídas: ${registros.length}`);
-  console.log(`Filas seleccionadas y verificadas: ${seleccionadosVerificados}`);
-  console.log(`Centros únicos: ${centros.size} (${fusionados} filas duplicadas fusionadas)`);
-  console.log(`Centros nuevos: ${resumen.nuevos}`);
-  console.log(`Centros actualizados: ${resumen.actualizados}`);
-  console.log(`Centros ambiguos no importados: ${resumen.ambiguos}`);
-  console.log(`Servicios asignados: ${resumen.servicios}`);
-  console.log(`Franjas horarias guardadas: ${resumen.horarios}`);
-  console.log(`Centros sin coordenadas (no se dibujan en el mapa): ${resumen.sinCoordenadas}`);
-  console.log(`Filas omitidas: ${omitidos.length}`);
-  for (const omitido of omitidos.slice(0, 20)) {
+  console.log(`Filas leídas: ${resultado.filasLeidas}`);
+  console.log(`Filas seleccionadas y verificadas: ${resultado.seleccionadosVerificados}`);
+  console.log(`Centros únicos: ${resultado.centrosUnicos} (${resultado.fusionados} filas duplicadas fusionadas)`);
+  console.log(`Centros nuevos: ${resultado.resumen.nuevos}`);
+  console.log(`Centros actualizados: ${resultado.resumen.actualizados}`);
+  console.log(`Centros ambiguos no importados: ${resultado.resumen.ambiguos}`);
+  console.log(`Servicios asignados: ${resultado.resumen.servicios}`);
+  console.log(`Franjas horarias guardadas: ${resultado.resumen.horarios}`);
+  console.log(`Centros sin coordenadas (no se dibujan en el mapa): ${resultado.resumen.sinCoordenadas}`);
+  console.log(`Filas omitidas: ${resultado.omitidos.length}`);
+  for (const omitido of resultado.omitidos.slice(0, 20)) {
     console.log(`  Línea ${omitido.linea}: ${omitido.motivo}`);
   }
-  if (omitidos.length > 20) {
-    console.log(`  ... y ${omitidos.length - 20} más`);
+  if (resultado.omitidos.length > 20) {
+    console.log(`  ... y ${resultado.omitidos.length - 20} más`);
   }
 }
 
-main()
-  .catch((error) => {
-    console.error(`Error al importar: ${error.message}`);
-    process.exitCode = 1;
-  })
-  .finally(() => pool.end());
+if (require.main === module) {
+  main()
+    .catch((error) => {
+      console.error(`Error al importar: ${error.message}`);
+      process.exitCode = 1;
+    })
+    .finally(() => pool.end());
+}
+
+module.exports = {
+  CATEGORIAS_CANONICAS,
+  CAMPOS_TEXTO,
+  ALIAS,
+  normalizarCabecera,
+  normalizarTexto,
+  parsearCSV,
+  leerRegistros,
+  validarFila,
+  fusionar,
+  categoriasDe,
+  coordenadas,
+  diasDesdeTexto,
+  parsearHorario,
+  combinarEnlaces,
+  insertarClinica,
+  actualizarClinica,
+  guardarServicios,
+  guardarHorarios,
+  procesarImportacion,
+  main,
+};
