@@ -27,6 +27,7 @@ function App() {
   const [clinicas, setClinicas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [reintentoCatalogo, setReintentoCatalogo] = useState(0)
   const [mostrarConfirmacionSalir, setMostrarConfirmacionSalir] = useState(false)
 
   useEffect(() => {
@@ -61,7 +62,7 @@ function App() {
 
     cargarClinicas()
     return () => controlador.abort()
-  }, [pathname, sesion])
+  }, [pathname, sesion, reintentoCatalogo])
 
   useEffect(() => {
     if (!sesion) return
@@ -159,7 +160,24 @@ function App() {
   if (pathname === '/mapa') {
     return (
       <>
-        {error ? <main role="alert">{error} No se mostrarán datos de demostración.</main> : (
+        {error ? (
+          <main className="app-container" role="alert">
+            <div className="state-card error">
+              <span className="alert-icon" aria-hidden="true"><AlertTriangle size={20} /></span>
+              <div>
+                <strong>No se pudo cargar el mapa</strong>
+                <p>{error}</p>
+                <button
+                  type="button"
+                  className="link-btn"
+                  onClick={() => setReintentoCatalogo((valor) => valor + 1)}
+                >
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          </main>
+        ) : (
           <MapaCentros sesion={sesion} onSalir={salir} clinicas={clinicas} cargando={cargando} />
         )}
         {modalConfirmacionSalir}
