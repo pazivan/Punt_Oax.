@@ -2,13 +2,24 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, HeartHandshake, MapPin, ShieldCheck } from 'lucide-react'
 import './Conocenos.css'
 
-export default function Conocenos() {
+export default function Conocenos({ sesion, perfil, onSalir }) {
+  const rutaCuenta = perfil?.rol === 'clinica' ? '/mi-clinica' : '/cuenta'
+
   return <div className="conocenos-page">
     <header className="conocenos-header">
-      <Link to="/conocenos" className="conocenos-logo">PuntOax<span>.</span></Link>
+      <Link to="/" className="conocenos-logo">PuntOax<span>.</span></Link>
       <nav aria-label="Navegación pública">
-        <Link to="/login">Iniciar sesión</Link>
-        <Link to="/registro" className="conocenos-register">Crear cuenta</Link>
+        {sesion ? (
+          <>
+            <Link to={rutaCuenta}>Mi cuenta</Link>
+            <button type="button" className="conocenos-salir" onClick={onSalir}>Salir</button>
+          </>
+        ) : (
+          <>
+            <Link to="/login">Iniciar sesión</Link>
+            <Link to="/registro" className="conocenos-register">Crear cuenta</Link>
+          </>
+        )}
       </nav>
     </header>
     <main>
@@ -17,7 +28,7 @@ export default function Conocenos() {
           <span className="conocenos-eyebrow">CONÓCENOS · SALUD EN OAXACA</span>
           <h1>Información para encontrar atención con confianza.</h1>
           <p>PuntOax reúne información sobre centros y servicios de atención de ITS e interrupción legal del embarazo (ILE) en Oaxaca. El directorio y el mapa están disponibles para consulta pública.</p>
-          <Link to="/" className="conocenos-cta">Explorar el directorio <ArrowRight size={18} aria-hidden="true" /></Link>
+          <Link to="/directorio" className="conocenos-cta">Explorar el directorio <ArrowRight size={18} aria-hidden="true" /></Link>
         </div>
         <div className="conocenos-preview" aria-hidden="true"><MapPin size={36} /><span>PuntOax · Oaxaca</span></div>
       </section>

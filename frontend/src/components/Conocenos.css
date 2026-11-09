@@ -4,6 +4,7 @@
 .conocenos-logo span { color: #43a882; }
 .conocenos-header nav { display: flex; gap: 20px; align-items: center; }
 .conocenos-header a { color: #001d14; }
+.conocenos-salir { background: transparent; border: 1px solid #103328; color: #001d14; padding: 10px 16px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
 .conocenos-register, .conocenos-cta { background: #103328; color: #fff !important; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; }
 .conocenos-hero { max-width: 1200px; margin: 20px auto 0; padding: 64px 48px; border-radius: 18px; background: #001d14; color: #fff; display: grid; grid-template-columns: 1.3fr 1fr; align-items: center; gap: 40px; }
 .conocenos-eyebrow { color: #a0f3d2; font-size: 12px; letter-spacing: .13em; font-weight: 700; }

@@ -64,7 +64,7 @@ export default function DirectorioMapa({ sesion, perfil, errorPerfil, onSalir })
   }
   const limpiar = () => setParams(new URLSearchParams(), { replace: true })
   const abrirFicha = centro => navigate(`/centro/${encodeURIComponent(centro.id_clinica)}${window.location.search}`)
-  const cerrarFicha = useCallback(() => navigate(`/${window.location.search}`, { replace: true }), [navigate])
+  const cerrarFicha = useCallback(() => navigate(`/directorio${window.location.search}`, { replace: true }), [navigate])
   const irAlCentro = centro => {
     setSeleccionado(centro.id_clinica)
     setVersionFoco(n => n + 1)
@@ -76,7 +76,7 @@ export default function DirectorioMapa({ sesion, perfil, errorPerfil, onSalir })
   return <div className="puntoax-directorio">
     <header className="puntoax-topbar">
       <Link to="/" className="puntoax-logo">PuntoOax<span className="puntoax-logo-dot">.</span></Link>
-      <nav aria-label="Navegación principal"><Link to="/" className="puntoax-topbar-active">Explorar mapa</Link><Link to="/directorio">Directorio</Link><Link to="/informacion-util">Información útil</Link></nav>
+      <nav aria-label="Navegación principal"><Link to="/directorio" className="puntoax-topbar-active">Explorar mapa</Link><Link to="/directorio">Directorio</Link><Link to="/informacion-util">Información útil</Link></nav>
       <div className="puntoax-topbar-auth">{sesion ? <><Link to="/cuenta">{perfil?.nombre || 'Mi cuenta'}</Link><button type="button" onClick={onSalir}>Salir</button></> : <><Link to="/login">Iniciar sesión</Link><Link to="/registro" className="puntoax-registrar">Crear cuenta</Link></>}</div>
     </header>
     <p role="note" className="puntoax-error-auth">Catálogo en pruebas: los centros disponibles pueden ser ejemplos. No uses esta información para decidir dónde recibir atención sin confirmarla con el centro.</p>
