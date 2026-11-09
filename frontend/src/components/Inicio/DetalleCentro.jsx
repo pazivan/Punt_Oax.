@@ -46,6 +46,7 @@ export default function DetalleCentro({
   if (!clinica) return null;
 
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
+  const rutaInicio = sesion ? '/cuenta' : '/';
   const servicios = Array.isArray(clinica.servicios) ? clinica.servicios : [];
   const linksRelacionados = Array.isArray(clinica.links_relacionados)
     ? clinica.links_relacionados.filter(Boolean)
@@ -61,13 +62,13 @@ export default function DetalleCentro({
         <div className="inicio-header-container">
           <div className="inicio-header-left">
             <div className="inicio-brand-wrap">
-              <Link to="/cuenta" className="inicio-brand" style={{ textDecoration: 'none' }}>
+              <Link to={rutaInicio} className="inicio-brand" style={{ textDecoration: 'none' }}>
                 PuntOax
               </Link>
             </div>
 
             <nav className="inicio-nav" aria-label="Navegación principal">
-              <Link to="/cuenta" className="inicio-nav-link">
+              <Link to={rutaInicio} className="inicio-nav-link">
                 Inicio
               </Link>
               <button
@@ -84,27 +85,36 @@ export default function DetalleCentro({
           </div>
 
           <div className="inicio-header-right">
-            <Link
-              to="/cuenta"
-              className="inicio-header-account-link"
-              title={nombreOCorreo}
-            >
-              Mi cuenta
-            </Link>
+            {sesion ? (
+              <>
+                <Link
+                  to="/cuenta"
+                  className="inicio-header-account-link"
+                  title={nombreOCorreo}
+                >
+                  Mi cuenta
+                </Link>
 
-            <button
-              type="button"
-              onClick={onSalir}
-              className="inicio-header-logout-btn"
-            >
-              Salir
-            </button>
+                <button
+                  type="button"
+                  onClick={onSalir}
+                  className="inicio-header-logout-btn"
+                >
+                  Salir
+                </button>
 
-            <div className="inicio-avatar-margin">
-              <div className="inicio-avatar-circle" aria-hidden="true">
-                <User size={14} color="#FFFFFF" />
-              </div>
-            </div>
+                <div className="inicio-avatar-margin">
+                  <div className="inicio-avatar-circle" aria-hidden="true">
+                    <User size={14} color="#FFFFFF" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="inicio-header-account-link">Iniciar sesión</Link>
+                <Link to="/registro" className="inicio-header-logout-btn">Crear cuenta</Link>
+              </>
+            )}
           </div>
         </div>
       </header>
