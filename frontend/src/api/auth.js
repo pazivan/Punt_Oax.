@@ -135,9 +135,19 @@ export function consultarCitasClinica() {
   return enviarConSesion('/api/clinicas/mi-citas')
 }
 
+// Citas del paciente autenticado: el servidor filtra por su JWT.
+export function consultarCitasUsuario() {
+  return enviarConSesion('/api/citas')
+}
+
+export function cancelarCitaUsuario(idCita) {
+  return enviarConSesion(`/api/citas/${encodeURIComponent(idCita)}/cancelar`, {
+    method: 'PATCH',
+  })
+}
+
 // Horarios reservables de una sede y confirmación de la cita (Sprint 6).
-export function consultarEspaciosClinica(idClinica, { desde, hasta } = {}) {
-  const parametros = new URLSearchParams()
+export function consultarEspaciosClinica(idClinica, { desde, hasta } = {}) {  const parametros = new URLSearchParams()
   if (desde) parametros.set('desde', desde)
   if (hasta) parametros.set('hasta', hasta)
   const consulta = parametros.toString()

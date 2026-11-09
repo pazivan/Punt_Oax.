@@ -401,6 +401,9 @@ export default function AgendarCitaDatos({
               <Link to="/agendar-cita" className="inicio-nav-link active">
                 <span className="inicio-nav-link-active-text">Agendar cita</span>
               </Link>
+              <Link to="/mis-citas" className="inicio-nav-link">
+                Mis citas
+              </Link>
               <Link to="/informacion-util" className="inicio-nav-link">
                 Información útil
               </Link>

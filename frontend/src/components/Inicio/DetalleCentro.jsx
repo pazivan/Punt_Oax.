@@ -83,6 +83,11 @@ export default function DetalleCentro({
               <Link to="/agendar-cita" className="inicio-nav-link">
                 Agendar cita
               </Link>
+              {sesion?.tipo === 'usuario' && (
+                <Link to="/mis-citas" className="inicio-nav-link">
+                  Mis citas
+                </Link>
+              )}
               <Link to="/informacion-util" className="inicio-nav-link">
                 Información útil
               </Link>
