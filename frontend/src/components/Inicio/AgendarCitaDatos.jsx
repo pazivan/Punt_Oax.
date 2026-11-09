@@ -1142,7 +1142,7 @@ export default function AgendarCitaDatos({
                               >
                                 <MapPin size={14} color="#FFFFFF" aria-hidden="true" />
                                 <span className="agendar-submit-btn-text">
-                                  Volver al directorio de centros
+                                  Volver al mapa
                                 </span>
                               </button>
                             ) : (
@@ -1153,7 +1153,7 @@ export default function AgendarCitaDatos({
                               >
                                 <MapPin size={14} color="#FFFFFF" aria-hidden="true" />
                                 <span className="agendar-submit-btn-text">
-                                  Volver al directorio de centros
+                                  Volver al mapa
                                 </span>
                               </Link>
                             )}

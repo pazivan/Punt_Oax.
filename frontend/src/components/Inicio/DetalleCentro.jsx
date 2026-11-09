@@ -138,7 +138,7 @@ export default function DetalleCentro({
                 <span className="detalle-back-icon" aria-hidden="true">
                   <ArrowLeft size={14} color="#001D14" />
                 </span>
-                <span className="detalle-back-text">Volver al directorio</span>
+                <span className="detalle-back-text">Volver al mapa</span>
               </button>
             </div>
           </div>
