@@ -7,7 +7,7 @@ import {
 import { consultarCitasClinica } from '../../api/auth.js'
 import TarjetaCita from '../Citas/TarjetaCita.jsx'
 import {
-  ETIQUETAS_ESTADO, filtrarCitas, folioCita, formatearFechaCita,
+  ETIQUETAS_ESTADO, filtrarCitas, formatearFechaCita,
   nombrePaciente,
 } from '../../utils/citasClinica.js'
 import '../Citas/Citas.css'

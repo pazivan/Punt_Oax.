@@ -135,6 +135,25 @@ export function consultarCitasClinica() {
   return enviarConSesion('/api/clinicas/mi-citas')
 }
 
+// Horarios reservables de una sede y confirmación de la cita (Sprint 6).
+export function consultarEspaciosClinica(idClinica, { desde, hasta } = {}) {
+  const parametros = new URLSearchParams()
+  if (desde) parametros.set('desde', desde)
+  if (hasta) parametros.set('hasta', hasta)
+  const consulta = parametros.toString()
+  return enviarConSesion(
+    `/api/clinicas/${encodeURIComponent(idClinica)}/espacios${consulta ? `?${consulta}` : ''}`
+  )
+}
+
+export function solicitarCita(idEspacio) {
+  return enviarConSesion('/api/citas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id_espacio: idEspacio }),
+  })
+}
+
 export function consultarMiFicha() {
   return enviarConSesion('/api/clinicas/mi-ficha')
 }

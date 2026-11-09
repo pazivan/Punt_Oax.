@@ -195,7 +195,7 @@ function App() {
           perfil={perfil}
           verificando={verificandoPerfil}
           error={errorPerfil}
-          rolesPermitidos={['usuario', 'clinica', 'administrador']}
+          rolesPermitidos={['usuario']}
         >
           <AgendarCitaDatos
             clinica={clinicas[0] || null}
