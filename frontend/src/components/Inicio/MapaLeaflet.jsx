@@ -2,14 +2,14 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import { OAXACA, coordenadas } from '../../utils/centros.js'
+import { OAXACA, coordenadas, ubicacionConfirmada } from '../../utils/centros.js'
 import { ResumenMarcador } from '../FichaCentroMapa.jsx'
 
 function EnfocarCentro({ clinica }) {
   const mapa = useMap()
   useEffect(() => {
-    const punto = coordenadas(clinica)
-    if (punto) mapa.flyTo(punto, Math.max(mapa.getZoom(), 13))
+    if (!ubicacionConfirmada(clinica)) return
+    mapa.flyTo(coordenadas(clinica), Math.max(mapa.getZoom(), 13))
   }, [clinica, mapa])
   return null
 }
@@ -17,7 +17,7 @@ function EnfocarCentro({ clinica }) {
 // Sustituye únicamente el espacio reservado para el mapa, sin alterar los filtros de Yareli.
 export default function MapaLeaflet({ clinicas, clinicaSeleccionada, onSeleccionarClinica }) {
   const navigate = useNavigate()
-  const ubicadas = clinicas.filter((clinica) => coordenadas(clinica))
+  const ubicadas = clinicas.filter((clinica) => ubicacionConfirmada(clinica))
 
   return (
     <>

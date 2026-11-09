@@ -34,11 +34,12 @@ export default function MapaCentros({
   const [filtroHorario, setFiltroHorario] = useState('todos');
   const [filtroNivel, setFiltroNivel] = useState('todos');
   const [clinicaSeleccionadaId, setClinicaSeleccionadaId] = useState(
-    () => clinicas[0]?.id_clinica ?? 'coesdia 1'
+    () => clinicas[0]?.id_clinica ?? null
   );
   const [clinicaEnDetalle, setClinicaEnDetalle] = useState(null);
 
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
+  const rutaInicio = sesion ? '/cuenta' : '/';
 
   const municipiosDisponibles = useMemo(() => {
     const conjunto = new Set();
@@ -150,13 +151,13 @@ export default function MapaCentros({
         <div className="inicio-header-container">
           <div className="inicio-header-left">
             <div className="inicio-brand-wrap">
-              <Link to="/cuenta" className="inicio-brand" style={{ textDecoration: 'none' }}>
+              <Link to={rutaInicio} className="inicio-brand" style={{ textDecoration: 'none' }}>
                 PuntOax
               </Link>
             </div>
 
             <nav className="inicio-nav mapa-nav" aria-label="Navegación principal">
-              <Link to="/cuenta" className="inicio-nav-link">
+              <Link to={rutaInicio} className="inicio-nav-link">
                 Inicio
               </Link>
               <Link to="/mapa" className="inicio-nav-link active mapa-nav-active">
@@ -169,27 +170,36 @@ export default function MapaCentros({
           </div>
 
           <div className="inicio-header-right">
-            <Link
-              to="/cuenta"
-              className="inicio-header-account-link"
-              title={nombreOCorreo}
-            >
-              Mi cuenta
-            </Link>
+            {sesion ? (
+              <>
+                <Link
+                  to="/cuenta"
+                  className="inicio-header-account-link"
+                  title={nombreOCorreo}
+                >
+                  Mi cuenta
+                </Link>
 
-            <button
-              type="button"
-              onClick={onSalir}
-              className="inicio-header-logout-btn"
-            >
-              Salir
-            </button>
+                <button
+                  type="button"
+                  onClick={onSalir}
+                  className="inicio-header-logout-btn"
+                >
+                  Salir
+                </button>
 
-            <div className="inicio-avatar-margin">
-              <div className="inicio-avatar-circle" aria-hidden="true">
-                <User size={14} color="#FFFFFF" />
-              </div>
-            </div>
+                <div className="inicio-avatar-margin">
+                  <div className="inicio-avatar-circle" aria-hidden="true">
+                    <User size={14} color="#FFFFFF" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="inicio-header-account-link">Iniciar sesión</Link>
+                <Link to="/registro" className="inicio-header-logout-btn">Crear cuenta</Link>
+              </>
+            )}
           </div>
         </div>
       </header>
