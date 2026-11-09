@@ -12,6 +12,7 @@ import { MapPin, Minus, Plus } from 'lucide-react';
  * @param {Array<Object>} props.clinicas - Centros filtrados a representar en el mapa.
  * @param {Object|null} [props.clinicaSeleccionada=null] - Centro activo seleccionado.
  * @param {(clinica: Object) => void} [props.onSeleccionarClinica] - Callback al pulsar un marcador.
+ * @param {(clinica: Object) => void} [props.onVerDetallesClinica] - Callback para abrir la ficha del centro.
  * @param {string} [props.filtroServicio=''] - Servicio activo en el filtro.
  * @param {string} [props.filtroMunicipio=''] - Municipio activo en el filtro.
  * @param {string} [props.terminoBusqueda=''] - Texto del buscador.
@@ -22,6 +23,7 @@ export default function EspacioMapa({
   clinicas = [],
   clinicaSeleccionada = null,
   onSeleccionarClinica,
+  onVerDetallesClinica,
   filtroServicio = '',
   filtroMunicipio = '',
   terminoBusqueda = '',
@@ -36,6 +38,7 @@ export default function EspacioMapa({
             clinicas={clinicas}
             clinicaSeleccionada={clinicaSeleccionada}
             onSeleccionarClinica={onSeleccionarClinica}
+            onVerDetallesClinica={onVerDetallesClinica}
             filtroServicio={filtroServicio}
             filtroMunicipio={filtroMunicipio}
             terminoBusqueda={terminoBusqueda}

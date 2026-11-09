@@ -356,6 +356,10 @@ export default function MapaCentros({
                 clinicas={clinicasFiltradas}
                 clinicaSeleccionada={clinicaActiva}
                 onSeleccionarClinica={(clinica) => setClinicaSeleccionadaId(clinica.id_clinica)}
+                onVerDetallesClinica={(clinica) => {
+                  setClinicaSeleccionadaId(clinica.id_clinica);
+                  setClinicaEnDetalle(clinica);
+                }}
                 filtroServicio={filtroServicio}
                 filtroMunicipio={filtroMunicipio}
                 terminoBusqueda={terminoBusqueda}

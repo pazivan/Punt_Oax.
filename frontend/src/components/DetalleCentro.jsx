@@ -76,7 +76,7 @@ export default function DetalleCentro({ sesion, onSalir }) {
   const volverAlMapa = () => {
     // Conserva la navegación anterior; un enlace directo vuelve al directorio.
     if (window.history.state?.idx > 0) navigate(-1);
-    else navigate('/directorio');
+    else navigate('/mapa');
   };
 
   // Si cambia :id, evitamos mostrar el centro anterior mientras carga el nuevo.
@@ -94,7 +94,7 @@ export default function DetalleCentro({ sesion, onSalir }) {
           <Link to="/" className="detalle-logo">PuntoOax</Link>
           <nav className="detalle-nav" aria-label="Navegación principal">
             <Link to="/">Inicio</Link>
-            <Link className="detalle-nav__activo" to="/directorio">Explorar mapa</Link>
+            <Link className="detalle-nav__activo" to="/mapa">Explorar mapa</Link>
             <span title="Sección pendiente de integración">Mis citas</span>
             <span title="Sección pendiente de integración">Orientación</span>
           </nav>
