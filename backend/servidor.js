@@ -737,7 +737,7 @@ app.post(
   }
 );
 
-app.get("/api/clinicas", autenticarToken, async (req, res) => {
+app.get("/api/clinicas", async (req, res) => {
   try {
     const { nombre, municipio, servicios } = req.query;
 
@@ -764,8 +764,8 @@ app.get("/api/clinicas", autenticarToken, async (req, res) => {
     }
 
     // Filtro por uno o varios servicios.
-    // Ejemplo: ?servicios=ITS
-    // Ejemplo: ?servicios=ITS,ILE
+    // ITS/ILE se comparan contra el nombre o la categoría canónica.
+    // Aborto es un alias de ILE y Ambos exige que la sede ofrezca las dos áreas.
     if (typeof servicios === "string" && servicios.trim()) {
       const listaServicios = servicios
         .split(",")
@@ -778,23 +778,41 @@ app.get("/api/clinicas", autenticarToken, async (req, res) => {
         });
       }
 
-      valores.push(listaServicios);
+      const solicitados = new Set();
+      let requiereAmbos = false;
+      for (const servicio of listaServicios) {
+        if (servicio === "ambos") requiereAmbos = true;
+        else if (servicio === "aborto" || servicio === "ile") solicitados.add("ile");
+        else solicitados.add(servicio);
+      }
 
-      condiciones.push(`
-        EXISTS (
-          SELECT 1
-          FROM clinicas_servicios cs
-          INNER JOIN servicios s
-            ON s.id_servicio = cs.id_servicio
-          WHERE cs.id_clinica = c.id_clinica
-            AND cs.activo = TRUE
-            AND s.activo = TRUE
-            AND (
-              LOWER(TRIM(s.nombre)) = ANY($${valores.length}::text[])
-              OR LOWER(TRIM(COALESCE(s.categoria, ''))) = ANY($${valores.length}::text[])
-            )
-        )
-      `);
+      const agregarCondicionServicio = (categorias) => {
+        valores.push(categorias);
+        condiciones.push(`
+          EXISTS (
+            SELECT 1
+            FROM clinicas_servicios cs
+            INNER JOIN servicios s
+              ON s.id_servicio = cs.id_servicio
+            WHERE cs.id_clinica = c.id_clinica
+              AND cs.activo = TRUE
+              AND s.activo = TRUE
+              AND EXISTS (
+                SELECT 1
+                FROM unnest($${valores.length}::text[]) AS buscado
+                WHERE LOWER(TRIM(COALESCE(s.categoria, ''))) = buscado
+                   OR LOWER(s.nombre) LIKE '%' || buscado || '%'
+              )
+          )
+        `);
+      };
+
+      if (requiereAmbos) {
+        agregarCondicionServicio(["its"]);
+        agregarCondicionServicio(["ile"]);
+      } else if (solicitados.size > 0) {
+        agregarCondicionServicio([...solicitados]);
+      }
     }
 
     const consulta = `
@@ -812,6 +830,18 @@ app.get("/api/clinicas", autenticarToken, async (req, res) => {
         c.direccion,
         c.codigo_postal,
         c.estado_publicacion,
+        c.id_origen,
+        c.region,
+        c.fuente_origen AS fuente,
+        c.horario_texto AS horario,
+        c.ubicacion_maps_url AS ubicacion_maps,
+        c.nivel_atencion,
+        c.situacion_ubicacion,
+        c.verificacion_datos,
+        c.datos_por_confirmar,
+        (c.ubicacion_geo IS NOT NULL
+          AND c.situacion_ubicacion = 'fija'
+          AND c.verificacion_datos = 'verificado') AS ubicacion_confirmada,
         ST_Y(c.ubicacion_geo::geometry) AS latitud,
         ST_X(c.ubicacion_geo::geometry) AS longitud,
         COALESCE((
@@ -828,7 +858,49 @@ app.get("/api/clinicas", autenticarToken, async (req, res) => {
           ) ORDER BY h.dia_semana, h.hora_apertura)
           FROM horarios_atencion h
           WHERE h.id_clinica = c.id_clinica
-        ), '[]'::json) AS horarios
+        ), '[]'::json) AS horarios,
+        COALESCE((
+          SELECT json_agg(DISTINCT s.categoria ORDER BY s.categoria)
+          FROM clinicas_servicios cs
+          JOIN servicios s ON s.id_servicio = cs.id_servicio
+          WHERE cs.id_clinica = c.id_clinica AND cs.activo = TRUE AND s.activo = TRUE
+            AND s.categoria IS NOT NULL
+        ), '[]'::json) AS categorias,
+        COALESCE((
+          SELECT string_agg(s.nombre, ', ' ORDER BY s.nombre)
+          FROM clinicas_servicios cs
+          JOIN servicios s ON s.id_servicio = cs.id_servicio
+          WHERE cs.id_clinica = c.id_clinica AND cs.activo = TRUE AND s.activo = TRUE
+        ), '') AS servicios_texto,
+        COALESCE((
+          SELECT string_agg(DISTINCT BTRIM(cs.requisitos), '; ')
+          FROM clinicas_servicios cs
+          WHERE cs.id_clinica = c.id_clinica AND cs.activo = TRUE
+            AND cs.requisitos IS NOT NULL AND BTRIM(cs.requisitos) <> ''
+        ), '') AS requisitos,
+        CASE
+          WHEN EXISTS (
+            SELECT 1 FROM horarios_atencion h
+            WHERE h.id_clinica = c.id_clinica AND h.es_24_horas = TRUE
+          ) THEN '24-horas'
+          WHEN EXISTS (
+            SELECT 1 FROM horarios_atencion h
+            WHERE h.id_clinica = c.id_clinica AND h.dia_semana IN (0, 6)
+          ) THEN 'fines-semana'
+          WHEN EXISTS (
+            SELECT 1 FROM horarios_atencion h
+            WHERE h.id_clinica = c.id_clinica AND h.dia_semana BETWEEN 1 AND 5
+          ) THEN 'lunes-viernes'
+          ELSE NULL
+        END AS modalidad_horario,
+        CASE
+          WHEN c.links_relacionados IS NULL OR BTRIM(c.links_relacionados) = '' THEN '[]'::json
+          ELSE COALESCE((
+            SELECT json_agg(DISTINCT BTRIM(enlace))
+            FROM regexp_split_to_table(c.links_relacionados, E'[\\n,]+') AS enlace
+            WHERE BTRIM(enlace) <> ''
+          ), '[]'::json)
+        END AS links_relacionados
       FROM clinicas c
       WHERE ${condiciones.join(" AND ")}
       ORDER BY c.nombre;
@@ -847,7 +919,7 @@ app.get("/api/clinicas", autenticarToken, async (req, res) => {
 });
 
 // La ficha solo expone centros aprobados y usa el identificador real de la sede.
-app.get("/api/clinicas/:id", autenticarToken, async (req, res) => {
+app.get("/api/clinicas/:id", async (req, res) => {
   const { id } = req.params;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     return res.status(400).json({ error: "Identificador de clínica no válido" });
@@ -857,6 +929,27 @@ app.get("/api/clinicas/:id", autenticarToken, async (req, res) => {
       SELECT c.id_clinica, c.nombre, c.descripcion, c.tipo_institucion,
         c.telefono, c.correo_contacto, c.sitio_web,
         c.municipio, c.localidad, c.direccion, c.codigo_postal,
+        c.id_origen, c.region, c.fuente_origen AS fuente,
+        c.horario_texto AS horario, c.ubicacion_maps_url AS ubicacion_maps,
+        c.nivel_atencion, c.situacion_ubicacion, c.verificacion_datos,
+        c.datos_por_confirmar,
+        CASE
+          WHEN c.links_relacionados IS NULL OR BTRIM(c.links_relacionados) = '' THEN '[]'::json
+          ELSE COALESCE((
+            SELECT json_agg(DISTINCT BTRIM(enlace))
+            FROM regexp_split_to_table(c.links_relacionados, E'[\\n,]+') AS enlace
+            WHERE BTRIM(enlace) <> ''
+          ), '[]'::json)
+        END AS links_relacionados,
+        (c.ubicacion_geo IS NOT NULL
+          AND c.situacion_ubicacion = 'fija'
+          AND c.verificacion_datos = 'verificado') AS ubicacion_confirmada,
+        COALESCE((
+          SELECT string_agg(DISTINCT BTRIM(cs.requisitos), '; ')
+          FROM clinicas_servicios cs
+          WHERE cs.id_clinica = c.id_clinica AND cs.activo = TRUE
+            AND cs.requisitos IS NOT NULL AND BTRIM(cs.requisitos) <> ''
+        ), '') AS requisitos,
         ST_Y(c.ubicacion_geo::geometry) AS latitud,
         ST_X(c.ubicacion_geo::geometry) AS longitud
       FROM clinicas c
@@ -867,7 +960,7 @@ app.get("/api/clinicas/:id", autenticarToken, async (req, res) => {
     }
     const [servicios, horarios] = await Promise.all([
       pool.query(`
-        SELECT cs.id_clinica_servicio, s.nombre, s.descripcion,
+        SELECT cs.id_clinica_servicio, s.nombre, s.descripcion, s.categoria,
           to_jsonb(cs)->>'detalle_servicio' AS detalle_servicio,
           cs.costo, cs.requisitos, cs.requiere_cita
         FROM clinicas_servicios cs JOIN servicios s ON s.id_servicio = cs.id_servicio

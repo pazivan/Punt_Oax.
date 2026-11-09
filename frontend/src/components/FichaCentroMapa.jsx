@@ -45,7 +45,7 @@ export default function FichaCentroMapa({ id, token, onCerrar }) {
     // Se realiza una petición nueva cada vez que cambia el ID o se reintenta.
     fetch(`/api/clinicas/${encodeURIComponent(id)}`, {
       signal: abortar.signal,
-      headers: { Authorization: `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     })
       .then(async r => {
         if (r.status === 404 || r.status === 400) { setEstado('no-encontrado'); return null }

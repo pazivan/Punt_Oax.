@@ -267,6 +267,15 @@ body {
   text-decoration: underline;
 }
 
+button.link-btn {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 @media (max-width: 768px) {
   .app-header h1 {
     font-size: 2rem;

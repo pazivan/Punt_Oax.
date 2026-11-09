@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import FichaCentroMapa, { ResumenMarcador } from './FichaCentroMapa.jsx'
-import { OAXACA, coordenadas, filtrarCentros } from '../utils/centros.js'
+import { OAXACA, coordenadas, filtrarCentros, ubicacionConfirmada } from '../utils/centros.js'
 import './DirectorioMapa.css'
 
 function MoverMapa({ destino }) {
@@ -43,18 +43,18 @@ export default function DirectorioMapa({ sesion, perfil, errorPerfil, onSalir })
     const controlador = new AbortController()
     fetch('/api/clinicas', {
       signal: controlador.signal,
-      headers: { Authorization: `Bearer ${sesion.token}` },
+      headers: sesion?.token ? { Authorization: `Bearer ${sesion.token}` } : undefined,
     })
       .then(async res => { if (!res.ok) throw new Error('API no disponible'); return res.json() })
       .then(datos => { if (!controlador.signal.aborted) { setCentros(Array.isArray(datos) ? datos : []); setEstado('exito') } })
       .catch(err => { if (err.name !== 'AbortError') setEstado('error') })
     return () => controlador.abort()
-  }, [reintento, sesion.token])
+  }, [reintento, sesion?.token])
 
   const municipios = useMemo(() => [...new Set(centros.map(c => c.municipio).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')), [centros])
   const servicios = useMemo(() => [...new Set(centros.flatMap(c => Array.isArray(c.servicios) ? c.servicios : []))].sort((a, b) => a.localeCompare(b, 'es')), [centros])
   const visibles = useMemo(() => filtrarCentros(centros, { busqueda, municipio, servicio }), [centros, busqueda, municipio, servicio])
-  const conUbicacion = visibles.filter(c => coordenadas(c))
+  const conUbicacion = visibles.filter(c => ubicacionConfirmada(c))
 
   const cambiarFiltro = (clave, valor) => {
     const nuevos = new URLSearchParams(params)
@@ -68,7 +68,7 @@ export default function DirectorioMapa({ sesion, perfil, errorPerfil, onSalir })
   const irAlCentro = centro => {
     setSeleccionado(centro.id_clinica)
     setVersionFoco(n => n + 1)
-    const punto = coordenadas(centro)
+    const punto = ubicacionConfirmada(centro) ? coordenadas(centro) : null
     if (punto) setDestino([...punto])
     else abrirFicha(centro)
   }
@@ -99,7 +99,7 @@ export default function DirectorioMapa({ sesion, perfil, errorPerfil, onSalir })
           {estado === 'exito' && <><h2>{visibles.length} {visibles.length === 1 ? 'centro encontrado' : 'centros encontrados'}</h2>{centros.length === 0 && <p>Por ahora no hay centros aprobados.</p>}{centros.length > 0 && visibles.length === 0 && <p>No encontramos centros con estos filtros. Puedes limpiar la búsqueda.</p>}{visibles.map(c => <article className="puntoax-centro-item" key={c.id_clinica}>
             <div className="puntoax-centro-item-enc"><span className="puntoax-etiqueta">{c.municipio || 'Municipio por confirmar'}</span><span className="puntoax-tipo">{c.tipo_institucion || 'Centro de salud'}</span></div>
             <h3>{c.nombre}</h3><p>{c.direccion || 'Dirección por confirmar'}</p>
-            <div className="puntoax-centro-item-acciones"><button type="button" onClick={() => irAlCentro(c)}>{coordenadas(c) ? 'Ubicar en mapa' : 'Ver ficha'}</button><button type="button" onClick={() => abrirFicha(c)}>Ver ficha completa →</button></div>
+            <div className="puntoax-centro-item-acciones"><button type="button" onClick={() => irAlCentro(c)}>{ubicacionConfirmada(c) ? 'Ubicar en mapa' : 'Ver ficha'}</button><button type="button" onClick={() => abrirFicha(c)}>Ver ficha completa →</button></div>
           </article>)}</>}
         </div>
       </aside>
@@ -116,6 +116,6 @@ export default function DirectorioMapa({ sesion, perfil, errorPerfil, onSalir })
         <div className="puntoax-mapa-pie">Mapa © OpenStreetMap · Solo se muestran ubicaciones registradas en la base de datos</div>
       </main>
     </div>
-    {idDetalle && <FichaCentroMapa key={idDetalle} id={idDetalle} token={sesion.token} onCerrar={cerrarFicha} />}
+    {idDetalle && <FichaCentroMapa key={idDetalle} id={idDetalle} token={sesion?.token} onCerrar={cerrarFicha} />}
   </div>
 }

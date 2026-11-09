@@ -27,11 +27,12 @@ function App() {
   const [clinicas, setClinicas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [reintentoCatalogo, setReintentoCatalogo] = useState(0)
   const [mostrarConfirmacionSalir, setMostrarConfirmacionSalir] = useState(false)
 
   useEffect(() => {
-    // Solo consultar el directorio después de verificar la sesión.
-    if ((pathname !== '/mapa' && pathname !== '/directorio') || !sesion || !perfil || verificandoPerfil) return
+    // El catálogo es público: no depende de una sesión verificada.
+    if (pathname !== '/mapa' && pathname !== '/directorio') return
     const controlador = new AbortController()
     async function cargarClinicas() {
       setCargando(true)
@@ -40,7 +41,7 @@ function App() {
       try {
         const respuesta = await fetch('/api/clinicas', {
           signal: controlador.signal,
-          headers: { Authorization: `Bearer ${sesion.token}` },
+          headers: sesion?.token ? { Authorization: `Bearer ${sesion.token}` } : undefined,
         })
 
         if (!respuesta.ok) {
@@ -61,7 +62,7 @@ function App() {
 
     cargarClinicas()
     return () => controlador.abort()
-  }, [pathname, sesion, perfil, verificandoPerfil])
+  }, [pathname, sesion, reintentoCatalogo])
 
   useEffect(() => {
     if (!sesion) return
@@ -152,24 +153,33 @@ function App() {
     />
   }
 
-  if (pathname === '/conocenos' || (pathname === '/' && !sesion)) {
+  if (pathname === '/conocenos') {
     return <Conocenos />
   }
 
   if (pathname === '/mapa') {
     return (
       <>
-        <RutaPrivada
-          sesion={sesion}
-          perfil={perfil}
-          verificando={verificandoPerfil}
-          error={errorPerfil}
-          rolesPermitidos={['usuario', 'clinica', 'administrador']}
-        >
-          {error ? <main role="alert">{error} No se mostrarán datos de demostración.</main> : (
-            <MapaCentros sesion={sesion} onSalir={salir} clinicas={clinicas} cargando={cargando} />
-          )}
-        </RutaPrivada>
+        {error ? (
+          <main className="app-container" role="alert">
+            <div className="state-card error">
+              <span className="alert-icon" aria-hidden="true"><AlertTriangle size={20} /></span>
+              <div>
+                <strong>No se pudo cargar el mapa</strong>
+                <p>{error}</p>
+                <button
+                  type="button"
+                  className="link-btn"
+                  onClick={() => setReintentoCatalogo((valor) => valor + 1)}
+                >
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          </main>
+        ) : (
+          <MapaCentros sesion={sesion} onSalir={salir} clinicas={clinicas} cargando={cargando} />
+        )}
         {modalConfirmacionSalir}
       </>
     )
@@ -244,15 +254,7 @@ function App() {
   if (pathname === '/' || /^\/centro\/[^/]+$/.test(pathname)) {
     return (
       <>
-        <RutaPrivada
-          sesion={sesion}
-          perfil={perfil}
-          verificando={verificandoPerfil}
-          error={errorPerfil}
-          rolesPermitidos={['usuario', 'clinica', 'administrador']}
-        >
-          <DirectorioMapa sesion={sesion} perfil={perfil} errorPerfil={errorPerfil} onSalir={salir} />
-        </RutaPrivada>
+        <DirectorioMapa sesion={sesion} perfil={perfil} errorPerfil={errorPerfil} onSalir={salir} />
         {modalConfirmacionSalir}
       </>
     )
@@ -260,13 +262,7 @@ function App() {
 
   if (pathname !== '/directorio') return <Navigate to="/" replace />
 
-  return <RutaPrivada
-    sesion={sesion}
-    perfil={perfil}
-    verificando={verificandoPerfil}
-    error={errorPerfil}
-    rolesPermitidos={['usuario', 'clinica', 'administrador']}
-  >{(
+  return (
     <div className="app-container">
       <header className="app-header">
         <p role="note">Catálogo en pruebas: los centros mostrados pueden ser ejemplos; confirma sus datos antes de acudir.</p>
@@ -378,7 +374,7 @@ function App() {
       </main>
       {modalConfirmacionSalir}
     </div>
-  )}</RutaPrivada>
+  )
 }
 
 export default App

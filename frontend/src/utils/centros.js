@@ -9,6 +9,11 @@ export function coordenadas(centro) {
     lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 ? [lat, lng] : null
 }
 
+// Solo se dibuja un marcador cuando la API confirma la ubicación fija y verificada.
+export function ubicacionConfirmada(centro) {
+  return centro?.ubicacion_confirmada === true && coordenadas(centro) !== null
+}
+
 export function textoPendiente(valor, texto = 'Por confirmar con el centro') {
   return typeof valor === 'string' && valor.trim() ? valor.trim() : texto
 }
