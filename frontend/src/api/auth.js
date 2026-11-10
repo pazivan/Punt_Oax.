@@ -130,6 +130,40 @@ export async function consultarPerfil() {
   return enviarConSesion('/api/auth/perfil')
 }
 
+// Las citas se filtran en el servidor con el id de la clínica autenticada.
+export function consultarCitasClinica() {
+  return enviarConSesion('/api/clinicas/mi-citas')
+}
+
+// Citas del paciente autenticado: el servidor filtra por su JWT.
+export function consultarCitasUsuario() {
+  return enviarConSesion('/api/citas')
+}
+
+export function cancelarCitaUsuario(idCita) {
+  return enviarConSesion(`/api/citas/${encodeURIComponent(idCita)}/cancelar`, {
+    method: 'PATCH',
+  })
+}
+
+// Horarios reservables de una sede y confirmación de la cita (Sprint 6).
+export function consultarEspaciosClinica(idClinica, { desde, hasta } = {}) {  const parametros = new URLSearchParams()
+  if (desde) parametros.set('desde', desde)
+  if (hasta) parametros.set('hasta', hasta)
+  const consulta = parametros.toString()
+  return enviarConSesion(
+    `/api/clinicas/${encodeURIComponent(idClinica)}/espacios${consulta ? `?${consulta}` : ''}`
+  )
+}
+
+export function solicitarCita(idEspacio) {
+  return enviarConSesion('/api/citas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id_espacio: idEspacio }),
+  })
+}
+
 export function consultarMiFicha() {
   return enviarConSesion('/api/clinicas/mi-ficha')
 }

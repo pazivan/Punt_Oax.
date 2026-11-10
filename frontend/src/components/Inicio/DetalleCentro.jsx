@@ -36,12 +36,14 @@ import '../../styles/Inicio.css';
  * @param {Object|null} [props.sesion] - Sesión activa del usuario.
  * @param {() => void} [props.onSalir] - Función para cerrar sesión.
  * @param {() => void} [props.onVolverAlMapa] - Callback para regresar a la ventana de Mapa.
+ * @param {(clinica: Object) => void} [props.onAgendarCita] - Callback al pulsar el botón "Agendar cita".
  */
 export default function DetalleCentro({
   clinica,
   sesion,
   onSalir,
   onVolverAlMapa,
+  onAgendarCita,
 }) {
   if (!clinica) return null;
 
@@ -67,7 +69,7 @@ export default function DetalleCentro({
               </Link>
             </div>
 
-            <nav className="inicio-nav" aria-label="Navegación principal">
+            <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
               <Link to={rutaInicio} className="inicio-nav-link">
                 Inicio
               </Link>
@@ -78,6 +80,14 @@ export default function DetalleCentro({
               >
                 <span className="inicio-nav-link-active-text">Mapa de centros</span>
               </button>
+              <Link to="/agendar-cita" className="inicio-nav-link">
+                Agendar cita
+              </Link>
+              {sesion?.tipo === 'usuario' && (
+                <Link to="/mis-citas" className="inicio-nav-link">
+                  Mis citas
+                </Link>
+              )}
               <Link to="/informacion-util" className="inicio-nav-link">
                 Información útil
               </Link>
@@ -133,7 +143,7 @@ export default function DetalleCentro({
                 <span className="detalle-back-icon" aria-hidden="true">
                   <ArrowLeft size={14} color="#001D14" />
                 </span>
-                <span className="detalle-back-text">Volver al directorio</span>
+                <span className="detalle-back-text">Volver al mapa</span>
               </button>
             </div>
           </div>
@@ -364,12 +374,29 @@ export default function DetalleCentro({
               </div>
 
               {/* Action Button -> Button (height: 52px) */}
-              <button type="button" className="detalle-schedule-btn">
-                <span className="detalle-schedule-btn-text">Agendar cita</span>
-                <span className="detalle-schedule-btn-icon" aria-hidden="true">
-                  <ArrowRight size={14} color="#FFFFFF" />
-                </span>
-              </button>
+              {typeof onAgendarCita === 'function' ? (
+                <button
+                  type="button"
+                  onClick={() => onAgendarCita(clinica)}
+                  className="detalle-schedule-btn"
+                >
+                  <span className="detalle-schedule-btn-text">Agendar cita</span>
+                  <span className="detalle-schedule-btn-icon" aria-hidden="true">
+                    <ArrowRight size={14} color="#FFFFFF" />
+                  </span>
+                </button>
+              ) : (
+                <Link
+                  to="/agendar-cita"
+                  className="detalle-schedule-btn"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <span className="detalle-schedule-btn-text">Agendar cita</span>
+                  <span className="detalle-schedule-btn-icon" aria-hidden="true">
+                    <ArrowRight size={14} color="#FFFFFF" />
+                  </span>
+                </Link>
+              )}
             </aside>
           </div>
         </div>

@@ -2585,3 +2585,997 @@
     padding: 24px;
   }
 }
+
+/* ==========================================================================
+   Ventana Agendar cita (Datos) - PuntoOax (1280px x 1131px)
+   ========================================================================== */
+.agendar-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  isolation: isolate;
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(0deg, #F9F9F8, #F9F9F8), #FFFFFF;
+  color: #191C1C;
+  box-sizing: border-box;
+}
+
+.agendar-header-nav {
+  width: auto;
+  min-width: 373.92px;
+}
+
+.agendar-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 0 0;
+  width: 100%;
+  min-height: 1041px;
+  background: #F9F9F8;
+  align-self: stretch;
+  flex: 1;
+  z-index: 0;
+  box-sizing: border-box;
+}
+
+.agendar-background {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 80px;
+  width: 100%;
+  min-height: 961px;
+  background: #F9F9F8;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.agendar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 48px 24px 0;
+  gap: 24px;
+  width: 100%;
+  max-width: 1280px;
+  min-height: 881px;
+  box-sizing: border-box;
+}
+
+/* Top Titles (width: 1232px, height: 108px, gap: 4px) */
+.agendar-top-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+  min-height: 108px;
+  align-self: stretch;
+}
+
+.agendar-eyebrow-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  height: 20px;
+}
+
+.agendar-eyebrow-text {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: #414845;
+}
+
+.agendar-heading-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  min-height: 56px;
+}
+
+.agendar-heading-title {
+  margin: 0;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 48px;
+  line-height: 56px;
+  display: flex;
+  align-items: center;
+  color: #191C1C;
+}
+
+.agendar-subtitle-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  min-height: 24px;
+}
+
+.agendar-subtitle-text {
+  margin: 0;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  color: #414845;
+}
+
+/* Main Layout Container (width: 1232px, height: 701px) */
+.agendar-layout-grid {
+  display: grid;
+  grid-template-columns: 394.67px minmax(0, 813.33px);
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+  min-height: 701px;
+  align-self: stretch;
+}
+
+/* Left Sidebar Progress / Summary (width: 394.67px, height: 425px, #001D14) */
+.agendar-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px;
+  isolation: isolate;
+  position: relative;
+  width: 100%;
+  min-height: 425px;
+  background: #001D14;
+  box-shadow: 0px 10px 15px -3px rgba(0, 0, 0, 0.1), 0px 4px 6px -4px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.agendar-sidebar-top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 48px;
+  width: 100%;
+  min-height: 288px;
+  align-self: stretch;
+  z-index: 1;
+}
+
+.agendar-sidebar-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+  min-height: 88px;
+  align-self: stretch;
+}
+
+.agendar-sidebar-eyebrow {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #AACFBF;
+}
+
+.agendar-sidebar-center-name {
+  margin: 0;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  color: #FFFFFF;
+}
+
+.agendar-sidebar-municipio {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  color: #AACFBF;
+}
+
+.agendar-steps-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 16px;
+  width: 100%;
+  min-height: 152px;
+  align-self: stretch;
+}
+
+.agendar-step-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 16px;
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  opacity: 0.75;
+  box-sizing: border-box;
+}
+
+.agendar-step-item.is-active {
+  background: #103328;
+  opacity: 1;
+}
+
+.agendar-step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.agendar-step-text {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  color: #AACFBF;
+}
+
+.agendar-step-item.is-active .agendar-step-text {
+  font-family: 'Liberation Serif', Georgia, serif;
+  color: #FFFFFF;
+}
+
+.agendar-sidebar-footer-margin {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 48px 0 0;
+  width: 100%;
+  min-height: 89px;
+  align-self: stretch;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.agendar-sidebar-footer-border {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 24px 0 0;
+  width: 100%;
+  min-height: 41px;
+  border-top: 1px solid rgba(16, 51, 40, 0.5);
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.agendar-sidebar-footer-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 8px;
+  width: 100%;
+  height: 16px;
+}
+
+.agendar-sidebar-lock-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.agendar-sidebar-footer-text {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  color: #AACFBF;
+}
+
+.agendar-sidebar-decor-circle {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  right: -39.99px;
+  bottom: -40px;
+  background: #103328;
+  opacity: 0.5;
+  border-radius: 9999px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Right Content Area / Form (813.33px x 697.67px) */
+.agendar-form-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 48px;
+  gap: 24px;
+  width: 100%;
+  min-height: 697.67px;
+  background: #FFFFFF;
+  box-shadow: 0px 10px 30px rgba(16, 51, 40, 0.06);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.agendar-form-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0 0 16px;
+  width: 100%;
+  min-height: 88px;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.agendar-form-step-label {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #414845;
+}
+
+.agendar-form-title {
+  margin: 0;
+  padding-top: 4px;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+  display: flex;
+  align-items: center;
+  color: #191C1C;
+}
+
+.agendar-form-subtitle {
+  margin: 0;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  color: #414845;
+}
+
+.agendar-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 24px;
+  width: 100%;
+  min-height: 489.67px;
+  align-self: stretch;
+}
+
+.agendar-form-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0;
+  gap: 24px;
+  width: 100%;
+  min-height: 76px;
+  align-self: stretch;
+}
+
+.agendar-field-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 4px;
+  flex: 1;
+  min-height: 76px;
+}
+
+.agendar-label {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  color: #191C1C;
+}
+
+.agendar-input {
+  width: 100%;
+  height: 52px;
+  padding: 18px 16px 17px;
+  background: #F3F4F3;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #191C1C;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.agendar-input::placeholder {
+  color: #717975;
+}
+
+.agendar-input:focus {
+  border-color: #103328;
+  background: #FFFFFF;
+}
+
+/* Privacy Notice Box */
+.agendar-privacy-box {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 16px;
+  gap: 16px;
+  width: 100%;
+  min-height: 48.67px;
+  background: rgba(214, 230, 224, 0.4);
+  border-radius: 8px;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.agendar-privacy-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16.67px;
+  height: 16.67px;
+  flex-shrink: 0;
+}
+
+.agendar-privacy-text {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  color: #596763;
+}
+
+/* Summary Cards Grid */
+.agendar-summary-grid {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: stretch;
+  padding: 8px 0 0;
+  gap: 16px;
+  width: 100%;
+  min-height: 100px;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.agendar-summary-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px;
+  gap: 4px;
+  flex: 1;
+  min-height: 92px;
+  background: #F3F4F3;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.agendar-summary-title {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  color: #191C1C;
+}
+
+.agendar-summary-strong {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  color: #191C1C;
+}
+
+.agendar-summary-regular {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  color: #414845;
+}
+
+/* Actions Footer:margin */
+.agendar-actions-margin {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px 0 0;
+  width: 100%;
+  min-height: 93px;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.agendar-actions-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0 0;
+  width: 100%;
+  min-height: 77px;
+  border-top: 1px solid #EDEEED;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.agendar-back-link {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414845;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.agendar-submit-btn {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 24px;
+  gap: 8px;
+  isolation: isolate;
+  min-width: 174.89px;
+  height: 52px;
+  background: #001D14;
+  box-shadow: 0px 4px 6px -1px rgba(0, 0, 0, 0.1), 0px 2px 4px -2px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.agendar-submit-btn-text {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #FFFFFF;
+}
+
+.agendar-step-btn {
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agendar-step-btn:disabled {
+  cursor: default;
+}
+
+.agendar-step-item.is-completed {
+  opacity: 0.92;
+}
+
+/* Paso 2: Selección de servicio, fecha y horario disponible */
+.agendar-step2-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.agendar-select {
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  background: #F3F4F3;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  color: #191C1C;
+  box-sizing: border-box;
+  outline: none;
+  cursor: pointer;
+}
+
+.agendar-select:focus {
+  border-color: #103328;
+  background: #FFFFFF;
+}
+
+.agendar-dates-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.agendar-date-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 12px 8px;
+  min-height: 64px;
+  background: #F3F4F3;
+  border: 1px solid #E4ECE8;
+  border-radius: 8px;
+  color: #191C1C;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.agendar-date-chip.is-selected {
+  background: #103328;
+  border-color: #103328;
+  color: #FFFFFF;
+}
+
+.agendar-date-day {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 18px;
+  color: inherit;
+}
+
+.agendar-date-num {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  color: inherit;
+  opacity: 0.9;
+}
+
+.agendar-slots-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.agendar-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.agendar-slot-btn {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  padding: 8px 12px;
+  background: #F3F4F3;
+  border: 1px solid #E4ECE8;
+  border-radius: 8px;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #001D14;
+  cursor: pointer;
+}
+
+.agendar-slot-btn.is-selected {
+  background: #103328;
+  border-color: #103328;
+  color: #FFFFFF;
+}
+
+.agendar-slot-btn.is-disabled {
+  background: #F9F9F8;
+  border-color: #EDEEED;
+  color: #9AA39F;
+  cursor: not-allowed;
+}
+
+.agendar-slot-status {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* Paso 3: Resumen y Confirmación de Cita */
+.agendar-confirmed-banner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  width: 100%;
+  background: #D6E6E0;
+  border: 1px solid #C5EBDA;
+  border-radius: 10px;
+  color: #001D14;
+  box-sizing: border-box;
+}
+
+.agendar-problem-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  width: 100%;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  color: #7F1D1D;
+  box-sizing: border-box;
+}
+
+.agendar-problem-top {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.agendar-problem-title {
+  display: block;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 20px;
+  color: #7F1D1D;
+  margin-bottom: 2px;
+}
+
+.agendar-problem-message {
+  margin: 0;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 19px;
+  color: #991B1B;
+}
+
+.agendar-problem-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-left: 32px;
+}
+
+.agendar-problem-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #103328;
+  color: #FFFFFF;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agendar-problem-demo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #103328;
+  background: #FFFFFF;
+  color: #001D14;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agendar-confirm-summary-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.agendar-confirm-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  background: #F9F9F8;
+  border: 1px solid #E4ECE8;
+  border-radius: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.agendar-confirm-block-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #E4ECE8;
+}
+
+.agendar-confirm-block-title {
+  margin: 0;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 20px;
+  color: #001D14;
+}
+
+.agendar-confirm-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  width: 100%;
+}
+
+.agendar-confirm-label {
+  display: block;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #596763;
+  margin-bottom: 2px;
+}
+
+.agendar-confirm-value {
+  margin: 0;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #191C1C;
+}
+
+@media (max-width: 1080px) {
+  .agendar-layout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agendar-sidebar {
+    min-height: auto;
+  }
+
+  .agendar-dates-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .agendar-slots-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .agendar-heading-title {
+    font-size: 32px;
+    line-height: 40px;
+  }
+
+  .agendar-form-card {
+    padding: 24px;
+  }
+
+  .agendar-form-row,
+  .agendar-summary-grid {
+    flex-direction: column;
+  }
+
+  .agendar-dates-grid,
+  .agendar-slots-grid,
+  .agendar-confirm-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .agendar-actions-footer {
+    flex-direction: column-reverse;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .agendar-submit-btn {
+    width: 100%;
+  }
+}

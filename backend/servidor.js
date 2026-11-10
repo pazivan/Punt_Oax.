@@ -5,7 +5,9 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { randomUUID, createHash } = require("node:crypto");
 const pool = require("./db");
+const { listarCitasClinica } = require("./citasClinica");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
+const { registrarRutasCitas } = require("./citas");
 
 const app = express();
 const PUERTO = process.env.PORT || 3000;
@@ -410,6 +412,22 @@ app.get("/api/servicios", async (req, res) => {
     return res.status(500).json({ error: "No se pudo obtener el catálogo de servicios." });
   }
 });
+
+// Agenda de la clínica autenticada: nunca aceptar id_clinica desde el navegador.
+app.get(
+  "/api/clinicas/mi-citas",
+  autenticarToken,
+  requerirRol(["clinica"]),
+  async (req, res) => {
+    try {
+      const citas = await listarCitasClinica(pool, req.usuario.id);
+      return res.json({ citas });
+    } catch (error) {
+      console.error("Error al consultar citas de clínica:", error.message);
+      return res.status(500).json({ error: "No se pudieron consultar las citas de tu clínica." });
+    }
+  }
+);
 
 // ==========================================
 // FICHA INSTITUCIONAL DE LA CLÍNICA AUTENTICADA
@@ -1305,6 +1323,11 @@ app.get(
   }
 );
 
+   // Rutas de citas (Sprint 6 · issue #56). Ver backend/citas.js
+   registrarRutasCitas(app, { pool, autenticarToken, requerirRol });
+   
 app.listen(PUERTO, () => {
   console.log(`Servidor listo en http://localhost:${PUERTO}`);
 });
+
+
