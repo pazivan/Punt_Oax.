@@ -14,13 +14,22 @@
  *  - clínica  -> completada | no_asistio      (solo si la hora de la cita ya pasó)
  */
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const {
+  esUuid,
+  ESTADOS_VALIDOS,
+  ESTADOS_PERMITIDOS_CLINICA,
+  validarPermisoRol,
+  validarPertenenciaCita,
+  validarDisponibilidadHorario,
+  validarEnHorarioAtencion,
+  validarTransicionEstadoCita,
+} = require("./validacionesCitas");
+
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
-const ESTADOS = ["confirmada", "cancelada", "completada", "no_asistio"];
-const ESTADOS_CLINICA = ["cancelada", "completada", "no_asistio"];
+const ESTADOS = Array.from(ESTADOS_VALIDOS);
+const ESTADOS_CLINICA = Array.from(ESTADOS_PERMITIDOS_CLINICA);
 const MAX_DIAS_CONSULTA = 60;
 
-const esUuid = (valor) => typeof valor === "string" && UUID_RE.test(valor);
 const respuesta = (status, body) => ({ status, body });
 const textoEstado = (estado) => String(estado).replace("_", " ");
 
@@ -136,7 +145,8 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
       const espacio = await db.query(
         `SELECT ed.fecha_hora_inicio,
                 (ed.habilitado AND cs.activo AND s.activo AND cl.estado_publicacion = 'aprobada') AS reservable,
-                ed.fecha_hora_inicio > NOW() AS es_futuro
+                ed.fecha_hora_inicio > NOW() AS es_futuro,
+                cl.id_clinica
          FROM espacios_disponibles ed
          INNER JOIN clinicas_servicios cs ON cs.id_clinica_servicio = ed.id_clinica_servicio
          INNER JOIN servicios s ON s.id_servicio = cs.id_servicio
@@ -163,6 +173,20 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
         [idUsuario, e.fecha_hora_inicio]
       );
       if (choque.rows.length) return respuesta(409, { error: "Ya tienes otra cita a esa misma hora." });
+
+      // Validar si la clínica tiene franjas de horarios_atencion y si el turno cae dentro de ellas
+      if (e.id_clinica) {
+        const { rows: horariosClinica } = await db.query(
+          `SELECT dia_semana, hora_apertura, hora_cierre, es_24_horas, cruza_medianoche
+           FROM horarios_atencion WHERE id_clinica = $1`,
+          [e.id_clinica]
+        );
+        if (horariosClinica.length > 0 && !validarEnHorarioAtencion(e.fecha_hora_inicio, horariosClinica)) {
+          return respuesta(409, {
+            error: "El horario seleccionado no coincide con los días y horas de atención de la clínica.",
+          });
+        }
+      }
 
       const creada = await db.query(
         `INSERT INTO citas (id_usuario, id_espacio, estado)
@@ -220,10 +244,16 @@ async function cancelarCitaUsuario(pool, idUsuario, idCita) {
     );
     const actual = rows[0];
     if (!actual) return respuesta(404, { error: "Cita no encontrada." });
-    if (actual.estado !== "confirmada") {
-      return respuesta(409, { error: `La cita ya está ${textoEstado(actual.estado)} y no se puede cancelar.` });
+
+    const validacion = validarTransicionEstadoCita({
+      rol: "usuario",
+      estadoActual: actual.estado,
+      nuevoEstado: "cancelada",
+      esFutura: actual.es_futura,
+    });
+    if (!validacion.valida) {
+      return respuesta(validacion.status, { error: validacion.motivo });
     }
-    if (!actual.es_futura) return respuesta(409, { error: "No se puede cancelar una cita que ya pasó." });
 
     await db.query("UPDATE citas SET estado = 'cancelada' WHERE id_cita = $1", [idCita]);
     const cita = await obtenerCitaDeUsuario(db, idUsuario, idCita);
@@ -252,14 +282,15 @@ async function actualizarEstadoCitaClinica(pool, idClinica, idCita, cuerpo) {
     );
     const actual = rows[0];
     if (!actual) return respuesta(404, { error: "Cita no encontrada en tu clínica." });
-    if (actual.estado !== "confirmada") {
-      return respuesta(409, { error: `La cita ya está ${textoEstado(actual.estado)}; no se puede cambiar.` });
-    }
-    if (nuevoEstado === "cancelada" && !actual.es_futura) {
-      return respuesta(409, { error: "La cita ya pasó: márcala como completada o no asistió." });
-    }
-    if (nuevoEstado !== "cancelada" && actual.es_futura) {
-      return respuesta(409, { error: "Solo puedes marcar completada o no asistió después de la hora de la cita." });
+
+    const validacion = validarTransicionEstadoCita({
+      rol: "clinica",
+      estadoActual: actual.estado,
+      nuevoEstado,
+      esFutura: actual.es_futura,
+    });
+    if (!validacion.valida) {
+      return respuesta(validacion.status, { error: validacion.motivo });
     }
 
     const actualizada = await db.query(
@@ -319,4 +350,5 @@ module.exports = {
   consultarCitaUsuario,
   cancelarCitaUsuario,
   actualizarEstadoCitaClinica,
+  ...require("./validacionesCitas"),
 };
