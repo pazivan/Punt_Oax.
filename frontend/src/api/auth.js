@@ -146,6 +146,15 @@ export function cancelarCitaUsuario(idCita) {
   })
 }
 
+// La clínica solo puede operar sobre citas de sus propios servicios (lo valida el servidor).
+export function actualizarEstadoCitaClinica(idCita, estado) {
+  return enviarConSesion(`/api/citas/${encodeURIComponent(idCita)}/estado`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estado }),
+  })
+}
+
 // Horarios reservables de una sede y confirmación de la cita (Sprint 6).
 export function consultarEspaciosClinica(idClinica, { desde, hasta } = {}) {  const parametros = new URLSearchParams()
   if (desde) parametros.set('desde', desde)

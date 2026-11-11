@@ -4,7 +4,7 @@ import {
   AlertCircle, ArrowRight, CalendarDays, ClipboardList, Clock3,
   MapPin, RefreshCw, UserRound, X,
 } from 'lucide-react'
-import { consultarCitasClinica } from '../../api/auth.js'
+import { actualizarEstadoCitaClinica, consultarCitasClinica } from '../../api/auth.js'
 import TarjetaCita from '../Citas/TarjetaCita.jsx'
 import {
   ETIQUETAS_ESTADO, filtrarCitas, formatearFechaCita,
@@ -18,7 +18,7 @@ const FILTROS = [
   { id: 'todas', texto: 'Todas' },
 ]
 
-function DetalleCita({ cita, onCerrar }) {
+function DetalleCita({ cita, ahora, actualizando, error, onCerrar, onCambiarEstado }) {
   useEffect(() => {
     function cerrarConEscape(evento) {
       if (evento.key === 'Escape') onCerrar()
@@ -26,6 +26,10 @@ function DetalleCita({ cita, onCerrar }) {
     document.addEventListener('keydown', cerrarConEscape)
     return () => document.removeEventListener('keydown', cerrarConEscape)
   }, [onCerrar])
+
+  const esFutura = new Date(cita.fecha_hora_inicio).getTime() > ahora
+  const puedeCancelar = cita.estado === 'confirmada' && esFutura
+  const puedeCerrarAtencion = cita.estado === 'confirmada' && !esFutura
 
   return (
     <div className="citas-modal-fondo" onMouseDown={(evento) => {
@@ -46,8 +50,49 @@ function DetalleCita({ cita, onCerrar }) {
           <div><dt>Teléfono del paciente</dt><dd>{cita.paciente_telefono || 'No registrado'}</dd></div>
           <div><dt>Fecha de reserva</dt><dd>{formatearFechaCita(cita.fecha_reserva)}</dd></div>
         </dl>
-        <p className="citas-modal-nota">La información procede del registro de citas. Los cambios de estado y la cancelación no están habilitados en esta pantalla.</p>
-        <button type="button" className="citas-boton citas-boton--oscuro" onClick={onCerrar}>Cerrar</button>
+        {error && <p className="citas-alerta citas-alerta--error" role="alert">{error}</p>}
+        <p className="citas-modal-nota">
+          {cita.estado !== 'confirmada'
+            ? 'Esta cita ya no está confirmada: solo puedes consultar sus datos.'
+            : esFutura
+              ? 'Puedes cancelar esta cita. Al hacerlo, el horario quedará disponible para otra persona.'
+              : 'La cita ya inició: puedes marcarla como completada o registrar que el paciente no asistió.'}
+        </p>
+        <div className="citas-modal-acciones">
+          {puedeCancelar && (
+            <button
+              type="button"
+              className="citas-boton citas-boton--peligro"
+              onClick={() => onCambiarEstado('cancelada')}
+              disabled={actualizando}
+            >
+              {actualizando ? 'Cancelando…' : 'Cancelar cita'}
+            </button>
+          )}
+          {puedeCerrarAtencion && (
+            <>
+              <button
+                type="button"
+                className="citas-boton citas-boton--oscuro"
+                onClick={() => onCambiarEstado('completada')}
+                disabled={actualizando}
+              >
+                {actualizando ? 'Guardando…' : 'Marcar completada'}
+              </button>
+              <button
+                type="button"
+                className="citas-boton citas-boton--peligro"
+                onClick={() => onCambiarEstado('no_asistio')}
+                disabled={actualizando}
+              >
+                Registrar no asistió
+              </button>
+            </>
+          )}
+          <button type="button" className="citas-boton citas-boton--secundario" onClick={onCerrar} disabled={actualizando}>
+            Cerrar
+          </button>
+        </div>
       </section>
     </div>
   )
@@ -61,6 +106,9 @@ export default function MisCitasClinica({ onSalir }) {
   const [seleccionada, setSeleccionada] = useState(null)
   const [recargar, setRecargar] = useState(0)
   const [ahora, setAhora] = useState(() => Date.now())
+  const [actualizando, setActualizando] = useState(false)
+  const [errorAccion, setErrorAccion] = useState('')
+  const [mensaje, setMensaje] = useState('')
 
   useEffect(() => {
     let vigente = true
@@ -90,6 +138,29 @@ export default function MisCitasClinica({ onSalir }) {
     setEstado('cargando')
     setError('')
     setRecargar((valor) => valor + 1)
+  }
+
+  function abrirDetalle(cita) {
+    setErrorAccion('')
+    setMensaje('')
+    setSeleccionada(cita)
+  }
+
+  async function cambiarEstadoCita(nuevoEstado) {
+    if (!seleccionada) return
+    setActualizando(true)
+    setErrorAccion('')
+    try {
+      const respuesta = await actualizarEstadoCitaClinica(seleccionada.id_cita, nuevoEstado)
+      setMensaje(respuesta.mensaje || 'Estado de la cita actualizado.')
+      setSeleccionada(null)
+      setEstado('cargando')
+      setRecargar((valor) => valor + 1)
+    } catch (fallo) {
+      setErrorAccion(fallo.message || 'No se pudo actualizar el estado de la cita.')
+    } finally {
+      setActualizando(false)
+    }
   }
 
   return (
@@ -129,6 +200,8 @@ export default function MisCitasClinica({ onSalir }) {
                 <RefreshCw size={15} aria-hidden="true" /> Actualizar
               </button>
             </div>
+            {mensaje && <p className="citas-alerta citas-alerta--ok" role="status">{mensaje}</p>}
+            {errorAccion && !seleccionada && <p className="citas-alerta citas-alerta--error" role="alert">{errorAccion}</p>}
             <div className="citas-filtros" role="group" aria-label="Filtrar citas">
               {FILTROS.map(({ id, texto }) => (
                 <button type="button" key={id} className={filtro === id ? 'citas-filtro activo' : 'citas-filtro'}
@@ -148,7 +221,7 @@ export default function MisCitasClinica({ onSalir }) {
             )}
             {estado === 'listo' && visibles.length > 0 && (
               <div className="citas-listado">{visibles.map((cita) => (
-                <TarjetaCita key={cita.id_cita} cita={cita} vista="clinica" onVerDetalles={setSeleccionada} />
+                <TarjetaCita key={cita.id_cita} cita={cita} vista="clinica" onVerDetalles={abrirDetalle} />
               ))}</div>
             )}
           </section>
@@ -170,7 +243,16 @@ export default function MisCitasClinica({ onSalir }) {
       </main>
 
       <footer className="citas-footer"><div className="citas-contenedor">© 2024 PuntOax. Salud, bienestar y orientación en Oaxaca.</div></footer>
-      {seleccionada && <DetalleCita cita={seleccionada} onCerrar={() => setSeleccionada(null)} />}
+      {seleccionada && (
+        <DetalleCita
+          cita={seleccionada}
+          ahora={ahora}
+          actualizando={actualizando}
+          error={errorAccion}
+          onCerrar={() => { setSeleccionada(null); setErrorAccion('') }}
+          onCambiarEstado={cambiarEstadoCita}
+        />
+      )}
     </div>
   )
 }
