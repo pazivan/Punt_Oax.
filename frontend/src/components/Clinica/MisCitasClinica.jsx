@@ -238,6 +238,7 @@ export default function MisCitasClinica({ onSalir }) {
             <Link className="citas-boton citas-boton--oscuro citas-aside-enlace" to="/mi-clinica">
               Ir a mi clínica <ArrowRight size={16} aria-hidden="true" />
             </Link>
+            <Link className="citas-boton citas-boton--oscuro citas-aside-enlace" to="/mi-clinica/agenda">Gestionar cupos y días no laborables</Link>
           </aside>
         </div>
       </main>

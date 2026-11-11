@@ -8,12 +8,15 @@ const pool = require("./db");
 const { listarCitasClinica } = require("./citasClinica");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
 const { registrarRutasCitas } = require("./citas");
+const { registrarRutasAgendaClinica } = require("./agendaClinica");
 
 const app = express();
 const PUERTO = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+// Registrar las rutas estáticas de la agenda antes de /api/clinicas/:id.
+registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol });
 
 const recibirDocumentos = multer({
   storage: multer.memoryStorage(),
@@ -1324,10 +1327,8 @@ app.get(
 );
 
    // Rutas de citas (Sprint 6 · issue #56). Ver backend/citas.js
-   registrarRutasCitas(app, { pool, autenticarToken, requerirRol });
+    registrarRutasCitas(app, { pool, autenticarToken, requerirRol });
    
 app.listen(PUERTO, () => {
   console.log(`Servidor listo en http://localhost:${PUERTO}`);
 });
-
-
