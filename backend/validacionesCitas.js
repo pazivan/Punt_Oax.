@@ -167,11 +167,15 @@ function validarDisponibilidadHorario({
 /**
  * 5. Valida si una fecha y hora cae dentro de las franjas de atención de la clínica.
  *
+ * Las franjas de `horarios_atencion` son hora local de la clínica. La zona se
+ * recibe como parámetro para no depender de la zona horaria del servidor.
+ *
  * @param {Date|string} fechaHora - Fecha y hora del turno
  * @param {Array<Object>} horariosAtencion - Franjas de la clínica [{ dia_semana, hora_apertura, hora_cierre, es_24_horas, cruza_medianoche }]
+ * @param {string} zonaHoraria - Zona IANA de las franjas (por defecto UTC)
  * @returns {boolean}
  */
-function validarEnHorarioAtencion(fechaHora, horariosAtencion) {
+function validarEnHorarioAtencion(fechaHora, horariosAtencion, zonaHoraria = "UTC") {
   if (!Array.isArray(horariosAtencion) || horariosAtencion.length === 0) {
     // Si la clínica no tiene horarios estructurados cargados, no bloquear
     return true;
@@ -180,11 +184,18 @@ function validarEnHorarioAtencion(fechaHora, horariosAtencion) {
   const fecha = new Date(fechaHora);
   if (Number.isNaN(fecha.getTime())) return false;
 
-  const diaSemana = fecha.getUTCDay(); // 0 = Domingo ... 6 = Sábado
-  // Formato HH:MM
-  const horas = String(fecha.getUTCHours()).padStart(2, "0");
-  const minutos = String(fecha.getUTCMinutes()).padStart(2, "0");
-  const horaCita = `${horas}:${minutos}`;
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: zonaHoraria,
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(fecha);
+  const valor = (tipo) => partes.find((parte) => parte.type === tipo)?.value;
+  const dias = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const diaSemana = dias[valor("weekday")];
+  const horaCita = `${valor("hour")}:${valor("minute")}`;
+  if (!Number.isInteger(diaSemana) || !/^\d{2}:\d{2}$/.test(horaCita)) return false;
 
   const franjasDia = horariosAtencion.filter((h) => Number(h.dia_semana) === diaSemana);
   if (franjasDia.length === 0) return false;

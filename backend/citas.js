@@ -181,7 +181,8 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
            FROM horarios_atencion WHERE id_clinica = $1`,
           [e.id_clinica]
         );
-        if (horariosClinica.length > 0 && !validarEnHorarioAtencion(e.fecha_hora_inicio, horariosClinica)) {
+        if (horariosClinica.length > 0 &&
+            !validarEnHorarioAtencion(e.fecha_hora_inicio, horariosClinica, "America/Mexico_City")) {
           return respuesta(409, {
             error: "El horario seleccionado no coincide con los días y horas de atención de la clínica.",
           });
