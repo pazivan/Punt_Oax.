@@ -37,7 +37,6 @@ export default function Conocenos({ sesion, perfil, onSalir }) {
         <article><HeartHandshake size={24} aria-hidden="true" /><h2>Conoce sus servicios</h2><p>Revisa la información registrada sobre servicios y horarios; confirma siempre los datos con el centro antes de acudir.</p></article>
         <article><ShieldCheck size={24} aria-hidden="true" /><h2>Publicación revisada</h2><p>Las clínicas nuevas no aparecen automáticamente. La postulación y la revisión administrativa son funciones pendientes.</p></article>
       </section>
-      <p className="conocenos-note">Catálogo en pruebas: los centros mostrados pueden ser ejemplos, no sedes verificadas.</p>
     </main>
   </div>
 }
