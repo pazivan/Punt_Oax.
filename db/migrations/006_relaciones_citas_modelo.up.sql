@@ -67,3 +67,4 @@ COMMENT ON COLUMN citas.estado IS
 - cancelada: Cancelada por usuario o clínica antes de iniciar. Libera automáticamente el espacio.
 - completada: Atención realizada en clínica una vez transcurrida la hora (fecha_hora_inicio <= NOW()).
 - no_asistio: El paciente no acudió a la cita programada (fecha_hora_inicio <= NOW()).';
+

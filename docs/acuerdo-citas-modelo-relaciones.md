@@ -93,3 +93,4 @@ Creada en la migración `006`, unifica en una sola consulta estructurada:
 3. **Reserva de Cita (`POST /api/citas`):**
    - Bloqueo transaccional `FOR UPDATE` para evitar condiciones de carrera.
    - Prevención de citas simultáneas del mismo usuario a la misma hora.
+

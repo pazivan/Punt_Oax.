@@ -6,3 +6,4 @@ DROP INDEX IF EXISTS idx_espacios_habilitado_fecha;
 DROP INDEX IF EXISTS idx_espacios_clinica_servicio_inicio;
 DROP INDEX IF EXISTS idx_citas_fecha_reserva;
 DROP INDEX IF EXISTS idx_citas_usuario_estado;
+

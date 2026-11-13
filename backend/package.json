@@ -8,6 +8,8 @@
     "test": "node probar-db.js",
     "test:citas-modelo": "node --test tests/citas-modelo.test.cjs",
     "test:migrations": "node --test tests/migraciones.test.cjs",
+    "test:importer": "node --test tests/importador-filtracion.test.cjs",
+    "import:filtracion": "node scripts/importar-filtracion.js --archivo data/filtracion.csv",
     "test:integration": "node --test tests/integracion-auth.test.cjs",
     "migrate": "node scripts/migrador.js up",
     "migrate:down": "node scripts/migrador.js down",
