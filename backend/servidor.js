@@ -8,6 +8,7 @@ const pool = require("./db");
 const { listarCitasClinica } = require("./citasClinica");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
 const { registrarRutasCitas } = require("./citas");
+const { registrarRutasAdminClinicas } = require("./adminClinicas");
 
 const app = express();
 const PUERTO = process.env.PORT || 3000;
@@ -1326,6 +1327,9 @@ app.get(
    // Rutas de citas (Sprint 6 · issue #56). Ver backend/citas.js
    registrarRutasCitas(app, { pool, autenticarToken, requerirRol });
    
+   // Revisión de clínicas por el administrador (Sprint 7 · issue #66). Ver backend/adminClinicas.js
+registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, prepararCarpetaDocumentos });
+
 app.listen(PUERTO, () => {
   console.log(`Servidor listo en http://localhost:${PUERTO}`);
 });
