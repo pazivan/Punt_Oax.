@@ -268,7 +268,7 @@ function App() {
           error={errorPerfil}
           rolesPermitidos={['clinica']}
         >
-          <MisCitasClinica onSalir={salir} />
+        <MisCitasClinica sesion={sesion} onSalir={salir} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -290,7 +290,7 @@ function App() {
           error={errorPerfil}
           rolesPermitidos={['clinica']}
         >
-          <FichaClinica onSalir={salir} />
+        <FichaClinica sesion={sesion} onSalir={salir} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>

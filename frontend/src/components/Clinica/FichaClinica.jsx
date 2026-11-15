@@ -23,6 +23,7 @@ import {
 } from '../../api/auth'
 import { validarEmail } from '../../utils/validaciones'
 import './FichaClinica.css'
+import EncabezadoClinica from './EncabezadoClinica.jsx'
 
 const DIAS = [
   { numero: 0, nombre: 'Domingo' },
@@ -171,25 +172,16 @@ function formatearFecha(fecha) {
     : valor.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
-function CabeceraClinica({ onSalir }) {
+function CabeceraClinica({ sesion, onSalir }) {
   return (
-    <header className="ficha-header">
-      <div className="ficha-header-inner">
-        <div className="ficha-brand-group">
-          <Link to="/mi-clinica" className="ficha-brand">PuntOax</Link>
-          <span className="ficha-area-label">Área de clínicas</span>
-        </div>
-        <div className="ficha-header-actions">
-          <Link to="/mapa" className="ficha-header-link">Mapa</Link>
-          <Link to="/mi-clinica/citas" className="ficha-header-link">Mis citas</Link>
-          <button type="button" className="ficha-header-outline" onClick={onSalir}>Cerrar sesión</button>
-        </div>
-      </div>
-    </header>
+    <EncabezadoClinica
+      sesion={sesion}
+      onSalir={onSalir}
+    />
   )
 }
 
-export default function FichaClinica({ onSalir }) {
+export default function FichaClinica({ sesion, onSalir }) {
   const [ficha, setFicha] = useState(null)
   const [form, setForm] = useState(null)
   const [cargando, setCargando] = useState(true)
@@ -249,7 +241,7 @@ export default function FichaClinica({ onSalir }) {
   if (cargando) {
     return (
       <div className="ficha-page">
-        <CabeceraClinica onSalir={onSalir} />
+        <CabeceraClinica sesion={sesion} onSalir={onSalir} />
         <main className="ficha-loading" role="status">
           <span className="ficha-spinner" aria-hidden="true" />
           <p>Cargando la ficha de tu clínica…</p>
