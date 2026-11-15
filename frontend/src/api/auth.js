@@ -130,6 +130,63 @@ export async function consultarPerfil() {
   return enviarConSesion('/api/auth/perfil')
 }
 
+// Las citas se filtran en el servidor con el id de la clínica autenticada.
+export function consultarCitasClinica() {
+  return enviarConSesion('/api/clinicas/mi-citas')
+}
+
+export const consultarAgendaClinica = () => enviarConSesion('/api/clinicas/mi-agenda')
+export const guardarHorariosAgenda = (horarios) => enviarConSesion('/api/clinicas/mi-agenda/horarios', {
+  method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ horarios }),
+})
+export const crearCupoClinica = (datos) => enviarConSesion('/api/clinicas/mi-agenda/espacios', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+})
+export const cambiarCupoClinica = (id, habilitado) => enviarConSesion(`/api/clinicas/mi-agenda/espacios/${encodeURIComponent(id)}`, {
+  method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ habilitado }),
+})
+export const bloquearDiaClinica = (fecha) => enviarConSesion('/api/clinicas/mi-agenda/bloqueos', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fecha }),
+})
+
+// Citas del paciente autenticado: el servidor filtra por su JWT.
+export function consultarCitasUsuario() {
+  return enviarConSesion('/api/citas')
+}
+
+export function cancelarCitaUsuario(idCita) {
+  return enviarConSesion(`/api/citas/${encodeURIComponent(idCita)}/cancelar`, {
+    method: 'PATCH',
+  })
+}
+
+// La clínica solo puede operar sobre citas de sus propios servicios (lo valida el servidor).
+export function actualizarEstadoCitaClinica(idCita, estado) {
+  return enviarConSesion(`/api/citas/${encodeURIComponent(idCita)}/estado`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estado }),
+  })
+}
+
+// Horarios reservables de una sede y confirmación de la cita (Sprint 6).
+export function consultarEspaciosClinica(idClinica, { desde, hasta } = {}) {  const parametros = new URLSearchParams()
+  if (desde) parametros.set('desde', desde)
+  if (hasta) parametros.set('hasta', hasta)
+  const consulta = parametros.toString()
+  return enviarConSesion(
+    `/api/clinicas/${encodeURIComponent(idClinica)}/espacios${consulta ? `?${consulta}` : ''}`
+  )
+}
+
+export function solicitarCita(idEspacio) {
+  return enviarConSesion('/api/citas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id_espacio: idEspacio }),
+  })
+}
+
 export function consultarMiFicha() {
   return enviarConSesion('/api/clinicas/mi-ficha')
 }

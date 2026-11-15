@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node servidor.js",
     "test": "node probar-db.js",
+    "test:citas-modelo": "node --test tests/citas-modelo.test.cjs",
+    "test:migrations": "node --test tests/migraciones.test.cjs",
     "test:integration": "node --test tests/integracion-auth.test.cjs",
     "migrate": "node scripts/migrador.js up",
     "migrate:down": "node scripts/migrador.js down",

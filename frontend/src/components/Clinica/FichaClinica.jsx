@@ -180,7 +180,8 @@ function CabeceraClinica({ onSalir }) {
           <span className="ficha-area-label">Área de clínicas</span>
         </div>
         <div className="ficha-header-actions">
-          <Link to="/directorio" className="ficha-header-link">Directorio</Link>
+          <Link to="/mapa" className="ficha-header-link">Mapa</Link>
+          <Link to="/mi-clinica/citas" className="ficha-header-link">Mis citas</Link>
           <button type="button" className="ficha-header-outline" onClick={onSalir}>Cerrar sesión</button>
         </div>
       </div>
@@ -268,7 +269,7 @@ export default function FichaClinica({ onSalir }) {
           <button type="button" className="ficha-btn-primary" onClick={cargarFicha}>
             Reintentar
           </button>
-          <Link to="/directorio" className="ficha-inline-link">Volver al directorio</Link>
+          <Link to="/mapa" className="ficha-inline-link">Volver al mapa</Link>
         </main>
       </div>
     )
@@ -309,7 +310,7 @@ export default function FichaClinica({ onSalir }) {
             se habilitarán en una etapa posterior.
           </p>
           <div className="ficha-pending-actions">
-            <Link to="/directorio" className="ficha-btn-secondary">Ver directorio</Link>
+            <Link to="/mapa" className="ficha-btn-secondary">Ver mapa</Link>
             <button type="button" className="ficha-btn-primary" onClick={onSalir}>Cerrar sesión</button>
           </div>
         </main>
@@ -325,7 +326,7 @@ export default function FichaClinica({ onSalir }) {
           <ShieldCheck size={30} aria-hidden="true" />
           <h1>La ficha no está disponible para edición</h1>
           <p>La clínica ya no puede modificarse desde este flujo en su estado actual.</p>
-          <Link to="/directorio" className="ficha-inline-link">Volver al directorio</Link>
+          <Link to="/mapa" className="ficha-inline-link">Volver al mapa</Link>
         </main>
       </div>
     )
@@ -555,8 +556,8 @@ export default function FichaClinica({ onSalir }) {
       <main className="ficha-main">
         <section className="ficha-hero">
           <div>
-            <Link to="/directorio" className="ficha-back-link">
-              <ArrowLeft size={15} aria-hidden="true" /> Volver al directorio
+            <Link to="/mapa" className="ficha-back-link">
+              <ArrowLeft size={15} aria-hidden="true" /> Volver al mapa
             </Link>
             <span className="ficha-eyebrow">FICHA INSTITUCIONAL · BORRADOR</span>
             <h1>Completa los datos de tu clínica</h1>

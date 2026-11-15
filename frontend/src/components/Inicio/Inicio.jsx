@@ -33,9 +33,21 @@ export default function Inicio({ sesion, onSalir }) {
               <span className="inicio-brand">PuntOax</span>
             </div>
 
-            <nav className="inicio-nav" aria-label="Navegación principal">
+            <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
               <Link to="/cuenta" className="inicio-nav-link active">
                 <span className="inicio-nav-link-active-text">Inicio</span>
+              </Link>
+              <Link to="/mapa" className="inicio-nav-link">
+                Mapa de centros
+              </Link>
+              <Link to="/agendar-cita" className="inicio-nav-link">
+                Agendar cita
+              </Link>
+              <Link to="/mis-citas" className="inicio-nav-link">
+                Mis citas
+              </Link>
+              <Link to="/informacion-util" className="inicio-nav-link">
+                Información útil
               </Link>
               <Link to="/conocenos" className="inicio-nav-link">
                 Conócenos
@@ -206,7 +218,7 @@ export default function Inicio({ sesion, onSalir }) {
             </Link>
 
             {/* Tarjeta 3: Agenda tu visita */}
-            <a href="#agenda-visita" className="inicio-feature-card">
+            <Link to="/agendar-cita" className="inicio-feature-card">
               <div className="inicio-feature-card-body">
                 <div className="inicio-feature-icon-box" aria-hidden="true">
                   <Calendar size={16} color="#001D14" />
@@ -231,7 +243,7 @@ export default function Inicio({ sesion, onSalir }) {
                   </span>
                 </div>
               </div>
-            </a>
+            </Link>
           </section>
         </div>
       </main>
