@@ -24,6 +24,7 @@ const {
   validarEnHorarioAtencion,
   validarTransicionEstadoCita,
 } = require("./validacionesCitas");
+const { festivoNacional } = require("./agendaClinica");
 
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ESTADOS = Array.from(ESTADOS_VALIDOS);
@@ -111,8 +112,9 @@ async function listarEspaciosDisponibles(db, idClinica, { desde, hasta, servicio
 
   // Fechas en hora de México; sin 'desde'/'hasta' se muestran los próximos 30 días.
   const { rows } = await db.query(
-    `SELECT ed.id_espacio, ed.fecha_hora_inicio, cs.id_clinica_servicio,
-            s.id_servicio, s.nombre AS nombre_servicio
+     `SELECT ed.id_espacio, ed.fecha_hora_inicio, cs.id_clinica_servicio,
+             s.id_servicio, s.nombre AS nombre_servicio,
+             (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::date::text AS fecha_local
      FROM espacios_disponibles ed
      INNER JOIN clinicas_servicios cs ON cs.id_clinica_servicio = ed.id_clinica_servicio
      INNER JOIN servicios s ON s.id_servicio = cs.id_servicio
@@ -123,13 +125,18 @@ async function listarEspaciosDisponibles(db, idClinica, { desde, hasta, servicio
        AND ed.fecha_hora_inicio >= COALESCE($3::date::timestamp AT TIME ZONE 'America/Mexico_City', NOW())
        AND ed.fecha_hora_inicio < COALESCE(($4::date + 1)::timestamp AT TIME ZONE 'America/Mexico_City',
                                            NOW() + INTERVAL '30 days')
-       AND NOT EXISTS (
-         SELECT 1 FROM citas ci WHERE ci.id_espacio = ed.id_espacio AND ci.estado <> 'cancelada'
-       )
+        AND NOT EXISTS (
+          SELECT 1 FROM citas ci WHERE ci.id_espacio = ed.id_espacio AND ci.estado <> 'cancelada'
+        )
+        AND NOT EXISTS (SELECT 1 FROM clinicas_dias_bloqueados b
+          WHERE b.id_clinica = cs.id_clinica
+          AND b.fecha = (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::date)
      ORDER BY ed.fecha_hora_inicio, s.nombre`,
     [idClinica, servicio ?? null, desde ?? null, hasta ?? null]
   );
-  return respuesta(200, { espacios: rows });
+   const espacios = rows.filter((espacio) => !festivoNacional(espacio.fecha_local))
+     .map(({ fecha_local, ...espacio }) => espacio);
+   return respuesta(200, { espacios });
 }
 
 // ------------------------------------------------------------------
@@ -146,7 +153,8 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
         `SELECT ed.fecha_hora_inicio,
                 (ed.habilitado AND cs.activo AND s.activo AND cl.estado_publicacion = 'aprobada') AS reservable,
                 ed.fecha_hora_inicio > NOW() AS es_futuro,
-                cl.id_clinica
+                 cl.id_clinica,
+                 (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::date::text AS fecha_local
          FROM espacios_disponibles ed
          INNER JOIN clinicas_servicios cs ON cs.id_clinica_servicio = ed.id_clinica_servicio
          INNER JOIN servicios s ON s.id_servicio = cs.id_servicio
@@ -158,7 +166,11 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
       const e = espacio.rows[0];
       if (!e) return respuesta(404, { error: "El horario seleccionado no existe." });
       if (!e.reservable) return respuesta(409, { error: "Este horario ya no está disponible." });
-      if (!e.es_futuro) return respuesta(409, { error: "No se puede reservar un horario que ya pasó." });
+       if (!e.es_futuro) return respuesta(409, { error: "No se puede reservar un horario que ya pasó." });
+       const bloqueado = await db.query(`SELECT 1 FROM clinicas_dias_bloqueados
+         WHERE id_clinica = $1 AND fecha = $2::date`, [e.id_clinica, e.fecha_local]);
+       if (bloqueado.rows.length || festivoNacional(e.fecha_local))
+         return respuesta(409, { error: "Este día no está disponible para citas." });
 
       const ocupado = await db.query(
         "SELECT 1 FROM citas WHERE id_espacio = $1 AND estado <> 'cancelada'",

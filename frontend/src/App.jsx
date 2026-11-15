@@ -11,6 +11,7 @@ import ModalConfirmacion from './components/Inicio/ModalConfirmacion.jsx'
 import Conocenos from './components/Conocenos.jsx'
 import FichaClinica from './components/Clinica/FichaClinica.jsx'
 import MisCitasClinica from './components/Clinica/MisCitasClinica.jsx'
+import AgendaClinica from './components/Clinica/AgendaClinica.jsx'
 import MisCitasUsuario from './components/Citas/MisCitasUsuario.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
@@ -272,6 +273,11 @@ function App() {
         {modalConfirmacionSalir}
       </>
     )
+  }
+
+  if (pathname === '/mi-clinica/agenda') {
+    return <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
+      error={errorPerfil} rolesPermitidos={['clinica']}><AgendaClinica /></RutaPrivada>
   }
 
   if (pathname === '/mi-clinica') {

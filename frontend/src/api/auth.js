@@ -135,6 +135,20 @@ export function consultarCitasClinica() {
   return enviarConSesion('/api/clinicas/mi-citas')
 }
 
+export const consultarAgendaClinica = () => enviarConSesion('/api/clinicas/mi-agenda')
+export const guardarHorariosAgenda = (horarios) => enviarConSesion('/api/clinicas/mi-agenda/horarios', {
+  method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ horarios }),
+})
+export const crearCupoClinica = (datos) => enviarConSesion('/api/clinicas/mi-agenda/espacios', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+})
+export const cambiarCupoClinica = (id, habilitado) => enviarConSesion(`/api/clinicas/mi-agenda/espacios/${encodeURIComponent(id)}`, {
+  method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ habilitado }),
+})
+export const bloquearDiaClinica = (fecha) => enviarConSesion('/api/clinicas/mi-agenda/bloqueos', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fecha }),
+})
+
 // Citas del paciente autenticado: el servidor filtra por su JWT.
 export function consultarCitasUsuario() {
   return enviarConSesion('/api/citas')
