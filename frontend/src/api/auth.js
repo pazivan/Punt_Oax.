@@ -64,6 +64,10 @@ export function iniciarSesionClinica(correo, password) {
   return enviarAuth('/api/auth/login-clinica', { correo, password })
 }
 
+export function iniciarSesionAdmin(correo, password) {
+  return enviarAuth('/api/auth/login-admin', { correo, password })
+}
+
 // El almacenamiento de la sesión queda concentrado aquí para poder sustituirlo.
 const CLAVE_SESION = 'puntoax-sesion'
 
@@ -71,7 +75,7 @@ export function leerSesion() {
   try {
     const sesion = JSON.parse(sessionStorage.getItem(CLAVE_SESION))
     return sesion && typeof sesion.token === 'string' && sesion.token &&
-      (sesion.tipo === 'usuario' || sesion.tipo === 'clinica') &&
+      (['usuario', 'clinica', 'administrador'].includes(sesion.tipo)) &&
       sesion.cuenta && typeof sesion.cuenta === 'object' && !Array.isArray(sesion.cuenta)
       ? sesion
       : null
@@ -81,10 +85,10 @@ export function leerSesion() {
 }
 
 export function guardarSesion(respuesta, tipo) {
-  if (!respuesta || (tipo !== 'usuario' && tipo !== 'clinica')) {
+  if (!respuesta || !['usuario', 'clinica', 'administrador'].includes(tipo)) {
     throw new Error('La respuesta de inicio de sesión no es válida.')
   }
-  const cuenta = tipo === 'clinica' ? respuesta.clinica : respuesta.usuario
+  const cuenta = tipo === 'clinica' ? respuesta.clinica : tipo === 'administrador' ? respuesta.admin : respuesta.usuario
   if (typeof respuesta.token !== 'string' || !respuesta.token || !cuenta ||
       typeof cuenta !== 'object' || Array.isArray(cuenta)) {
     throw new Error('La respuesta de inicio de sesión no es válida.')
@@ -102,7 +106,7 @@ export function cerrarSesion() {
   sessionStorage.removeItem(CLAVE_SESION)
 }
 
-async function enviarConSesion(ruta, opciones = {}) {
+export async function enviarConSesion(ruta, opciones = {}) {
   const token = leerSesion()?.token
   if (!token) throw new Error('Inicia sesión para continuar.')
 

@@ -632,3 +632,11 @@
     line-height: 34px;
   }
 }
+
+/* El acceso administrativo comparte el formulario, con tres opciones de rol. */
+.auth-role-toggle { gap: 4px; }
+.auth-role-toggle .auth-toggle-btn { min-width: 0; height: auto; min-height: 40px; padding: 6px 3px; font-family: inherit; font-size: 12px; }
+@media (max-width: 450px) {
+  .auth-role-toggle .auth-toggle-btn { font-size: 11px; }
+  .auth-role-toggle .auth-toggle-btn svg { display: none; }
+}
