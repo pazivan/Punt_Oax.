@@ -57,6 +57,7 @@
 }
 
 .auth-nav-link {
+  font-family: var(--sans);
   font-size: 14px;
   color: #414845;
   text-decoration: none;
@@ -565,6 +566,7 @@
 }
 
 .auth-inline-link {
+  font-family: var(--sans);
   background: none;
   border: none;
   color: #103328;

@@ -2,6 +2,9 @@
 
 ## Tipografías
 
+La interfaz usa Nimbus Sans, los destacados usan Liberation Serif y los
+códigos usan una fuente monoespaciada.
+
 Las fuentes originales sin modificar se incluyen en `public/fonts/`: Nimbus Sans
 (URW Software / (URW)++ Design & Development, AGPL-3 con excepción de fuente)
 y Liberation Serif (Google Corporation / Red Hat, Inc., SIL OFL-1.1).
