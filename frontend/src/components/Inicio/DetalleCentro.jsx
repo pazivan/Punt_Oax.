@@ -11,7 +11,7 @@ import {
   User,
 } from 'lucide-react';
 import CampanaNotificaciones from './CampanaNotificaciones.jsx';
-import '../../styles/Inicio.css';
+import '../../css/Inicio.css';
 import { normalizarUrlExterna } from '../../utils/enlaces.js';
 
 /**

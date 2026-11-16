@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowLeft,
-  ArrowRight,
-  Calendar,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -16,8 +14,8 @@ import {
   User,
 } from 'lucide-react';
 import CampanaNotificaciones from './CampanaNotificaciones.jsx';
-import { consultarCitasUsuario } from '../../api/auth.js';
-import { filtrarCitas } from '../../utils/citasClinica.js';
+import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
+import { consultarCitasUsuario, consultarMiFicha } from '../../api/auth.js';
 import {
   PASSWORD_MAX_BYTES,
   PASSWORD_MIN,
@@ -25,7 +23,7 @@ import {
   obtenerClavePerfilLocal,
   validarPassword,
 } from '../../utils/validaciones.js';
-import '../../styles/Inicio.css';
+import '../../css/Inicio.css';
 
 const NOMBRE_MIN = 2;
 const NOMBRE_MAX = 60;
@@ -53,14 +51,20 @@ function limpiarTelefonoDiezDigitos(valor) {
  * de contacto y módulo de cambio de contraseña con validaciones.
  */
 export default function MiPerfil({ sesion, perfil, onSalir }) {
+  const esClinica = sesion?.tipo === 'clinica' || perfil?.rol === 'clinica';
   const correoCuenta =
     sesion?.cuenta?.correo || perfil?.correo || '';
   const idCuenta =
-    sesion?.cuenta?.id_usuario || perfil?.id || 'Verificado en sesión';
+    sesion?.cuenta?.id_clinica ||
+    sesion?.cuenta?.id_usuario ||
+    perfil?.id ||
+    'Verificado en sesión';
   const rolCuenta =
-    perfil?.rol === 'administrador'
-      ? 'Administrador'
-      : 'Paciente / Usuario';
+    esClinica
+      ? 'Clínica / Centro'
+      : perfil?.rol === 'administrador'
+        ? 'Administrador'
+        : 'Paciente / Usuario';
 
   const datosIniciales = useMemo(
     () => leerDatosPerfilLocal(correoCuenta),
@@ -86,11 +90,30 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
   const [mensajePassword, setMensajePassword] = useState('');
   const [errorPassword, setErrorPassword] = useState('');
 
-  // Resumen de citas del usuario
+  // Resumen de citas del usuario (y ficha si es clínica)
   const [citas, setCitas] = useState([]);
+  const [fichaClinica, setFichaClinica] = useState(null);
 
   useEffect(() => {
     let activo = true;
+    if (esClinica) {
+      consultarMiFicha()
+        .then((datos) => {
+          if (!activo) return;
+          setFichaClinica(datos);
+          if (!nombre.trim() && datos?.clinica?.nombre) {
+            setNombre(datos.clinica.nombre);
+          }
+        })
+        .catch(() => {
+          if (!activo) return;
+          setFichaClinica(null);
+        });
+      return () => {
+        activo = false;
+      };
+    }
+
     consultarCitasUsuario()
       .then((res) => {
         if (!activo) return;
@@ -103,12 +126,30 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
     return () => {
       activo = false;
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esClinica]);
 
-  const citasProximas = useMemo(
-    () => filtrarCitas(citas, 'proximas').length,
-    [citas]
-  );
+  const enModoPanelAprobado =
+    esClinica &&
+    (fichaClinica?.clinica?.estado_publicacion === 'aprobada' ||
+      sesion?.cuenta?.estado_publicacion === 'aprobada' ||
+      sessionStorage.getItem('puntoax_panel_aprobado') === '1');
+
+  const estadoSolicitudClinica = useMemo(() => {
+    if (!esClinica) return '';
+    const pub = fichaClinica?.clinica?.estado_publicacion || sesion?.cuenta?.estado_publicacion;
+    const fichaEst = fichaClinica?.clinica?.estado_ficha;
+    const postEst = fichaClinica?.postulacion?.estado;
+
+    if (pub === 'aprobada') return 'Clínica aprobada y publicada';
+    if (postEst === 'pendiente' || fichaEst === 'pendiente_revision') {
+      return 'Enviada para revisión';
+    }
+    if (fichaEst === 'rechazada' || pub === 'rechazada') {
+      return 'Requiere correcciones';
+    }
+    return 'Aún no registrada (en borrador)';
+  }, [esClinica, fichaClinica, sesion]);
 
   const nombreCompletoVista =
     [nombre.trim(), apellidos.trim()].filter(Boolean).join(' ') ||
@@ -269,76 +310,94 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
   return (
     <div className="perfil-page">
       {/* Header (80px) */}
-      <header className="inicio-header">
-        <div className="inicio-header-container">
-          <div className="inicio-header-left">
-            <div className="inicio-brand-wrap">
-              <Link to="/cuenta" className="inicio-brand" style={{ textDecoration: 'none' }}>
-                <img
-                  src="/logo-puntoax.svg"
-                  alt=""
-                  className="inicio-brand-logo"
-                  aria-hidden="true"
-                />
-                <span>PuntOax</span>
-              </Link>
+      {esClinica ? (
+        <EncabezadoClinica
+          sesion={sesion}
+          onSalir={onSalir}
+          modoPostulacion={!enModoPanelAprobado}
+        />
+      ) : (
+        <header className="inicio-header">
+          <div className="inicio-header-container">
+            <div className="inicio-header-left">
+              <div className="inicio-brand-wrap">
+                <Link to="/cuenta" className="inicio-brand" style={{ textDecoration: 'none' }}>
+                  <img
+                    src="/logo-puntoax.svg"
+                    alt=""
+                    className="inicio-brand-logo"
+                    aria-hidden="true"
+                  />
+                  <span>PuntOax</span>
+                </Link>
+              </div>
+
+              <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
+                <Link to="/cuenta" className="inicio-nav-link">
+                  Inicio
+                </Link>
+                <Link to="/mapa" className="inicio-nav-link">
+                  Mapa de centros
+                </Link>
+                <Link to="/agendar-cita" className="inicio-nav-link">
+                  Agendar cita
+                </Link>
+                <Link to="/mis-citas" className="inicio-nav-link">
+                  Mis citas
+                </Link>
+                <Link to="/informacion-util" className="inicio-nav-link">
+                  Información útil
+                </Link>
+              </nav>
             </div>
 
-            <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-              <Link to="/cuenta" className="inicio-nav-link">
-                Inicio
+            <div className="inicio-header-right">
+              <CampanaNotificaciones sesion={sesion} citasPreCargadas={citas} />
+
+              <Link
+                to="/mi-perfil"
+                className="inicio-header-profile-link is-active"
+                title={correoCuenta || 'Mi perfil'}
+                aria-current="page"
+              >
+                <span className="inicio-avatar-circle" aria-hidden="true">
+                  <User size={14} color="#FFFFFF" />
+                </span>
+                <span>Mi perfil</span>
               </Link>
-              <Link to="/mapa" className="inicio-nav-link">
-                Mapa de centros
-              </Link>
-              <Link to="/agendar-cita" className="inicio-nav-link">
-                Agendar cita
-              </Link>
-              <Link to="/mis-citas" className="inicio-nav-link">
-                Mis citas
-              </Link>
-              <Link to="/informacion-util" className="inicio-nav-link">
-                Información útil
-              </Link>
-            </nav>
+
+              <button
+                type="button"
+                onClick={onSalir}
+                className="inicio-header-logout-btn"
+              >
+                Salir
+              </button>
+            </div>
           </div>
-
-          <div className="inicio-header-right">
-            <CampanaNotificaciones sesion={sesion} citasPreCargadas={citas} />
-
-            <Link
-              to="/mi-perfil"
-              className="inicio-header-profile-link is-active"
-              title={correoCuenta || 'Mi perfil'}
-              aria-current="page"
-            >
-              <span className="inicio-avatar-circle" aria-hidden="true">
-                <User size={14} color="#FFFFFF" />
-              </span>
-              <span>Mi perfil</span>
-            </Link>
-
-            <button
-              type="button"
-              onClick={onSalir}
-              className="inicio-header-logout-btn"
-            >
-              Salir
-            </button>
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main Content */}
       <main className="perfil-main">
         <div className="perfil-container">
           <div className="detalle-back-margin">
             <div className="detalle-back-wrap">
-              <Link to="/cuenta" className="detalle-back-link" style={{ textDecoration: 'none' }}>
+              <Link
+                to={esClinica ? (enModoPanelAprobado ? '/panel-clinica' : '/mi-clinica') : '/cuenta'}
+                className="detalle-back-link"
+                style={{ textDecoration: 'none' }}
+              >
                 <span className="detalle-back-icon" aria-hidden="true">
                   <ArrowLeft size={14} color="#001D14" />
                 </span>
-                <span className="detalle-back-text">Volver al inicio</span>
+                <span className="detalle-back-text">
+                  {esClinica
+                    ? enModoPanelAprobado
+                      ? 'Volver al panel'
+                      : 'Volver al formulario'
+                    : 'Volver al inicio'}
+                </span>
               </Link>
             </div>
           </div>
@@ -349,7 +408,9 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
               Mi perfil
             </h1>
             <p className="perfil-subtitle-text">
-              Consulta los detalles de tu cuenta, administra tus datos de contacto para agendar citas más rápido y actualiza tu contraseña de acceso.
+              {esClinica
+                ? 'Consulta los detalles de tu cuenta de clínica, administra tus datos de contacto y actualiza tu contraseña de acceso.'
+                : 'Consulta los detalles de tu cuenta, administra tus datos de contacto para agendar citas más rápido y actualiza tu contraseña de acceso.'}
             </p>
           </section>
 
@@ -376,54 +437,46 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
                   </span>
                 </div>
 
+                {esClinica && (
+                  <>
+                    <div className="perfil-meta-item">
+                      <span className="perfil-meta-label">Estado de registro</span>
+                      <span className="perfil-meta-value">{estadoSolicitudClinica}</span>
+                    </div>
+
+                    <div className="perfil-meta-item">
+                      <span className="perfil-meta-label">Nombre</span>
+                      <span className="perfil-meta-value">{nombreCompletoVista}</span>
+                    </div>
+                  </>
+                )}
+
                 <div className="perfil-meta-item">
                   <span className="perfil-meta-label">Correo de acceso</span>
                   <span className="perfil-meta-value">{correoCuenta || 'No disponible'}</span>
                 </div>
 
-                <div className="perfil-meta-item">
-                  <span className="perfil-meta-label">Identificador de usuario</span>
-                  <span className="perfil-meta-value is-mono">{String(idCuenta)}</span>
-                </div>
-              </div>
-
-              <div className="perfil-stats-grid">
-                <div className="perfil-stat-box">
-                  <span className="perfil-stat-number">{citasProximas}</span>
-                  <span className="perfil-stat-label">
-                    Cita{citasProximas === 1 ? '' : 's'} próxima{citasProximas === 1 ? '' : 's'}
-                  </span>
-                </div>
-                <div className="perfil-stat-box">
-                  <span className="perfil-stat-number">{citas.length}</span>
-                  <span className="perfil-stat-label">Total registradas</span>
-                </div>
-              </div>
-
-              <div className="perfil-sidebar-actions">
-                <Link to="/mis-citas" className="perfil-action-btn-primary">
-                  <Calendar size={15} color="#FFFFFF" aria-hidden="true" />
-                  <span>Ver mis citas</span>
-                  <ArrowRight size={14} color="#FFFFFF" aria-hidden="true" />
-                </Link>
-
-                <Link to="/agendar-cita" className="perfil-action-btn-secondary">
-                  <span>Agendar nueva cita</span>
-                  <ArrowRight size={14} color="#001D14" aria-hidden="true" />
-                </Link>
+                {!esClinica && (
+                  <div className="perfil-meta-item">
+                    <span className="perfil-meta-label">Identificador de usuario</span>
+                    <span className="perfil-meta-value is-mono">{String(idCuenta)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="perfil-privacy-box">
                 <Lock size={15} color="#103328" aria-hidden="true" />
                 <p>
-                  Tu información personal es confidencial y se emplea únicamente para gestionar tus solicitudes de atención médica.
+                  {esClinica
+                    ? 'Tu información de acceso es confidencial y se emplea únicamente para administrar tu centro en PuntOax.'
+                    : 'Tu información personal es confidencial y se emplea únicamente para gestionar tus solicitudes de atención médica.'}
                 </p>
               </div>
             </aside>
 
             {/* Columna derecha: Formularios de Detalles y Contraseña */}
             <div className="perfil-content-stack">
-              {/* Tarjeta 1: Detalles de la cuenta y datos de contacto */}
+              {/* Tarjeta 1: Detalles de la cuenta */}
               <section className="perfil-card" aria-labelledby="perfil-datos-heading">
                 <div className="perfil-card-header">
                   <div className="perfil-card-icon" aria-hidden="true">
@@ -431,10 +484,12 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
                   </div>
                   <div>
                     <h2 id="perfil-datos-heading" className="perfil-card-title">
-                      Detalles personales y de contacto
+                      {esClinica ? 'Datos de la cuenta' : 'Detalles personales y de contacto'}
                     </h2>
                     <p className="perfil-card-desc">
-                      Estos datos se rellenarán automáticamente en el Paso 1 cuando agendes una cita.
+                      {esClinica
+                        ? 'Consulta el correo vinculado a tu clínica y actualiza el nombre visible de tu cuenta.'
+                        : 'Estos datos se rellenarán automáticamente en el Paso 1 cuando agendes una cita.'}
                     </p>
                   </div>
                 </div>
@@ -474,20 +529,22 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
                       />
                     </div>
                     <span className="agendar-field-hint">
-                      Se asigna automáticamente desde tu cuenta y no requiere volver a capturarse al agendar.
+                      {esClinica
+                        ? 'Este correo corresponde a tu cuenta de acceso como clínica.'
+                        : 'Se asigna automáticamente desde tu cuenta y no requiere volver a capturarse al agendar.'}
                     </span>
                   </div>
 
-                  <div className="agendar-form-row">
+                  {esClinica ? (
                     <div className="agendar-field-group">
                       <label htmlFor="perfil-nombre" className="agendar-label">
-                        Nombre(s)
+                        Nombre de la clínica o cuenta
                       </label>
                       <input
                         id="perfil-nombre"
                         type="text"
                         className="agendar-input"
-                        placeholder="Ej. Mariana"
+                        placeholder="Ej. Clínica Salud Oaxaca"
                         maxLength={NOMBRE_MAX}
                         value={nombre}
                         onChange={(e) => {
@@ -496,62 +553,85 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
                           if (mensajeDatos) setMensajeDatos('');
                         }}
                       />
-                      <span className="agendar-field-hint">
-                        Solo letras ({NOMBRE_MIN} a {NOMBRE_MAX} caracteres).
-                      </span>
                     </div>
+                  ) : (
+                    <>
+                      <div className="agendar-form-row">
+                        <div className="agendar-field-group">
+                          <label htmlFor="perfil-nombre" className="agendar-label">
+                            Nombre(s)
+                          </label>
+                          <input
+                            id="perfil-nombre"
+                            type="text"
+                            className="agendar-input"
+                            placeholder="Ej. Mariana"
+                            maxLength={NOMBRE_MAX}
+                            value={nombre}
+                            onChange={(e) => {
+                              setNombre(limpiarTextoNombre(e.target.value, NOMBRE_MAX));
+                              if (errorDatos) setErrorDatos('');
+                              if (mensajeDatos) setMensajeDatos('');
+                            }}
+                          />
+                          <span className="agendar-field-hint">
+                            Solo letras ({NOMBRE_MIN} a {NOMBRE_MAX} caracteres).
+                          </span>
+                        </div>
 
-                    <div className="agendar-field-group">
-                      <label htmlFor="perfil-apellidos" className="agendar-label">
-                        Apellidos
-                      </label>
-                      <input
-                        id="perfil-apellidos"
-                        type="text"
-                        className="agendar-input"
-                        placeholder="Ej. López Ruiz"
-                        maxLength={APELLIDOS_MAX}
-                        value={apellidos}
-                        onChange={(e) => {
-                          setApellidos(limpiarTextoNombre(e.target.value, APELLIDOS_MAX));
-                          if (errorDatos) setErrorDatos('');
-                          if (mensajeDatos) setMensajeDatos('');
-                        }}
-                      />
-                      <span className="agendar-field-hint">
-                        Solo letras ({APELLIDOS_MIN} a {APELLIDOS_MAX} caracteres).
-                      </span>
-                    </div>
-                  </div>
+                        <div className="agendar-field-group">
+                          <label htmlFor="perfil-apellidos" className="agendar-label">
+                            Apellidos
+                          </label>
+                          <input
+                            id="perfil-apellidos"
+                            type="text"
+                            className="agendar-input"
+                            placeholder="Ej. López Ruiz"
+                            maxLength={APELLIDOS_MAX}
+                            value={apellidos}
+                            onChange={(e) => {
+                              setApellidos(limpiarTextoNombre(e.target.value, APELLIDOS_MAX));
+                              if (errorDatos) setErrorDatos('');
+                              if (mensajeDatos) setMensajeDatos('');
+                            }}
+                          />
+                          <span className="agendar-field-hint">
+                            Solo letras ({APELLIDOS_MIN} a {APELLIDOS_MAX} caracteres).
+                          </span>
+                        </div>
+                      </div>
 
-                  <div className="agendar-field-group">
-                    <label htmlFor="perfil-telefono" className="agendar-label">
-                      Teléfono de contacto (10 dígitos)
-                    </label>
-                    <div className="perfil-input-icon-wrap">
-                      <span className="perfil-input-icon" aria-hidden="true">
-                        <Phone size={15} color="#596763" />
-                      </span>
-                      <input
-                        id="perfil-telefono"
-                        type="tel"
-                        inputMode="numeric"
-                        pattern="[0-9]{10}"
-                        maxLength={TELEFONO_LONGITUD}
-                        className="agendar-input perfil-input-with-icon"
-                        placeholder="9510000000"
-                        value={telefono}
-                        onChange={(e) => {
-                          setTelefono(limpiarTelefonoDiezDigitos(e.target.value));
-                          if (errorDatos) setErrorDatos('');
-                          if (mensajeDatos) setMensajeDatos('');
-                        }}
-                      />
-                    </div>
-                    <span className="agendar-field-hint">
-                      Únicamente números ({telefono.length}/{TELEFONO_LONGITUD} dígitos).
-                    </span>
-                  </div>
+                      <div className="agendar-field-group">
+                        <label htmlFor="perfil-telefono" className="agendar-label">
+                          Teléfono de contacto (10 dígitos)
+                        </label>
+                        <div className="perfil-input-icon-wrap">
+                          <span className="perfil-input-icon" aria-hidden="true">
+                            <Phone size={15} color="#596763" />
+                          </span>
+                          <input
+                            id="perfil-telefono"
+                            type="tel"
+                            inputMode="numeric"
+                            pattern="[0-9]{10}"
+                            maxLength={TELEFONO_LONGITUD}
+                            className="agendar-input perfil-input-with-icon"
+                            placeholder="9510000000"
+                            value={telefono}
+                            onChange={(e) => {
+                              setTelefono(limpiarTelefonoDiezDigitos(e.target.value));
+                              if (errorDatos) setErrorDatos('');
+                              if (mensajeDatos) setMensajeDatos('');
+                            }}
+                          />
+                        </div>
+                        <span className="agendar-field-hint">
+                          Únicamente números ({telefono.length}/{TELEFONO_LONGITUD} dígitos).
+                        </span>
+                      </div>
+                    </>
+                  )}
 
                   <div className="perfil-form-actions">
                     <button type="submit" className="agendar-submit-btn">

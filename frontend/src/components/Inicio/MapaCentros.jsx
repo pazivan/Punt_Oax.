@@ -7,7 +7,8 @@ import DetalleCentro from './DetalleCentro.jsx';
 import AgendarCitaDatos from './AgendarCitaDatos.jsx';
 import MapaLeaflet from './MapaLeaflet.jsx';
 import CampanaNotificaciones from './CampanaNotificaciones.jsx';
-import '../../styles/Inicio.css';
+import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
+import '../../css/Inicio.css';
 
 /**
  * MapaCentros - Ventana de Mapa / Directorio de centros según diseño oficial de Figma (1280x1294).

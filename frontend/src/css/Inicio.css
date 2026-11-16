@@ -107,6 +107,10 @@
   align-items: center;
   color: #414845;
   text-decoration: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 .inicio-nav-link.active {

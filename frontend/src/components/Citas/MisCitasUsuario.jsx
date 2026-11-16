@@ -10,8 +10,8 @@ import CampanaNotificaciones from '../Inicio/CampanaNotificaciones.jsx'
 import {
   ETIQUETAS_ESTADO, filtrarCitas, formatearFechaCita,
 } from '../../utils/citasClinica.js'
-import '../../styles/Inicio.css'
-import './Citas.css'
+import '../../css/Inicio.css'
+import '../../css/Citas.css'
 
 const FILTROS = [
   { id: 'proximas', texto: 'Próximas' },

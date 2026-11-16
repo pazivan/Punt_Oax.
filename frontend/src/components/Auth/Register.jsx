@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ArrowRight, Building2, Check, Eye, EyeOff, ShieldCheck, User } from 'lucide-react';
-import '../../styles/Auth.css';
+import '../../css/Auth.css';
 import { registrarClinica, registrarUsuario } from '../../api/auth';
 import {
   PASSWORD_MAX_BYTES,

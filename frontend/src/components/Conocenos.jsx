@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, HeartHandshake, MapPin, ShieldCheck } from 'lucide-react'
-import './Conocenos.css'
+import '../css/Conocenos.css'
 
 export default function Conocenos({ sesion, perfil, onSalir }) {
   const rutaCuenta = perfil?.rol === 'clinica' ? '/mi-clinica' : perfil?.rol === 'administrador' ? '/admin' : '/cuenta'

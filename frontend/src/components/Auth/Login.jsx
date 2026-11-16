@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ArrowRight, Building2, Check, Eye, EyeOff, MapPin, ShieldCheck, User } from 'lucide-react';
-import '../../styles/Auth.css';
+import '../../css/Auth.css';
 import { guardarSesion, iniciarSesion, iniciarSesionAdmin, iniciarSesionClinica } from '../../api/auth';
 import { normalizarCorreo, validarEmail, validarRequerido } from '../../utils/validaciones';
 

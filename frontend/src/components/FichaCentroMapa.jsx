@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { direccionCompleta, enlaceComoLlegar, horarioTexto, textoPendiente } from '../utils/centros.js'
 import { normalizarUrlExterna } from '../utils/enlaces.js'
-import './DirectorioMapa.css'
+import '../css/DirectorioMapa.css'
 
 export function ResumenMarcador({ centro, onVerFicha }) {
   const enlace = enlaceComoLlegar(centro)

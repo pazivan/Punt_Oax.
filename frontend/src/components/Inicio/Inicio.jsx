@@ -9,7 +9,7 @@ import {
   User,
 } from 'lucide-react';
 import CampanaNotificaciones, { BannerRecordatorioCitas } from './CampanaNotificaciones.jsx';
-import '../../styles/Inicio.css';
+import '../../css/Inicio.css';
 
 /**
  * Inicio - Ventana de inicio para usuario autenticado según diseño de Figma (1280x932).

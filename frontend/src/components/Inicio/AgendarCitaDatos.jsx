@@ -19,8 +19,8 @@ import ModalConfirmacion from './ModalConfirmacion.jsx';
 import CampanaNotificaciones from './CampanaNotificaciones.jsx';
 import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js';
 import { consultarEspaciosClinica, solicitarCita } from '../../api/auth.js';
-import { validarEmail, validarTelefono } from '../../utils/validaciones.js';
-import '../../styles/Inicio.css';
+import { leerDatosPerfilLocal, validarEmail, validarTelefono } from '../../utils/validaciones.js';
+import '../../css/Inicio.css';
 
 const NOMBRE_MIN = 2;
 const NOMBRE_MAX = 60;

@@ -11,7 +11,7 @@ import {
   cambiarVisibilidadAdmin, consultarSolicitudAdmin, consultarSolicitudesAdmin,
   descargarDocumentoAdmin, resolverSolicitudAdmin,
 } from '../../api/admin.js'
-import './Administracion.css'
+import '../../css/Administracion.css'
 
 const FILTROS = [
   { valor: 'pendiente', nombre: 'Pendientes' },

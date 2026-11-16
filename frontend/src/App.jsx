@@ -11,13 +11,14 @@ import MiPerfil from './components/Inicio/MiPerfil.jsx'
 import ModalConfirmacion from './components/Inicio/ModalConfirmacion.jsx'
 import Conocenos from './components/Conocenos.jsx'
 import FichaClinica from './components/Clinica/FichaClinica.jsx'
+import PanelClinica from './components/Clinica/PanelClinica.jsx'
 import MisCitasClinica from './components/Clinica/MisCitasClinica.jsx'
 import AgendaClinica from './components/Clinica/AgendaClinica.jsx'
 import MisCitasUsuario from './components/Citas/MisCitasUsuario.jsx'
 import Administracion from './components/Admin/Administracion.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
-import './App.css'
+import './css/App.css'
 
 function App() {
   const navigate = useNavigate()
@@ -102,6 +103,7 @@ function App() {
   function confirmarSalir() {
     consultaPerfil.current++
     cerrarSesion()
+    sessionStorage.removeItem('puntoax_panel_aprobado')
     setMostrarConfirmacionSalir(false)
     setSesion(null)
     setPerfil(null)
@@ -268,7 +270,7 @@ function App() {
           perfil={perfil}
           verificando={verificandoPerfil}
           error={errorPerfil}
-          rolesPermitidos={['usuario', 'administrador']}
+          rolesPermitidos={['usuario', 'clinica', 'administrador']}
         >
           <MiPerfil sesion={sesion} perfil={perfil} onSalir={salir} />
         </RutaPrivada>
@@ -295,8 +297,37 @@ function App() {
   }
 
   if (pathname === '/mi-clinica/agenda') {
-    return <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
-      error={errorPerfil} rolesPermitidos={['clinica']}><AgendaClinica /></RutaPrivada>
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          rolesPermitidos={['clinica']}
+        >
+          <AgendaClinica sesion={sesion} onSalir={salir} />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
+  }
+
+  if (pathname === '/panel-clinica') {
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          rolesPermitidos={['clinica']}
+        >
+          <PanelClinica sesion={sesion} onSalir={salir} />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
   }
 
   if (pathname === '/mi-clinica') {
