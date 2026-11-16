@@ -6,6 +6,7 @@ const path = require("node:path");
 const { randomUUID, createHash } = require("node:crypto");
 const pool = require("./db");
 const { listarCitasClinica } = require("./citasClinica");
+const { fichaPublica } = require("./catalogoPublico");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
 const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
@@ -859,6 +860,8 @@ app.get("/api/clinicas", async (req, res) => {
         c.codigo_postal,
         c.estado_publicacion,
         c.id_origen,
+        c.clues,
+        c.revision_catalogo,
         c.region,
         c.fuente_origen AS fuente,
         c.horario_texto AS horario,
@@ -936,7 +939,7 @@ app.get("/api/clinicas", async (req, res) => {
 
     const resultado = await pool.query(consulta, valores);
 
-    return res.json(resultado.rows);
+    return res.json(resultado.rows.map(fichaPublica));
   } catch (error) {
     console.error("Error al consultar clínicas:", error.message);
 
@@ -957,7 +960,7 @@ app.get("/api/clinicas/:id", async (req, res) => {
       SELECT c.id_clinica, c.nombre, c.descripcion, c.tipo_institucion,
         c.telefono, c.correo_contacto, c.sitio_web,
         c.municipio, c.localidad, c.direccion, c.codigo_postal,
-        c.id_origen, c.region, c.fuente_origen AS fuente,
+        c.id_origen, c.clues, c.revision_catalogo, c.region, c.fuente_origen AS fuente,
         c.horario_texto AS horario, c.ubicacion_maps_url AS ubicacion_maps,
         c.nivel_atencion, c.situacion_ubicacion, c.verificacion_datos,
         c.datos_por_confirmar,
@@ -1003,7 +1006,7 @@ app.get("/api/clinicas/:id", async (req, res) => {
         ORDER BY dia_semana, hora_apertura
       `, [id]),
     ]);
-    return res.json({ ...resultado.rows[0], servicios: servicios.rows, horarios: horarios.rows });
+    return res.json(fichaPublica({ ...resultado.rows[0], servicios: servicios.rows, horarios: horarios.rows }));
   } catch (error) {
     console.error("Error al consultar ficha de clínica:", error.message);
     return res.status(500).json({ error: "No se pudo obtener la ficha del centro" });

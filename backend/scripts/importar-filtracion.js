@@ -16,6 +16,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const pool = require("../db");
+const { resolverIdentidad } = require("./identidad-catalogo");
 
 const CATEGORIAS_CANONICAS = ["ITS", "ILE"];
 const CAMPOS_TEXTO = [
@@ -323,8 +324,9 @@ function parsearHorario(registro) {
   return horarios;
 }
 
-function validarFila(registro) {
+function validarFila(registro, { catalogoIle = false } = {}) {
   const idOrigen = limpiar(obtener(registro, "id_origen"));
+  const clues = limpiar(registro.clues);
   let nombre = limpiar(obtener(registro, "nombre"));
   const cabeceras = registro.__cabeceras || new Set();
 
@@ -339,7 +341,9 @@ function validarFila(registro) {
     return { ok: false, motivo: "verificación distinta de 'verificado'" };
   }
 
-  if (!idOrigen) return { ok: false, motivo: "sin id_origen" };
+  if (!idOrigen && !(catalogoIle && /^[A-Z]{5}\d{6}$/.test(clues))) {
+    return { ok: false, motivo: "sin id_origen" };
+  }
   if (idOrigen.length > 50) return { ok: false, motivo: "id_origen mayor a 50 caracteres" };
 
   // Deducir nombre de unidad si no viene en columna específica (ej. catálogo ITS de COESIDA)
@@ -390,7 +394,8 @@ function validarFila(registro) {
   return {
     ok: true,
     datos: {
-      id_origen: idOrigen,
+      id_origen: idOrigen || null,
+      clues: clues || null,
       nombre,
       categorias,
       punto,
@@ -578,7 +583,7 @@ async function actualizarClinica(client, idClinica, datos) {
   ]);
 }
 
-async function guardarServicios(client, idClinica, datos, servicios) {
+async function guardarServicios(client, idClinica, datos, servicios, conservar = false) {
   let guardados = 0;
   for (const categoria of datos.categorias) {
     const servicio = servicios.get(categoria);
@@ -587,13 +592,13 @@ async function guardarServicios(client, idClinica, datos, servicios) {
         id_clinica, id_servicio, requisitos, costo, costo_texto, detalle_servicio,
         requiere_cita, activo, id_origen
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, $8)
-      ON CONFLICT (id_clinica, id_servicio) DO UPDATE SET
+      ON CONFLICT (id_clinica, id_servicio) ${conservar ? "DO NOTHING" : `DO UPDATE SET
         activo = TRUE,
         requisitos = COALESCE(EXCLUDED.requisitos, clinicas_servicios.requisitos),
         costo = COALESCE(EXCLUDED.costo, clinicas_servicios.costo),
         costo_texto = COALESCE(EXCLUDED.costo_texto, clinicas_servicios.costo_texto),
         detalle_servicio = COALESCE(EXCLUDED.detalle_servicio, clinicas_servicios.detalle_servicio),
-        requiere_cita = EXCLUDED.requiere_cita
+        requiere_cita = EXCLUDED.requiere_cita`}
     `, [
       idClinica, servicio.id_servicio, datos.requisitos, datos.costo, datos.costo_texto,
       datos.detalle_servicio, datos.requiere_cita, datos.id_origen,
@@ -632,24 +637,51 @@ Por defecto solo simula y revierte la transacción. --apply confirma los cambios
 También se puede indicar la ruta con la variable FILTRACION_CSV.
 Solo se importan filas marcadas como seleccionadas y con verificación "verificado".
 --solo-its-coordenadas exige latitud y longitud explícitas, importa solo ITS
-y no crea horarios estructurados ni habilita citas.`);
+y no crea horarios estructurados ni habilita citas.
+--catalogo-ile exige CLUES y coordenadas explícitas; verifica identidad y
+conserva servicios, agenda y relaciones existentes. Requiere migración 008.`);
 }
 
 async function procesarImportacion(registros, dbPool = pool, opciones = {}) {
   const aplicar = Boolean(opciones.aplicar);
   const soloItsCoordenadas = Boolean(opciones.soloItsCoordenadas);
+  const catalogoIle = Boolean(opciones.catalogoIle);
+  if (catalogoIle && soloItsCoordenadas) throw new Error("Selecciona solo un modo de catálogo.");
   const omitidos = [];
   const centros = new Map();
   let seleccionadosVerificados = 0;
   let fusionados = 0;
 
   for (const registro of registros) {
-    const validacion = validarFila(registro);
+    const validacion = validarFila(registro, { catalogoIle });
     if (!validacion.ok) {
       omitidos.push({ linea: registro.__linea, motivo: validacion.motivo });
       continue;
     }
     const datos = validacion.datos;
+    if (catalogoIle) {
+      const lat = numero(registro.latitud), lng = numero(registro.longitud);
+      if (!/^[A-Z]{5}\d{6}$/.test(datos.clues || '') ||
+          registro.categoria !== 'ILE' || lat === null || lng === null ||
+          !datos.punto || lat !== datos.punto.lat || lng !== datos.punto.lng ||
+          !registro.direccion_identidad || !datos.municipio) {
+        omitidos.push({ linea: registro.__linea, motivo: 'ILE requiere CLUES, domicilio y coordenadas numéricas explícitas' });
+        continue;
+      }
+      datos.categorias = new Set(['ILE']);
+      datos.horarios = [];
+      datos.requiere_cita = false;
+      datos.direccion_identidad = registro.direccion_identidad;
+      datos.revision_catalogo = {
+        hoja: 'Aborto', fila: Number(registro.fila_fuente), id_origen_hoja: datos.id_origen,
+        direccion_identidad: registro.direccion_identidad,
+        direccion_publicada: datos.direccion,
+        campos_no_publicar: (registro.campos_no_publicar || '').split('|').filter(Boolean),
+        verificacion: registro.verificacion_ubicacion,
+        fuente: 'https://docs.google.com/spreadsheets/d/1cVc7mSo7Xi8dNWG7lI7DNeUuS4G12Dq1dfMB1oPfaAU/edit?gid=1498636790',
+        auditoria: 'https://docs.google.com/spreadsheets/d/1cVc7mSo7Xi8dNWG7lI7DNeUuS4G12Dq1dfMB1oPfaAU/edit?gid=1498636791',
+      };
+    }
     if (soloItsCoordenadas) {
       const lat = numero(obtener(registro, "latitud"));
       const lon = numero(obtener(registro, "longitud"));
@@ -664,11 +696,15 @@ async function procesarImportacion(registros, dbPool = pool, opciones = {}) {
       datos.requiere_cita = false;
     }
     seleccionadosVerificados += 1;
-    if (centros.has(datos.id_origen)) {
-      fusionar(centros.get(datos.id_origen), datos);
+    const clave = catalogoIle ? datos.clues : datos.id_origen;
+    if (catalogoIle && centros.has(clave)) {
+      throw new Error(`CLUES repetida en archivo: ${clave}; revisar filas antes de importar.`);
+    }
+    if (centros.has(clave)) {
+      fusionar(centros.get(clave), datos);
       fusionados += 1;
     } else {
-      centros.set(datos.id_origen, datos);
+      centros.set(clave, datos);
     }
   }
 
@@ -689,15 +725,21 @@ async function procesarImportacion(registros, dbPool = pool, opciones = {}) {
     nuevos: 0, actualizados: 0, ambiguos: 0,
     servicios: 0, horarios: 0, sinCoordenadas: 0,
   };
+  const unidades = [];
 
   try {
     await client.query("BEGIN");
+    // Serializa importaciones del catálogo para evitar carreras de identidad.
+    if (catalogoIle) await client.query("LOCK TABLE clinicas IN SHARE ROW EXCLUSIVE MODE");
     const servicios = await obtenerServicios(client);
 
     for (const datos of centros.values()) {
       if (!datos.punto) resumen.sinCoordenadas += 1;
 
-      const existente = await buscarExistente(client, datos);
+      const existente = catalogoIle ? resolverIdentidad((await client.query(`
+        SELECT id_clinica, id_origen, clues, nombre, municipio, direccion,
+          fuente_origen, links_relacionados, horario_texto, revision_catalogo FROM clinicas
+      `)).rows, datos) : await buscarExistente(client, datos);
       if (existente?.ambiguo) {
         resumen.ambiguos += 1;
         omitidos.push({ linea: datos.linea, motivo: existente.motivo });
@@ -707,6 +749,12 @@ async function procesarImportacion(registros, dbPool = pool, opciones = {}) {
       let idClinica;
       if (existente) {
         idClinica = existente.fila.id_clinica;
+        if (catalogoIle) {
+          datos.id_origen = existente.fila.id_origen || datos.id_origen;
+          datos.horario_texto = existente.fila.horario_texto || datos.horario_texto;
+          datos.fuente_origen = [...new Set([existente.fila.fuente_origen, datos.fuente_origen]
+            .filter(Boolean).flatMap((s) => s.split('\n')))].join('\n');
+        }
         datos.links_relacionados = combinarEnlaces(
           existente.fila.links_relacionados,
           datos.links_relacionados
@@ -718,7 +766,13 @@ async function procesarImportacion(registros, dbPool = pool, opciones = {}) {
         resumen.nuevos += 1;
       }
 
-      resumen.servicios += await guardarServicios(client, idClinica, datos, servicios);
+      if (catalogoIle) {
+        await client.query('UPDATE clinicas SET clues = $2, revision_catalogo = $3 WHERE id_clinica = $1',
+          [idClinica, datos.clues, datos.revision_catalogo]);
+      }
+      unidades.push({ fila: datos.revision_catalogo?.fila || datos.linea, id_clinica: idClinica,
+        clues: datos.clues, coincidencia: existente?.tipo || 'nueva' });
+      resumen.servicios += await guardarServicios(client, idClinica, datos, servicios, catalogoIle);
       resumen.horarios += await guardarHorarios(client, idClinica, datos);
     }
 
@@ -737,6 +791,7 @@ async function procesarImportacion(registros, dbPool = pool, opciones = {}) {
       fusionados,
       resumen,
       omitidos,
+      unidades,
     };
   } catch (error) {
     await client.query("ROLLBACK");
@@ -758,6 +813,7 @@ async function main() {
     process.env.FILTRACION_CSV;
   const aplicar = argumentos.includes("--apply") || argumentos.includes("--aplicar");
   const soloItsCoordenadas = argumentos.includes("--solo-its-coordenadas");
+  const catalogoIle = argumentos.includes("--catalogo-ile");
 
   if (!archivo) {
     imprimirAyuda();
@@ -779,7 +835,7 @@ async function main() {
     return;
   }
 
-  const resultado = await procesarImportacion(registros, pool, { aplicar, soloItsCoordenadas });
+  const resultado = await procesarImportacion(registros, pool, { aplicar, soloItsCoordenadas, catalogoIle });
 
   if (!resultado.ok) {
     console.error(resultado.error);
@@ -801,6 +857,9 @@ async function main() {
   console.log(`Franjas horarias guardadas: ${resultado.resumen.horarios}`);
   console.log(`Centros sin coordenadas (no se dibujan en el mapa): ${resultado.resumen.sinCoordenadas}`);
   console.log(`Filas omitidas: ${resultado.omitidos.length}`);
+  if (catalogoIle) {
+    for (const unidad of resultado.unidades) console.log(JSON.stringify(unidad));
+  }
   for (const omitido of resultado.omitidos.slice(0, 20)) {
     console.log(`  Línea ${omitido.linea}: ${omitido.motivo}`);
   }
