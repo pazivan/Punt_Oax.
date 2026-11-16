@@ -6,6 +6,7 @@ import EspacioMapa from './EspacioMapa.jsx';
 import DetalleCentro from './DetalleCentro.jsx';
 import AgendarCitaDatos from './AgendarCitaDatos.jsx';
 import MapaLeaflet from './MapaLeaflet.jsx';
+import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx'
 import '../../styles/Inicio.css';
 
 /**
@@ -163,6 +164,9 @@ export default function MapaCentros({
   return (
     <div className="mapa-page">
       {/* Header (80px) */}
+      {sesion?.tipo === 'clinica' ? (
+      <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
+      ) : (
       <header className="inicio-header">
         <div className="inicio-header-container">
           <div className="inicio-header-left">
@@ -179,13 +183,21 @@ export default function MapaCentros({
               <Link to="/mapa" className="inicio-nav-link active mapa-nav-active">
                 <span className="inicio-nav-link-active-text">Mapa de centros</span>
               </Link>
-              <Link to="/agendar-cita" className="inicio-nav-link">
-                Agendar cita
-              </Link>
-              {sesion?.tipo === 'usuario' && (
-                <Link to="/mis-citas" className="inicio-nav-link">
+              {sesion?.tipo === 'clinica' ? (
+              <Link to="/mi-clinica/citas" className="inicio-nav-link">
                   Mis citas
                 </Link>
+              ) : (
+                <>
+                  <Link to="/agendar-cita" className="inicio-nav-link">
+                    Agendar cita
+                  </Link>
+                  {sesion?.tipo === 'usuario' && (
+                    <Link to="/mis-citas" className="inicio-nav-link">
+                      Mis citas
+                    </Link>
+                  )}
+                </>
               )}
               <Link to="/informacion-util" className="inicio-nav-link">
                 Información útil
@@ -227,6 +239,7 @@ export default function MapaCentros({
           </div>
         </div>
       </header>
+      )}
 
       {/* Main (padding-top: 80px) */}
       <main className="mapa-main">

@@ -13,6 +13,7 @@ import FichaClinica from './components/Clinica/FichaClinica.jsx'
 import MisCitasClinica from './components/Clinica/MisCitasClinica.jsx'
 import AgendaClinica from './components/Clinica/AgendaClinica.jsx'
 import MisCitasUsuario from './components/Citas/MisCitasUsuario.jsx'
+import Administracion from './components/Admin/Administracion.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
 import './App.css'
@@ -137,7 +138,7 @@ function App() {
         setErrorPerfil('')
         setMensajeAuth('')
         // La ficha se consulta de nuevo en el servidor dentro de /mi-clinica.
-        navigate(nuevaSesion?.tipo === 'clinica' ? '/mi-clinica' : '/cuenta')
+        navigate(nuevaSesion?.tipo === 'clinica' ? '/mi-clinica' : nuevaSesion?.tipo === 'administrador' ? '/admin' : '/cuenta')
       }}
       mensaje={mensajeAuth}
     />
@@ -268,7 +269,7 @@ function App() {
           error={errorPerfil}
           rolesPermitidos={['clinica']}
         >
-          <MisCitasClinica onSalir={salir} />
+        <MisCitasClinica sesion={sesion} onSalir={salir} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -290,11 +291,28 @@ function App() {
           error={errorPerfil}
           rolesPermitidos={['clinica']}
         >
-          <FichaClinica onSalir={salir} />
+        <FichaClinica sesion={sesion} onSalir={salir} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
     )
+  }
+
+  if (pathname === '/admin' || /^\/admin\/solicitudes\/[^/]+$/.test(pathname)) {
+    return (
+      <>
+        <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
+          error={errorPerfil} rolesPermitidos={['administrador']}>
+          <Administracion sesion={sesion} onSalir={salir}
+            idSolicitud={pathname === '/admin' ? null : pathname.split('/')[3]} />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
+  }
+
+  if (pathname === '/cuenta' && perfil?.rol === 'administrador') {
+    return <Navigate to="/admin" replace />
   }
 
   // Una clínica no usa la vista genérica de "Mi cuenta": su destino es la ficha.
@@ -302,7 +320,7 @@ function App() {
     return <Navigate to="/mi-clinica" replace />
   }
 
-  if (pathname === '/cuenta' || pathname === '/admin') {
+  if (pathname === '/cuenta') {
     return (
       <>
         <RutaPrivada
@@ -310,13 +328,13 @@ function App() {
           perfil={perfil}
           verificando={verificandoPerfil}
           error={errorPerfil}
-          rolesPermitidos={pathname === '/admin' ? ['administrador'] : ['usuario', 'clinica', 'administrador']}
+          rolesPermitidos={['usuario', 'clinica', 'administrador']}
         >
           {pathname === '/cuenta' && (perfil?.rol === 'usuario' || sesion?.tipo === 'usuario') ? (
             <Inicio sesion={sesion} onSalir={salir} />
           ) : (
             <main className="app-container">
-              <h1>{pathname === '/admin' ? 'Área de administración' : 'Mi cuenta'}</h1>
+              <h1>Mi cuenta</h1>
               <p role="status">Sesión verificada: {sesion?.cuenta.correo || sesion?.cuenta.nombre}</p>
               <p>Los paneles de cada rol aún no están disponibles.</p>
               <Link to="/mapa">Volver al mapa</Link>{' '}

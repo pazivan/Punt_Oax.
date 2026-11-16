@@ -23,6 +23,7 @@ import {
 } from '../../api/auth'
 import { validarEmail } from '../../utils/validaciones'
 import './FichaClinica.css'
+import EncabezadoClinica from './EncabezadoClinica.jsx'
 
 const DIAS = [
   { numero: 0, nombre: 'Domingo' },
@@ -171,25 +172,16 @@ function formatearFecha(fecha) {
     : valor.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
-function CabeceraClinica({ onSalir }) {
+function CabeceraClinica({ sesion, onSalir }) {
   return (
-    <header className="ficha-header">
-      <div className="ficha-header-inner">
-        <div className="ficha-brand-group">
-          <Link to="/mi-clinica" className="ficha-brand">PuntOax</Link>
-          <span className="ficha-area-label">Área de clínicas</span>
-        </div>
-        <div className="ficha-header-actions">
-          <Link to="/mapa" className="ficha-header-link">Mapa</Link>
-          <Link to="/mi-clinica/citas" className="ficha-header-link">Mis citas</Link>
-          <button type="button" className="ficha-header-outline" onClick={onSalir}>Cerrar sesión</button>
-        </div>
-      </div>
-    </header>
+    <EncabezadoClinica
+      sesion={sesion}
+      onSalir={onSalir}
+    />
   )
 }
 
-export default function FichaClinica({ onSalir }) {
+export default function FichaClinica({ sesion, onSalir }) {
   const [ficha, setFicha] = useState(null)
   const [form, setForm] = useState(null)
   const [cargando, setCargando] = useState(true)
@@ -249,7 +241,7 @@ export default function FichaClinica({ onSalir }) {
   if (cargando) {
     return (
       <div className="ficha-page">
-        <CabeceraClinica onSalir={onSalir} />
+        <CabeceraClinica sesion={sesion} onSalir={onSalir} />
         <main className="ficha-loading" role="status">
           <span className="ficha-spinner" aria-hidden="true" />
           <p>Cargando la ficha de tu clínica…</p>
@@ -261,7 +253,7 @@ export default function FichaClinica({ onSalir }) {
   if (errorCarga) {
     return (
       <div className="ficha-page">
-        <CabeceraClinica onSalir={onSalir} />
+        <CabeceraClinica sesion={sesion} onSalir={onSalir} />
         <main className="ficha-state-card" role="alert">
           <AlertTriangle size={30} aria-hidden="true" />
           <h1>No pudimos cargar tu ficha</h1>
@@ -275,12 +267,53 @@ export default function FichaClinica({ onSalir }) {
     )
   }
 
+  // Las sedes aprobadas ya tienen ficha publicada. El editor de postulaciones
+  // se bloquea por diseño; desde aquí se consultan sus datos y se gestiona la agenda.
+  if (ficha?.clinica?.estado_publicacion === 'aprobada') {
+    const clinica = ficha.clinica
+    return (
+      <div className="ficha-page">
+        <CabeceraClinica sesion={sesion} onSalir={onSalir} />
+        <main className="ficha-main ficha-publicada">
+          <span className="ficha-eyebrow">CLÍNICA PUBLICADA</span>
+          <h1>{clinica.nombre}</h1>
+          <p>Tu sede ya está dada de alta y aparece en el directorio. Puedes consultar sus datos y gestionar los turnos de atención.</p>
+          <div className="ficha-publicada-acciones">
+            <Link to="/mi-clinica/citas" className="ficha-btn-primary">Ver mis citas</Link>
+            <Link to="/mi-clinica/agenda" className="ficha-btn-secondary">Gestionar agenda</Link>
+            <Link to="/mapa" className="ficha-btn-secondary">Ver en el mapa</Link>
+          </div>
+          <section className="ficha-publicada-datos" aria-label="Datos de la sede">
+            <h2>Datos de la sede</h2>
+            <dl>
+              <div><dt>Municipio</dt><dd>{clinica.municipio || 'No especificado'}</dd></div>
+              <div><dt>Dirección</dt><dd>{clinica.direccion || 'No especificada'}</dd></div>
+              <div><dt>Teléfono</dt><dd>{clinica.telefono || 'No especificado'}</dd></div>
+              <div><dt>Correo de contacto</dt><dd>{clinica.correo_contacto || 'No especificado'}</dd></div>
+            </dl>
+          </section>
+          <section className="ficha-publicada-datos" aria-label="Servicios de la sede">
+            <h2>Servicios</h2>
+            {ficha.servicios?.length
+              ? <ul>{ficha.servicios.map((servicio) => (
+                  <li key={servicio.id_servicio}>
+                    <strong>{servicio.nombre}</strong>
+                    {servicio.detalle_servicio && <p>{servicio.detalle_servicio}</p>}
+                  </li>
+                ))}</ul>
+              : <p>No hay servicios activos registrados.</p>}
+          </section>
+        </main>
+      </div>
+    )
+  }
+
   const pendiente = ficha?.postulacion?.estado === 'pendiente' || ficha?.clinica?.estado_ficha === 'pendiente_revision'
 
   if (pendiente) {
     return (
       <div className="ficha-page">
-        <CabeceraClinica onSalir={onSalir} />
+        <CabeceraClinica sesion={sesion} onSalir={onSalir} />
         <main className="ficha-pending">
           <div className="ficha-pending-icon" aria-hidden="true">
             <CheckCircle2 size={40} />
@@ -321,7 +354,7 @@ export default function FichaClinica({ onSalir }) {
   if (!ficha?.clinica?.puede_editar) {
     return (
       <div className="ficha-page">
-        <CabeceraClinica onSalir={onSalir} />
+        <CabeceraClinica sesion={sesion} onSalir={onSalir} />
         <main className="ficha-state-card">
           <ShieldCheck size={30} aria-hidden="true" />
           <h1>La ficha no está disponible para edición</h1>
@@ -551,7 +584,7 @@ export default function FichaClinica({ onSalir }) {
 
   return (
     <div className="ficha-page">
-      <CabeceraClinica onSalir={onSalir} />
+      <CabeceraClinica sesion={sesion} onSalir={onSalir} />
 
       <main className="ficha-main">
         <section className="ficha-hero">

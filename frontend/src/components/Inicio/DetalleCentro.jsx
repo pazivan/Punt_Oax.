@@ -80,13 +80,21 @@ export default function DetalleCentro({
               >
                 <span className="inicio-nav-link-active-text">Mapa de centros</span>
               </button>
-              <Link to="/agendar-cita" className="inicio-nav-link">
-                Agendar cita
-              </Link>
-              {sesion?.tipo === 'usuario' && (
-                <Link to="/mis-citas" className="inicio-nav-link">
+              {sesion?.tipo === 'clinica' ? (
+              <Link to="/mi-clinica/citas" className="inicio-nav-link">
                   Mis citas
                 </Link>
+              ) : (
+                <>
+                  <Link to="/agendar-cita" className="inicio-nav-link">
+                    Agendar cita
+                  </Link>
+                  {sesion?.tipo === 'usuario' && (
+                    <Link to="/mis-citas" className="inicio-nav-link">
+                      Mis citas
+                    </Link>
+                  )}
+                </>
               )}
               <Link to="/informacion-util" className="inicio-nav-link">
                 Información útil
