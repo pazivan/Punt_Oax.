@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import {
   cerrarSesion, consultarPerfil, guardarSesion, iniciarSesion,
   iniciarSesionClinica, leerSesion, registrarClinica, registrarUsuario,
+  verificarCorreo, reenviarVerificacion, solicitarRecuperacion, restablecerPassword,
 } from '../src/api/auth.js'
 
 const almacen = new Map()
@@ -25,11 +26,28 @@ function simular(estado, cuerpo, { sinJson = false } = {}) {
 }
 
 test('registro solo envía correo y password, nunca nombre ni confirmación', async () => {
-  const llamadas = simular(201, { usuario: { correo: 'a@ejemplo.com' }, token: 'jwt' })
+  const llamadas = simular(201, { usuario: { correo: 'a@ejemplo.com' }, requiere_verificacion: true })
   await registrarUsuario('a@ejemplo.com', 'contraseña')
   assert.equal(llamadas[0].ruta, '/api/auth/registro-usuario')
   assert.equal(llamadas[0].opciones.method, 'POST')
   assert.deepEqual(JSON.parse(llamadas[0].opciones.body), { correo: 'a@ejemplo.com', password: 'contraseña' })
+})
+
+test('verificación y recuperación usan rutas públicas sin guardar sesiones ni exponer secretos en URL', async () => {
+  for (const [fn, ruta, args, cuerpo] of [
+    [verificarCorreo, 'verificar-correo', ['clinica', 'c@ejemplo.com', '123456'], { rol: 'clinica', correo: 'c@ejemplo.com', codigo: '123456' }],
+    [reenviarVerificacion, 'reenviar-verificacion', ['usuario', 'u@ejemplo.com'], { rol: 'usuario', correo: 'u@ejemplo.com' }],
+    [solicitarRecuperacion, 'solicitar-recuperacion', ['administrador', 'a@ejemplo.com'], { rol: 'administrador', correo: 'a@ejemplo.com' }],
+    [restablecerPassword, 'restablecer-password', ['usuario', 'u@ejemplo.com', 'token', 'Nueva-Clave8!'],
+      { rol: 'usuario', correo: 'u@ejemplo.com', token: 'token', password: 'Nueva-Clave8!' }],
+  ]) {
+    const llamadas = simular(200, { mensaje: 'OK' })
+    await fn(...args)
+    assert.equal(llamadas[0].ruta, `/api/auth/${ruta}`)
+    assert.deepEqual(JSON.parse(llamadas[0].opciones.body), cuerpo)
+  }
+  simular(403, { error: 'Verifica tu correo.', requiere_verificacion: true })
+  await assert.rejects(iniciarSesion('u@ejemplo.com', 'Clave'), (err) => err.requiere_verificacion === true)
 })
 
 test('registro de clínica envía solo los datos básicos y conserva estado borrador', async () => {

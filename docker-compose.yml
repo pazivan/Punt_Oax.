@@ -32,6 +32,10 @@ services:
       - PGDATABASE=puntoax_bd
       - PORT=3000
       - JWT_SECRET=${JWT_SECRET:?Configura JWT_SECRET en el entorno antes de iniciar la API}
+      - BREVO_API_KEY=${BREVO_API_KEY:-}
+      - BREVO_SENDER_EMAIL=${BREVO_SENDER_EMAIL:-notificaciones@puntoax.online}
+      - BREVO_SENDER_NAME=${BREVO_SENDER_NAME:-PuntOax}
+      - APP_URL=${APP_URL:-https://puntoax.online}
       - DOCUMENTS_PRIVATE_DIR=/var/lib/puntoax/documentos
     volumes:
       - puntoax_documentos:/var/lib/puntoax

@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import Login from './components/Auth/Login.jsx'
 import Register from './components/Auth/Register.jsx'
+import CorreoCuenta from './components/Auth/CorreoCuenta.jsx'
 import Inicio from './components/Inicio/Inicio.jsx'
 import MapaCentros from './components/Inicio/MapaCentros.jsx'
 import InformacionUtil from './components/Inicio/InformacionUtil.jsx'
@@ -20,7 +21,7 @@ import './App.css'
 
 function App() {
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const { pathname, state: estadoRuta } = useLocation()
   const [sesion, setSesion] = useState(leerSesion)
   const [mensajeAuth, setMensajeAuth] = useState('')
   const [tipoRegistro, setTipoRegistro] = useState('usuario')
@@ -140,9 +141,12 @@ function App() {
         // La ficha se consulta de nuevo en el servidor dentro de /mi-clinica.
         navigate(nuevaSesion?.tipo === 'clinica' ? '/mi-clinica' : nuevaSesion?.tipo === 'administrador' ? '/admin' : '/cuenta')
       }}
-      mensaje={mensajeAuth}
+      mensaje={estadoRuta?.aviso || mensajeAuth}
     />
   }
+  if (pathname === '/verificar-correo') return <CorreoCuenta modo="verificar" />
+  if (pathname === '/recuperar') return <CorreoCuenta modo="solicitar" />
+  if (pathname === '/restablecer') return <CorreoCuenta modo="restablecer" />
 
   if (pathname === '/registro') {
     return <Register
@@ -154,6 +158,7 @@ function App() {
         navigate('/login')
       }}
       onBackToPublic={() => navigate('/conocenos')}
+      onVerificar={(rol, correo) => navigate('/verificar-correo', { state: { rol, correo } })}
     />
   }
 

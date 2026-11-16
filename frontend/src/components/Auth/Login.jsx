@@ -3,6 +3,7 @@ import { ArrowRight, Building2, Check, Eye, EyeOff, MapPin, ShieldCheck, User } 
 import '../../styles/Auth.css';
 import { guardarSesion, iniciarSesion, iniciarSesionAdmin, iniciarSesionClinica } from '../../api/auth';
 import { normalizarCorreo, validarEmail, validarRequerido } from '../../utils/validaciones';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Login({
   onSwitchToRegister,
@@ -22,6 +23,7 @@ export default function Login({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const enviando = useRef(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,7 +59,8 @@ export default function Login({
       const sesion = guardarSesion(respuesta, accountType);
       onLogin(sesion);
     } catch (err) {
-      setError(err.message);
+      if (err.requiere_verificacion) navigate('/verificar-correo', { state: { rol: accountType, correo: correoLimpio } });
+      else setError(err.message);
     } finally {
       enviando.current = false;
       setLoading(false);
@@ -280,6 +283,8 @@ export default function Login({
                   )}
                 </button>
               </form>
+              <p><Link to="/recuperar" state={{ rol: accountType, correo: email.trim() }}>¿Olvidaste tu contraseña?</Link></p>
+              {accountType !== 'administrador' && <p><Link to="/verificar-correo" state={{ rol: accountType, correo: email.trim() }}>¿Aún no verificas tu correo?</Link></p>}
 
               {/* Enlace inferior */}
               {accountType !== 'administrador' && <div className="auth-bottom-links">

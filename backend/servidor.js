@@ -12,6 +12,7 @@ const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
 const { registrarRutasAgendaClinica } = require("./agendaClinica");
 const { registrarRutasDatosClinica } = require("./datosClinica");
+const { registrarRutasCorreo, permitido } = require("./correo");
 const {
   MENSAJE_TELEFONO,
   validarPassword,
@@ -24,6 +25,7 @@ const PUERTO = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+const { enviarDesafio, proveedor: proveedorCorreo, limiteIp: limiteCorreo } = registrarRutasCorreo(app, { pool, hashearPassword, validarPassword });
 // Registrar las rutas estáticas de la agenda antes de /api/clinicas/:id.
 registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol });
 
@@ -1030,6 +1032,10 @@ app.post("/api/auth/registro-usuario", async (req, res) => {
         error: "El formato del correo electrónico no es válido.",
       });
     }
+    if (!permitido(correo) || !proveedorCorreo.listo()) {
+      return res.status(503).json({ error: "El correo no está disponible. Inténtalo más tarde." });
+    }
+    if (!await limiteCorreo(req, 'verificar')) return res.status(429).json({ error: 'Demasiadas solicitudes.' });
 
     const errorPassword = validarPassword(password);
     if (errorPassword) {
@@ -1072,17 +1078,17 @@ app.post("/api/auth/registro-usuario", async (req, res) => {
 
     const nuevoUsuario = rows[0];
 
-    // 4. Generar token JWT
-    const token = generarToken({
-      id: nuevoUsuario.id_usuario,
-      correo: nuevoUsuario.correo,
-      rol: "usuario",
-    });
+    try {
+      await enviarDesafio({ rol: 'usuario', correo: nuevoUsuario.correo }, 'verificacion');
+    } catch {
+      await pool.query('DELETE FROM usuarios WHERE id_usuario=$1 AND correo_verificado_en IS NULL', [nuevoUsuario.id_usuario]);
+      return res.status(503).json({ error: "No se pudo enviar el código. Inténtalo de nuevo." });
+    }
 
     // 5. Respuesta exitosa
     return res.status(201).json({
       usuario: nuevoUsuario,
-      token,
+      requiere_verificacion: true,
     });
   } catch (error) {
     // Correo duplicado
@@ -1134,6 +1140,14 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
       error: "El formato del correo electrónico no es válido.",
     });
   }
+  if (!permitido(correoLimpio) || !proveedorCorreo.listo()) {
+    return res.status(503).json({ error: "El correo no está disponible. Inténtalo más tarde." });
+  }
+  try {
+    if (!await limiteCorreo(req, 'verificar')) return res.status(429).json({ error: 'Demasiadas solicitudes.' });
+  } catch {
+    return res.status(503).json({ error: 'El correo no está disponible.' });
+  }
 
   const errorPassword = validarPassword(password);
   if (errorPassword) {
@@ -1157,10 +1171,17 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
       [nombreLimpio, correoLimpio, hash]
     );
     const clinica = rows[0];
+    try {
+      await enviarDesafio({ rol: 'clinica', correo: clinica.correo_acceso }, 'verificacion');
+    } catch {
+      await pool.query('DELETE FROM clinicas WHERE id_clinica=$1 AND correo_verificado_en IS NULL', [clinica.id_clinica]);
+      return res.status(503).json({ error: "No se pudo enviar el código. Inténtalo de nuevo." });
+    }
 
     // Sin JWT: se crea la cuenta y después se inicia sesión.
     return res.status(201).json({
-      mensaje: "Cuenta de clínica creada correctamente. Ya puedes iniciar sesión y completar los datos de tu clínica.",
+      mensaje: "Cuenta creada. Verifica tu correo para poder iniciar sesión.",
+      requiere_verificacion: true,
       clinica: {
         id: clinica.id_clinica,
         nombre: clinica.nombre,
@@ -1197,7 +1218,7 @@ app.post("/api/auth/login-usuario", async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      "SELECT id_usuario, correo, password_hash, nombre, apellidos FROM usuarios WHERE correo = LOWER(TRIM($1))",
+      "SELECT id_usuario, correo, password_hash, nombre, apellidos, correo_verificado_en, version_sesion FROM usuarios WHERE correo = LOWER(TRIM($1))",
       [correo]
     );
 
@@ -1212,11 +1233,13 @@ app.post("/api/auth/login-usuario", async (req, res) => {
     if (!passwordValido) {
       return res.status(401).json({ error: "Credenciales inválidas." });
     }
+    if (!usuario.correo_verificado_en) return res.status(403).json({ error: "Verifica tu correo antes de iniciar sesión.", requiere_verificacion: true });
 
     const token = generarToken({
       id: usuario.id_usuario,
       correo: usuario.correo,
       rol: "usuario",
+      version_sesion: usuario.version_sesion,
     });
 
     res.json({
@@ -1246,7 +1269,7 @@ app.post("/api/auth/login-clinica", async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      "SELECT id_clinica, correo_acceso, password_hash, nombre FROM clinicas WHERE correo_acceso = LOWER(TRIM($1))",
+      "SELECT id_clinica, correo_acceso, password_hash, nombre, correo_verificado_en, version_sesion FROM clinicas WHERE correo_acceso = LOWER(TRIM($1))",
       [correo]
     );
 
@@ -1260,11 +1283,13 @@ app.post("/api/auth/login-clinica", async (req, res) => {
     if (!passwordValido) {
       return res.status(401).json({ error: "Credenciales inválidas." });
     }
+    if (!clinica.correo_verificado_en) return res.status(403).json({ error: "Verifica tu correo antes de iniciar sesión.", requiere_verificacion: true });
 
     const token = generarToken({
       id: clinica.id_clinica,
       correo: clinica.correo_acceso,
       rol: "clinica",
+      version_sesion: clinica.version_sesion,
     });
 
     res.json({
@@ -1293,7 +1318,7 @@ app.post("/api/auth/login-admin", async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      "SELECT id_administrador, correo, password_hash, nombre FROM administradores WHERE correo = LOWER(TRIM($1))",
+      "SELECT id_administrador, correo, password_hash, nombre, version_sesion FROM administradores WHERE correo = LOWER(TRIM($1))",
       [correo]
     );
 
@@ -1312,6 +1337,7 @@ app.post("/api/auth/login-admin", async (req, res) => {
       id: admin.id_administrador,
       correo: admin.correo,
       rol: "administrador",
+      version_sesion: admin.version_sesion,
     });
 
     res.json({

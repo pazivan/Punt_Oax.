@@ -3,6 +3,7 @@ const { randomUUID } = require('node:crypto');
 const { test } = require('node:test');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
+const fs = require('node:fs');
 
 // Rechazar cualquier ejecución accidental contra una base compartida.
 if (process.env.PUNTOAX_TEST_DB !== '1' ||
@@ -36,6 +37,14 @@ async function llamar(ruta, { datos, token } = {}) {
   });
   return { status: respuesta.status, cuerpo: await respuesta.json() };
 }
+function ultimoCorreo(correo) {
+  return fs.readFileSync(process.env.PUNTOAX_MOCK_MAIL_FILE, 'utf8').trim().split('\n')
+    .map((linea) => JSON.parse(linea)).filter((mensaje) => mensaje.correo === correo).at(-1);
+}
+async function verificarCuenta(rol, correo) {
+  const codigo = ultimoCorreo(correo).textContent.match(/Código: (\d{6})/)[1];
+  assert.equal((await llamar('/api/auth/verificar-correo', { datos: { rol, correo, codigo } })).status, 200);
+}
 
 test('registro, inicio de sesión y permisos reales contra API y BD aisladas', async () => {
   const correo = `integracion-${randomUUID()}@puntoax.online`;
@@ -52,7 +61,10 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     const registro = await llamar('/api/auth/registro-usuario', { datos: { correo, password } });
     assert.equal(registro.status, 201);
     assert.equal(registro.cuerpo.usuario.correo, correo);
-    assert.equal(typeof registro.cuerpo.token, 'string');
+    assert.equal(registro.cuerpo.requiere_verificacion, true);
+    assert.equal(registro.cuerpo.token, undefined);
+    assert.equal((await llamar('/api/auth/login-usuario', { datos: { correo, password } })).status, 403);
+    await verificarCuenta('usuario', correo);
     const { rows } = await pool.query('SELECT nombre, password_hash FROM usuarios WHERE correo = $1', [correo]);
     assert.equal(rows.length, 1);
     assert.equal(rows[0].nombre, null);
@@ -97,6 +109,8 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     assert.equal(registroClinica.cuerpo.clinica.correo, correoClinicaNormalizado);
     assert.equal(registroClinica.cuerpo.clinica.estado_publicacion, 'borrador');
     assert.equal('token' in registroClinica.cuerpo, false);
+    assert.equal((await llamar('/api/auth/login-clinica', { datos: { correo: correoClinicaNormalizado, password } })).status, 403);
+    await verificarCuenta('clinica', correoClinicaNormalizado);
     const clinicaId = registroClinica.cuerpo.clinica.id;
     const clinicaDb = await pool.query('SELECT password_hash, municipio FROM clinicas WHERE id_clinica = $1', [clinicaId]);
     assert.equal(await bcrypt.compare(password, clinicaDb.rows[0].password_hash), true);
