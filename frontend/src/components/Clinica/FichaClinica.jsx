@@ -21,7 +21,7 @@ import {
   guardarBorradorClinica,
   subirDocumentosClinica,
 } from '../../api/auth'
-import { validarEmail } from '../../utils/validaciones'
+import { validarEmail, validarTelefono } from '../../utils/validaciones'
 import './FichaClinica.css'
 import EncabezadoClinica from './EncabezadoClinica.jsx'
 
@@ -125,8 +125,8 @@ function faltantesLocales(form, documentos) {
 }
 
 function validarInformacion(form) {
-  if (form.telefono.trim() && !/^[+\d()\s.-]+$/.test(form.telefono.trim())) {
-    return 'El teléfono solo puede incluir números, espacios y los signos + ( ) . -'
+  if (form.telefono.trim() && !validarTelefono(form.telefono)) {
+    return 'El teléfono debe tener al menos 10 dígitos y solo puede incluir números, espacios y los signos + ( ) . -'
   }
   if (form.correo_contacto.trim() && !validarEmail(form.correo_contacto)) {
     return 'El correo de contacto no es válido.'

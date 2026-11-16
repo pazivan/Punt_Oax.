@@ -11,11 +11,11 @@ import {
   User,
 } from 'lucide-react';
 import '../../styles/Inicio.css';
+import { normalizarUrlExterna } from '../../utils/enlaces.js';
 
 /**
  * DetalleCentro - Ventana "Detalle de centro - PuntoOax" según diseño oficial de Figma (1280x1218),
  * mostrando única y exclusivamente las columnas existentes en el archivo oficial de Filtración:
- * - Id
  * - Entidad Federativa y Municipio
  * - Unidad de Salud (nombre)
  * - Nivel de Atención
@@ -53,9 +53,12 @@ export default function DetalleCentro({
   const linksRelacionados = Array.isArray(clinica.links_relacionados)
     ? clinica.links_relacionados.filter(Boolean)
     : [];
-  const tieneUrlMaps =
-    typeof clinica.ubicacion_maps === 'string' &&
-    clinica.ubicacion_maps.trim().startsWith('http');
+  const fuenteUrl = normalizarUrlExterna(clinica.fuente);
+  const mapaUrl = normalizarUrlExterna(clinica.ubicacion_maps);
+  const correoContacto = typeof clinica.correo_contacto === 'string'
+    ? clinica.correo_contacto.trim()
+    : '';
+  const tieneUrlMaps = Boolean(mapaUrl);
 
   return (
     <div className="detalle-page">
@@ -257,12 +260,14 @@ export default function DetalleCentro({
                       <span className="detalle-data-label">Correo electrónico</span>
                     </div>
                     <p className="detalle-data-value">
-                      {clinica.correo_contacto || 'No especificado'}
+                      {correoContacto
+                        ? <a href={`mailto:${correoContacto}`}>{correoContacto}</a>
+                        : 'No especificado'}
                     </p>
                   </div>
                 </div>
 
-                {/* Fila 3: Municipio / Entidad Federativa e Id de registro */}
+                {/* Fila 3: Municipio / Entidad Federativa */}
                 <div className="detalle-data-row">
                   <div className="detalle-data-box">
                     <div className="detalle-data-label-row">
@@ -273,15 +278,6 @@ export default function DetalleCentro({
                     </div>
                     <p className="detalle-data-value">
                       {clinica.municipio || 'No especificado'}, {clinica.entidad_federativa || 'Oaxaca'}
-                    </p>
-                  </div>
-
-                  <div className="detalle-data-box">
-                    <div className="detalle-data-label-row">
-                      <span className="detalle-data-label">ID de registro</span>
-                    </div>
-                    <p className="detalle-data-value">
-                      {clinica.id_clinica || 'No especificado'}
                     </p>
                   </div>
                 </div>
@@ -304,24 +300,41 @@ export default function DetalleCentro({
                   <div className="detalle-data-label-row">
                     <span className="detalle-data-label">Fuente y Links relacionados</span>
                   </div>
-                  <p className="detalle-data-value" style={{ wordBreak: 'break-word' }}>
-                    {clinica.fuente || 'No especificada'}
-                  </p>
+                  {fuenteUrl ? (
+                    <a
+                      href={fuenteUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="info-util-source-link"
+                      style={{ wordBreak: 'break-word' }}
+                    >
+                      <span>{clinica.fuente}</span>
+                      <ExternalLink size={12} aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <p className="detalle-data-value" style={{ wordBreak: 'break-word' }}>
+                      {clinica.fuente || 'No especificada'}
+                    </p>
+                  )}
                   {linksRelacionados.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
-                      {linksRelacionados.map((url) => (
-                        <a
-                          key={url}
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="info-util-source-link"
-                          style={{ padding: '6px 12px', fontSize: '12px' }}
-                        >
-                          <span>Abrir link relacionado</span>
-                          <ExternalLink size={12} aria-hidden="true" />
-                        </a>
-                      ))}
+                      {linksRelacionados.map((url) => {
+                        const href = normalizarUrlExterna(url)
+                        if (!href) return null
+                        return (
+                          <a
+                            key={url}
+                            href={href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="info-util-source-link"
+                            style={{ padding: '6px 12px', fontSize: '12px' }}
+                          >
+                            <span>Abrir link relacionado</span>
+                            <ExternalLink size={12} aria-hidden="true" />
+                          </a>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -356,7 +369,7 @@ export default function DetalleCentro({
               {/* Ubicacion maps (columna Ubicacion maps del archivo CSV) */}
               {tieneUrlMaps ? (
                 <a
-                  href={clinica.ubicacion_maps}
+                  href={mapaUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="info-util-source-link"

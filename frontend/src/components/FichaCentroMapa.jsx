@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { direccionCompleta, enlaceComoLlegar, horarioTexto, textoPendiente } from '../utils/centros.js'
+import { normalizarUrlExterna } from '../utils/enlaces.js'
 import './DirectorioMapa.css'
 
 export function ResumenMarcador({ centro, onVerFicha }) {
@@ -84,6 +85,8 @@ export default function FichaCentroMapa({ id, token, onCerrar }) {
   }
 
   const enlace = centro && enlaceComoLlegar(centro)
+  const sitioWeb = centro && normalizarUrlExterna(centro.sitio_web)
+  const correoContacto = typeof centro?.correo_contacto === 'string' ? centro.correo_contacto.trim() : ''
   return (
     <div className="puntoax-modal-fondo" onMouseDown={evento => { if (evento.target === evento.currentTarget) onCerrar() }}>
       <section className="puntoax-ficha" role="dialog" aria-modal="true" aria-labelledby="puntoax-ficha-titulo">
@@ -102,7 +105,7 @@ export default function FichaCentroMapa({ id, token, onCerrar }) {
             <Campo titulo="Dirección">{textoPendiente(direccionCompleta(centro), 'Dirección por confirmar')}</Campo>
             <Campo titulo="Horario registrado">{horarioTexto(centro.horarios)}</Campo>
             <Campo titulo="Teléfono">{centro.telefono ? <a href={`tel:${centro.telefono.replace(/[^+\d]/g, '')}`}>{centro.telefono}</a> : 'Por confirmar'}</Campo>
-            <Campo titulo="Contacto">{centro.correo_contacto ? <a href={`mailto:${centro.correo_contacto}`}>{centro.correo_contacto}</a> : 'Por confirmar'}</Campo>
+            <Campo titulo="Contacto">{correoContacto ? <a href={`mailto:${correoContacto}`}>{correoContacto}</a> : 'Por confirmar'}</Campo>
             <Campo titulo="Tipo de institución">{textoPendiente(centro.tipo_institucion)}</Campo>
           </dl>
           <div className="puntoax-ficha-servicios">
@@ -113,7 +116,7 @@ export default function FichaCentroMapa({ id, token, onCerrar }) {
           <div className="puntoax-ficha-botones">
             {enlace && <a className="puntoax-btn puntoax-btn--primario" href={enlace} target="_blank" rel="noreferrer">◉ Cómo llegar</a>}
             <button type="button" className="puntoax-btn puntoax-btn--borde" onClick={compartir}>Compartir</button>
-            {/^https?:\/\//i.test(centro.sitio_web || '') && <a className="puntoax-btn puntoax-btn--borde" href={centro.sitio_web} target="_blank" rel="noreferrer">Sitio web ↗</a>}
+            {sitioWeb && <a className="puntoax-btn puntoax-btn--borde" href={sitioWeb} target="_blank" rel="noreferrer">Sitio web ↗</a>}
           </div>
           {aviso && <p className="puntoax-aviso" role="status">{aviso}</p>}
         </>}

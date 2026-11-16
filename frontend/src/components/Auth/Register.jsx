@@ -3,6 +3,8 @@ import { ArrowRight, Building2, Check, Eye, EyeOff, ShieldCheck, User } from 'lu
 import '../../styles/Auth.css';
 import { registrarClinica, registrarUsuario } from '../../api/auth';
 import {
+  PASSWORD_MAX_BYTES,
+  PASSWORD_REQUISITOS,
   normalizarCorreo,
   validarEmail,
   validarNombreClinica,
@@ -24,6 +26,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const enviando = useRef(false);
@@ -64,9 +67,9 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
     }
 
     if (!validarPassword(password)) {
-      setError(password.length < 8
-        ? 'La contraseña debe tener al menos 8 caracteres.'
-        : 'La contraseña no puede superar los 72 caracteres.');
+      setError(new TextEncoder().encode(password).length > PASSWORD_MAX_BYTES
+        ? 'La contraseña no puede superar los 72 caracteres.'
+        : PASSWORD_REQUISITOS);
       return;
     }
 
@@ -101,7 +104,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
   const inputPassword = (
     <div className="auth-input-group">
       <label htmlFor={accountType === 'clinica' ? 'reg-clinica-pass' : 'reg-pass'} className="auth-label">
-        Contraseña (mínimo 8 caracteres)
+        Contraseña (mínimo 8 caracteres, una mayúscula, un número y un símbolo)
       </label>
       <div className="auth-password-wrap">
         <input
@@ -133,16 +136,28 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
       <label htmlFor={accountType === 'clinica' ? 'reg-clinica-confirm' : 'reg-confirm'} className="auth-label">
         Confirmar contraseña
       </label>
-      <input
-        id={accountType === 'clinica' ? 'reg-clinica-confirm' : 'reg-confirm'}
-        type={mostrarPassword ? 'text' : 'password'}
-        required
-        autoComplete="new-password"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-        placeholder="••••••••••"
-        className="auth-input"
-      />
+      <div className="auth-password-wrap">
+        <input
+          id={accountType === 'clinica' ? 'reg-clinica-confirm' : 'reg-confirm'}
+          type={mostrarConfirmacion ? 'text' : 'password'}
+          required
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder="••••••••••"
+          className="auth-input"
+        />
+        <button
+          type="button"
+          className="auth-password-toggle"
+          onClick={() => setMostrarConfirmacion((visible) => !visible)}
+          aria-label={mostrarConfirmacion ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          aria-pressed={mostrarConfirmacion}
+          disabled={loading}
+        >
+          {mostrarConfirmacion ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+        </button>
+      </div>
     </div>
   );
 
