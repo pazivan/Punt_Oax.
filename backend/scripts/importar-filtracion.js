@@ -626,15 +626,18 @@ async function guardarHorarios(client, idClinica, datos) {
 }
 
 function imprimirAyuda() {
-  console.log(`Uso: node scripts/importar-filtracion.js --archivo <ruta.csv> [--apply]
+  console.log(`Uso: node scripts/importar-filtracion.js --archivo <ruta.csv> [--apply] [--solo-its-coordenadas]
 
 Por defecto solo simula y revierte la transacción. --apply confirma los cambios.
 También se puede indicar la ruta con la variable FILTRACION_CSV.
-Solo se importan filas marcadas como seleccionadas y con verificación "verificado".`);
+Solo se importan filas marcadas como seleccionadas y con verificación "verificado".
+--solo-its-coordenadas exige latitud y longitud explícitas, importa solo ITS
+y no crea horarios estructurados ni habilita citas.`);
 }
 
 async function procesarImportacion(registros, dbPool = pool, opciones = {}) {
   const aplicar = Boolean(opciones.aplicar);
+  const soloItsCoordenadas = Boolean(opciones.soloItsCoordenadas);
   const omitidos = [];
   const centros = new Map();
   let seleccionadosVerificados = 0;
@@ -646,8 +649,21 @@ async function procesarImportacion(registros, dbPool = pool, opciones = {}) {
       omitidos.push({ linea: registro.__linea, motivo: validacion.motivo });
       continue;
     }
-    seleccionadosVerificados += 1;
     const datos = validacion.datos;
+    if (soloItsCoordenadas) {
+      const lat = numero(obtener(registro, "latitud"));
+      const lon = numero(obtener(registro, "longitud"));
+      if (normalizarTexto(obtener(registro, "categoria")) !== "its" ||
+          lat === null || lon === null || !datos.punto ||
+          datos.punto.lat !== lat || datos.punto.lng !== lon) {
+        omitidos.push({ linea: registro.__linea, motivo: "no es ITS con coordenadas explícitas válidas" });
+        continue;
+      }
+      datos.categorias = new Set(["ITS"]);
+      datos.horarios = [];
+      datos.requiere_cita = false;
+    }
+    seleccionadosVerificados += 1;
     if (centros.has(datos.id_origen)) {
       fusionar(centros.get(datos.id_origen), datos);
       fusionados += 1;
@@ -741,6 +757,7 @@ async function main() {
   const archivo = (indiceArchivo >= 0 ? argumentos[indiceArchivo + 1] : null) ||
     process.env.FILTRACION_CSV;
   const aplicar = argumentos.includes("--apply") || argumentos.includes("--aplicar");
+  const soloItsCoordenadas = argumentos.includes("--solo-its-coordenadas");
 
   if (!archivo) {
     imprimirAyuda();
@@ -762,7 +779,7 @@ async function main() {
     return;
   }
 
-  const resultado = await procesarImportacion(registros, pool, { aplicar });
+  const resultado = await procesarImportacion(registros, pool, { aplicar, soloItsCoordenadas });
 
   if (!resultado.ok) {
     console.error(resultado.error);

@@ -208,6 +208,54 @@ test('el archivo filtracion.csv existe, es procesable y contiene sedes de ITS, A
   assert.equal(idsVistos.size, centrosValidos, 'Todos los id_origen deben ser únicos');
 });
 
+test('las fichas ITS con coordenadas se preparan sin citas ni notas de confirmación', () => {
+  const registros = leerRegistros(fs.readFileSync(
+    path.resolve(__dirname, '../data/its-coordenadas.csv'), 'utf8'
+  ));
+  assert.equal(registros.length, 26);
+  assert.equal(new Set(registros.map((r) => r.id_origen)).size, 26);
+  for (const reg of registros) {
+    const ficha = validarFila(reg);
+    assert.equal(ficha.ok, true, reg.id_origen);
+    assert.equal(reg.categoria, 'ITS');
+    assert.ok(ficha.datos.punto, reg.id_origen);
+    assert.equal(ficha.datos.requiere_cita, false);
+    assert.doesNotMatch(`${reg.horario} ${reg.requisitos}`, /confirmar|pendiente|orientativ|no reconfirmad/i);
+  }
+});
+
+test('modo solo ITS con coordenadas excluye ILE y no crea agenda ni citas', async () => {
+  const queries = [];
+  const client = {
+    query: async (sql, params = []) => {
+      queries.push({ sql, params });
+      if (sql.includes('FROM servicios')) return { rows: [
+        { id_servicio: 'its', categoria: 'ITS' }, { id_servicio: 'ile', categoria: 'ILE' },
+      ] };
+      if (sql.includes('FROM clinicas WHERE')) return { rows: [] };
+      if (sql.includes('INSERT INTO clinicas (')) return { rows: [{ id_clinica: 'centro' }] };
+      return { rowCount: 1, rows: [] };
+    },
+    release() {},
+  };
+  const csv = `id_origen,nombre,categoria,servicios,horario,latitud,longitud
+its-1,Centro ITS,ITS,Detección de ITS,Lunes a viernes 08:00 a 16:00,17.06,-96.72
+ile-1,Centro ILE,ILE,Aborto seguro,Lunes a viernes 08:00 a 16:00,17.06,-96.72
+its-2,Centro sin punto,ITS,Detección de ITS,Lunes a viernes 08:00 a 16:00,,
+its-3,Centro ITS e ILE,ITS,Detección de ITS e ILE,Lunes a viernes 08:00 a 16:00,17.07,-96.73`;
+  const resultado = await procesarImportacion(leerRegistros(csv), { connect: async () => client }, {
+    soloItsCoordenadas: true, aplicar: false,
+  });
+  assert.equal(resultado.centrosUnicos, 2);
+  assert.equal(resultado.resumen.horarios, 0);
+  assert.equal(resultado.omitidos.length, 2);
+  assert.equal(queries.filter(({ sql }) => sql.includes('INSERT INTO clinicas_servicios')).length, 2);
+  assert.equal(queries.filter(({ sql }) => sql.includes('INSERT INTO horarios_atencion')).length, 0);
+  assert.ok(queries.filter(({ sql }) => sql.includes('INSERT INTO clinicas_servicios'))
+    .every(({ params }) => params[6] === false));
+  assert.ok(queries.some(({ sql }) => sql === 'ROLLBACK'));
+});
+
 test('procesarImportacion simula correctamente con rollback y reporta métricas', async () => {
   const fakeServicios = [
     { id_servicio: 'srv-its-01', categoria: 'ITS', nombre: 'Detección de ITS' },

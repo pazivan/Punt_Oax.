@@ -87,6 +87,46 @@
   box-sizing: border-box;
 }
 
+.ficha-publicada {
+  max-width: 900px;
+}
+
+.ficha-publicada h1 {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-size: clamp(30px, 4vw, 42px);
+  color: #103328;
+  margin: 12px 0;
+}
+
+.ficha-publicada-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 28px 0;
+}
+
+.ficha-publicada-acciones a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.ficha-publicada-datos {
+  background: #fff;
+  border: 1px solid #e4eae6;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-top: 16px;
+}
+
+.ficha-publicada-datos h2 { margin-top: 0; }
+.ficha-publicada-datos dl { margin: 0; }
+.ficha-publicada-datos dl div { margin: 12px 0; }
+.ficha-publicada-datos dt { color: #596763; font-size: 13px; }
+.ficha-publicada-datos dd { margin: 4px 0 0; overflow-wrap: anywhere; }
+.ficha-publicada-datos li { margin: 12px 0; }
+.ficha-publicada-datos li p { margin: 4px 0; }
+
 .ficha-hero {
   display: flex;
   align-items: flex-end;
