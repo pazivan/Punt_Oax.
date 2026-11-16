@@ -16,9 +16,57 @@ import {
   User,
 } from 'lucide-react';
 import ModalConfirmacion from './ModalConfirmacion.jsx';
+import CampanaNotificaciones from './CampanaNotificaciones.jsx';
 import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js';
 import { consultarEspaciosClinica, solicitarCita } from '../../api/auth.js';
+import { leerDatosPerfilLocal, validarEmail } from '../../utils/validaciones.js';
 import '../../styles/Inicio.css';
+
+const NOMBRE_MIN = 2;
+const NOMBRE_MAX = 60;
+const APELLIDOS_MIN = 2;
+const APELLIDOS_MAX = 80;
+const TELEFONO_DIGITOS = 10;
+const REGEX_SOLO_LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
+
+function limpiarTextoNombre(valor, maxLen) {
+  return String(valor || '')
+    .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .slice(0, maxLen);
+}
+
+function limpiarTelefonoDiezDigitos(valor) {
+  return String(valor || '')
+    .replace(/\D/g, '')
+    .slice(0, TELEFONO_DIGITOS);
+}
+
+function formatearHorarioDeCentro(clinica) {
+  if (typeof clinica?.horario === 'string' && clinica.horario.trim()) {
+    return clinica.horario.trim();
+  }
+  if (Array.isArray(clinica?.horarios) && clinica.horarios.length > 0) {
+    const diasNombres = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    return clinica.horarios
+      .map((h) => {
+        const dia = diasNombres[h.dia_semana] ?? `Día ${h.dia_semana}`;
+        return `${dia} ${h.apertura}–${h.cierre}`;
+      })
+      .join(', ');
+  }
+  return 'Consultar disponibilidad en el Paso 2';
+}
+
+function obtenerRequisitosDeCentro(clinica, servicioSeleccionado) {
+  if (typeof servicioSeleccionado?.requisitos === 'string' && servicioSeleccionado.requisitos.trim()) {
+    return servicioSeleccionado.requisitos.trim();
+  }
+  if (typeof clinica?.requisitos === 'string' && clinica.requisitos.trim()) {
+    return clinica.requisitos.trim();
+  }
+  return 'Sin requisitos adicionales especificados por el centro.';
+}
 
 const ZONA_HORARIA = 'America/Mexico_City';
 const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -30,6 +78,15 @@ const MESES = [
 // Fecha local de México en formato AAAA-MM-DD, sin depender de la zona del navegador.
 function isoFechaLocal(fechaHora) {
   return new Date(fechaHora).toLocaleDateString('sv-SE', { timeZone: ZONA_HORARIA });
+}
+
+function isoHoyLocal() {
+  return new Date().toLocaleDateString('sv-SE', { timeZone: ZONA_HORARIA });
+}
+
+function esFechaHoraFutura(fechaHora) {
+  const tiempo = new Date(fechaHora).getTime();
+  return Number.isFinite(tiempo) && tiempo > Date.now();
 }
 
 function describirFecha(isoFecha) {
@@ -85,7 +142,13 @@ export default function AgendarCitaDatos({
   onCitaConfirmada,
 }) {
   const correoSesion = sesion?.cuenta?.correo || '';
-  const nombreSesion = sesion?.cuenta?.nombre || '';
+  const datosPerfilGuardados = useMemo(
+    () => leerDatosPerfilLocal(correoSesion),
+    [correoSesion]
+  );
+  const nombreSesion = sesion?.cuenta?.nombre || datosPerfilGuardados.nombre || '';
+  const apellidosSesion = sesion?.cuenta?.apellidos || datosPerfilGuardados.apellidos || '';
+  const telefonoSesion = sesion?.cuenta?.telefono || datosPerfilGuardados.telefono || '';
 
   // Catálogo completo de clínicas para que el usuario pueda elegir o cambiar el centro ahí mismo
   const catalogoCentros = useMemo(() => {
@@ -114,10 +177,13 @@ export default function AgendarCitaDatos({
   const [pasoActual, setPasoActual] = useState(1);
 
   // Datos del Paso 1 (tabla `usuarios`)
-  const [nombres, setNombres] = useState(nombreSesion);
-  const [apellidos, setApellidos] = useState('');
-  const [telefono, setTelefono] = useState('');
+  const [nombres, setNombres] = useState(() => limpiarTextoNombre(nombreSesion, NOMBRE_MAX));
+  const [apellidos, setApellidos] = useState(() =>
+    limpiarTextoNombre(apellidosSesion, APELLIDOS_MAX)
+  );
+  const [telefono, setTelefono] = useState(() => limpiarTelefonoDiezDigitos(telefonoSesion));
   const [correoContacto, setCorreoContacto] = useState(correoSesion);
+  const correoFinal = correoSesion || correoContacto;
 
   // Espacios reales de la sede (`espacios_disponibles` -> `clinicas_servicios` -> `servicios`).
   const [espaciosDisponibles, setEspaciosDisponibles] = useState([]);
@@ -181,15 +247,20 @@ export default function AgendarCitaDatos({
     serviciosClinica[0];
 
   const fechasDisponibles = useMemo(() => {
+    const hoyIso = isoHoyLocal();
     const fechas = new Set();
     for (const espacio of espaciosDisponibles) {
+      if (!esFechaHoraFutura(espacio.fecha_hora_inicio)) continue;
       if (
         servicioSeleccionadoObj &&
         espacio.id_clinica_servicio !== servicioSeleccionadoObj.id_clinica_servicio
       ) {
         continue;
       }
-      fechas.add(isoFechaLocal(espacio.fecha_hora_inicio));
+      const fechaIso = isoFechaLocal(espacio.fecha_hora_inicio);
+      if (fechaIso >= hoyIso) {
+        fechas.add(fechaIso);
+      }
     }
     return [...fechas].sort().map(describirFecha);
   }, [espaciosDisponibles, servicioSeleccionadoObj]);
@@ -204,6 +275,7 @@ export default function AgendarCitaDatos({
     return espaciosDisponibles
       .filter(
         (espacio) =>
+          esFechaHoraFutura(espacio.fecha_hora_inicio) &&
           espacio.id_clinica_servicio === servicioSeleccionadoObj.id_clinica_servicio &&
           isoFechaLocal(espacio.fecha_hora_inicio) === fechaSeleccionadaObj.isoFecha
       )
@@ -240,9 +312,8 @@ export default function AgendarCitaDatos({
     ? `${clinicaActiva.nombre.replace(/^Punto Fijo de Detección\s*[–-]\s*/i, '')} - ${municipioCentro}`
     : 'Dirección de Sanidad - Oaxaca de Juárez';
 
-  const requisitoResumen =
-    clinicaActiva?.requisitos || 'Presenta tu CURP para realizarte una prueba rápida.';
-  const horarioResumen = clinicaActiva?.horario || '09:00–10:30 y 11:30–13:00 h.';
+  const requisitoResumen = obtenerRequisitosDeCentro(clinicaActiva, servicioSeleccionadoObj);
+  const horarioResumen = formatearHorarioDeCentro(clinicaActiva);
 
   const manejarCambioClinica = (nuevoIdClinica) => {
     setIdClinicaElegida(nuevoIdClinica);
@@ -262,12 +333,46 @@ export default function AgendarCitaDatos({
     setErrorFormulario('');
     setErrorSolicitudCita('');
 
-    if (!nombres.trim() || !apellidos.trim()) {
+    const nombreLimpio = nombres.trim();
+    const apellidosLimpio = apellidos.trim();
+    const telefonoLimpio = telefono.trim();
+    const correoLimpio = correoFinal.trim();
+
+    if (!nombreLimpio || !apellidosLimpio) {
       setErrorFormulario('Por favor, ingresa tu(s) nombre(s) y apellidos para continuar.');
       return;
     }
 
-    if (!correoContacto.trim() || !correoContacto.includes('@')) {
+    if (
+      nombreLimpio.length < NOMBRE_MIN ||
+      nombreLimpio.length > NOMBRE_MAX ||
+      !REGEX_SOLO_LETRAS.test(nombreLimpio)
+    ) {
+      setErrorFormulario(
+        `El nombre debe tener entre ${NOMBRE_MIN} y ${NOMBRE_MAX} caracteres y contener únicamente letras.`
+      );
+      return;
+    }
+
+    if (
+      apellidosLimpio.length < APELLIDOS_MIN ||
+      apellidosLimpio.length > APELLIDOS_MAX ||
+      !REGEX_SOLO_LETRAS.test(apellidosLimpio)
+    ) {
+      setErrorFormulario(
+        `Los apellidos deben tener entre ${APELLIDOS_MIN} y ${APELLIDOS_MAX} caracteres y contener únicamente letras.`
+      );
+      return;
+    }
+
+    if (telefonoLimpio && !/^\d{10}$/.test(telefonoLimpio)) {
+      setErrorFormulario(
+        `El número de teléfono debe contener exactamente ${TELEFONO_DIGITOS} dígitos numéricos.`
+      );
+      return;
+    }
+
+    if (!validarEmail(correoLimpio)) {
       setErrorFormulario('Por favor, ingresa un correo electrónico de contacto válido.');
       return;
     }
@@ -291,6 +396,13 @@ export default function AgendarCitaDatos({
       return;
     }
 
+    if (!esFechaHoraFutura(espacioSeleccionadoObj.fecha_hora_inicio)) {
+      setErrorFormulario(
+        'No puedes seleccionar una fecha u hora que ya pasó. Por favor elige un horario futuro.'
+      );
+      return;
+    }
+
     setPasoActual(3);
   };
 
@@ -301,11 +413,11 @@ export default function AgendarCitaDatos({
 
     if (
       !clinicaActiva ||
-      !fechaSeleccionadaIso ||
+      !fechaSeleccionadaObj ||
       !espacioSeleccionadoObj ||
       !nombres.trim() ||
       !apellidos.trim() ||
-      !correoContacto.trim()
+      !correoFinal.trim()
     ) {
       setMostrarModalConfirmarCita(false);
       setErrorSolicitudCita(
@@ -326,7 +438,7 @@ export default function AgendarCitaDatos({
           nombre: nombres.trim(),
           apellidos: apellidos.trim(),
           telefono: telefono.trim() || 'No especificado',
-          correo: correoContacto.trim(),
+          correo: correoFinal.trim(),
         },
         clinica_servicio: {
           id_clinica_servicio: servicioSeleccionadoObj?.id_clinica_servicio,
@@ -387,7 +499,13 @@ export default function AgendarCitaDatos({
           <div className="inicio-header-left">
             <div className="inicio-brand-wrap">
               <Link to="/cuenta" className="inicio-brand" style={{ textDecoration: 'none' }}>
-                PuntOax
+                <img
+                  src="/logo-puntoax.svg"
+                  alt=""
+                  className="inicio-brand-logo"
+                  aria-hidden="true"
+                />
+                <span>PuntOax</span>
               </Link>
             </div>
 
@@ -411,12 +529,17 @@ export default function AgendarCitaDatos({
           </div>
 
           <div className="inicio-header-right">
+            <CampanaNotificaciones sesion={sesion} />
+
             <Link
-              to="/cuenta"
-              className="inicio-header-account-link"
+              to="/mi-perfil"
+              className="inicio-header-profile-link"
               title={nombreOCorreo}
             >
-              Mi cuenta
+              <span className="inicio-avatar-circle" aria-hidden="true">
+                <User size={14} color="#FFFFFF" />
+              </span>
+              <span>Mi perfil</span>
             </Link>
 
             <button
@@ -426,12 +549,6 @@ export default function AgendarCitaDatos({
             >
               Salir
             </button>
-
-            <div className="inicio-avatar-margin">
-              <div className="inicio-avatar-circle" aria-hidden="true">
-                <User size={14} color="#FFFFFF" />
-              </div>
-            </div>
           </div>
         </div>
       </header>
@@ -616,9 +733,12 @@ export default function AgendarCitaDatos({
                             id="agendar-nombres"
                             type="text"
                             required
-                            maxLength={100}
+                            minLength={NOMBRE_MIN}
+                            maxLength={NOMBRE_MAX}
                             value={nombres}
-                            onChange={(e) => setNombres(e.target.value)}
+                            onChange={(e) =>
+                              setNombres(limpiarTextoNombre(e.target.value, NOMBRE_MAX))
+                            }
                             placeholder="Mariana"
                             className="agendar-input"
                           />
@@ -632,9 +752,12 @@ export default function AgendarCitaDatos({
                             id="agendar-apellidos"
                             type="text"
                             required
-                            maxLength={150}
+                            minLength={APELLIDOS_MIN}
+                            maxLength={APELLIDOS_MAX}
                             value={apellidos}
-                            onChange={(e) => setApellidos(e.target.value)}
+                            onChange={(e) =>
+                              setApellidos(limpiarTextoNombre(e.target.value, APELLIDOS_MAX))
+                            }
                             placeholder="López Ruiz"
                             className="agendar-input"
                           />
@@ -645,15 +768,19 @@ export default function AgendarCitaDatos({
                       <div className="agendar-form-row">
                         <div className="agendar-field-group">
                           <label htmlFor="agendar-telefono" className="agendar-label">
-                            Teléfono
+                            Teléfono (10 dígitos)
                           </label>
                           <input
                             id="agendar-telefono"
                             type="tel"
-                            maxLength={20}
+                            inputMode="numeric"
+                            pattern="[0-9]{10}"
+                            maxLength={TELEFONO_DIGITOS}
                             value={telefono}
-                            onChange={(e) => setTelefono(e.target.value)}
-                            placeholder="951 000 0000"
+                            onChange={(e) =>
+                              setTelefono(limpiarTelefonoDiezDigitos(e.target.value))
+                            }
+                            placeholder="9510000000"
                             className="agendar-input"
                           />
                         </div>
@@ -667,7 +794,8 @@ export default function AgendarCitaDatos({
                             type="email"
                             required
                             maxLength={255}
-                            value={correoContacto}
+                            value={correoFinal}
+                            readOnly={Boolean(correoSesion)}
                             onChange={(e) => setCorreoContacto(e.target.value)}
                             placeholder="mariana@correo.ejemplo"
                             className="agendar-input"
@@ -691,10 +819,10 @@ export default function AgendarCitaDatos({
                         <div className="agendar-summary-card">
                           <span className="agendar-summary-title">Tu visita</span>
                           <span className="agendar-summary-strong">
-                            Servicio: {servicioSeleccionadoObj?.nombre || 'Detección de ITS'}
-                          </span>
-                          <span className="agendar-summary-strong">
                             Centro: {centroResumen}
+                          </span>
+                          <span className="agendar-summary-regular">
+                            Servicio y horario: Se eligen en el Paso 2
                           </span>
                         </div>
 
@@ -1014,7 +1142,7 @@ export default function AgendarCitaDatos({
                           </div>
                           <div>
                             <span className="agendar-confirm-label">Correo electrónico</span>
-                            <p className="agendar-confirm-value">{correoContacto}</p>
+                            <p className="agendar-confirm-value">{correoFinal}</p>
                           </div>
                           <div>
                             <span className="agendar-confirm-label">Teléfono de contacto</span>

@@ -10,6 +10,7 @@ import {
   Phone,
   User,
 } from 'lucide-react';
+import CampanaNotificaciones from './CampanaNotificaciones.jsx';
 import '../../styles/Inicio.css';
 
 /**
@@ -65,7 +66,13 @@ export default function DetalleCentro({
           <div className="inicio-header-left">
             <div className="inicio-brand-wrap">
               <Link to={rutaInicio} className="inicio-brand" style={{ textDecoration: 'none' }}>
-                PuntOax
+                <img
+                  src="/logo-puntoax.svg"
+                  alt=""
+                  className="inicio-brand-logo"
+                  aria-hidden="true"
+                />
+                <span>PuntOax</span>
               </Link>
             </div>
 
@@ -97,12 +104,17 @@ export default function DetalleCentro({
           <div className="inicio-header-right">
             {sesion ? (
               <>
+                <CampanaNotificaciones sesion={sesion} />
+
                 <Link
-                  to="/cuenta"
-                  className="inicio-header-account-link"
+                  to="/mi-perfil"
+                  className="inicio-header-profile-link"
                   title={nombreOCorreo}
                 >
-                  Mi cuenta
+                  <span className="inicio-avatar-circle" aria-hidden="true">
+                    <User size={14} color="#FFFFFF" />
+                  </span>
+                  <span>Mi perfil</span>
                 </Link>
 
                 <button
@@ -112,12 +124,6 @@ export default function DetalleCentro({
                 >
                   Salir
                 </button>
-
-                <div className="inicio-avatar-margin">
-                  <div className="inicio-avatar-circle" aria-hidden="true">
-                    <User size={14} color="#FFFFFF" />
-                  </div>
-                </div>
               </>
             ) : (
               <>

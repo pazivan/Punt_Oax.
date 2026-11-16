@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  nombrePaciente, folioCita, esProxima, filtrarCitas, formatearFechaCita,
+  nombrePaciente, folioCita, esProxima, filtrarCitas, formatearFechaCita, calcularTiempoRestanteCita,
 } from '../src/utils/citasClinica.js'
 
 const pasado = '2026-11-05T08:00:00.000Z'
@@ -31,3 +31,15 @@ test('datos opcionales se muestran como pendientes, no inventados', () => {
 test('formatea fechas en hora local de México, no en hora del servidor', () => {
   assert.match(formatearFechaCita('2026-11-10T15:00:00.000Z'), /09:00/)
 })
+
+test('calcula cuánto tiempo falta para una cita próxima en minutos, horas y días', () => {
+  const base = new Date('2026-11-10T10:00:00.000Z').getTime()
+  const en45Min = '2026-11-10T10:45:00.000Z'
+  const en3Horas = '2026-11-10T13:30:00.000Z'
+  const en3Dias = '2026-11-13T10:00:00.000Z'
+
+  assert.equal(calcularTiempoRestanteCita(en45Min, base).etiqueta, 'Faltan 45 min')
+  assert.equal(calcularTiempoRestanteCita(en3Horas, base).etiqueta, 'Faltan 3 h 30 min')
+  assert.equal(calcularTiempoRestanteCita(en3Dias, base).etiqueta, 'Faltan 3 días')
+})
+

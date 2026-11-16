@@ -7,6 +7,7 @@ import Inicio from './components/Inicio/Inicio.jsx'
 import MapaCentros from './components/Inicio/MapaCentros.jsx'
 import InformacionUtil from './components/Inicio/InformacionUtil.jsx'
 import AgendarCitaDatos from './components/Inicio/AgendarCitaDatos.jsx'
+import MiPerfil from './components/Inicio/MiPerfil.jsx'
 import ModalConfirmacion from './components/Inicio/ModalConfirmacion.jsx'
 import Conocenos from './components/Conocenos.jsx'
 import FichaClinica from './components/Clinica/FichaClinica.jsx'
@@ -252,6 +253,23 @@ function App() {
           rolesPermitidos={['usuario']}
         >
           <MisCitasUsuario onSalir={salir} />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
+  }
+
+  if (pathname === '/mi-perfil') {
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          rolesPermitidos={['usuario', 'administrador']}
+        >
+          <MiPerfil sesion={sesion} perfil={perfil} onSalir={salir} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>

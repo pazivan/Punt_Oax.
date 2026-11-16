@@ -74,7 +74,8 @@ export default function Login({
               onClick={onBackToPublic}
               disabled={loading}
             >
-              PuntOax
+              <img src="/logo-puntoax.svg" alt="" className="auth-brand-logo" aria-hidden="true" />
+              <span>PuntOax</span>
             </button>
             <button
               type="button"
@@ -116,9 +117,15 @@ export default function Login({
               </p>
             </div>
 
-            {/* Previsualización del mapa */}
+            {/* Ilustración representativa de Oaxaca y red de centros */}
             <div className="auth-map-preview-box">
               <div className="auth-map-card-inner">
+                <img
+                  src="/img/oaxaca-panel-ilustracion.svg"
+                  alt=""
+                  className="auth-oaxaca-illustration"
+                  aria-hidden="true"
+                />
                 <div className="auth-map-tag">
                   <MapPin size={14} aria-hidden="true" />
                   <span>PuntOax · Oaxaca</span>

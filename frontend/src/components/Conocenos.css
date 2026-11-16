@@ -1,6 +1,7 @@
 .conocenos-page { min-height: 100vh; background: #f9f9f8; color: #191c1c; font-family: Arial, Helvetica, sans-serif; }
 .conocenos-header { max-width: 1200px; margin: auto; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.conocenos-logo { font: bold 24px Georgia, 'Times New Roman', serif; color: #001d14; text-decoration: none; }
+.conocenos-logo { display: inline-flex; align-items: center; gap: 10px; font: bold 24px Georgia, 'Times New Roman', serif; color: #001d14; text-decoration: none; }
+.conocenos-logo-img { width: 34px; height: 34px; border-radius: 8px; display: block; flex-shrink: 0; }
 .conocenos-logo span { color: #43a882; }
 .conocenos-header nav { display: flex; gap: 20px; align-items: center; }
 .conocenos-header a { color: #123b2d; }
