@@ -275,6 +275,47 @@ export default function FichaClinica({ onSalir }) {
     )
   }
 
+  // Las sedes aprobadas ya tienen ficha publicada. El editor de postulaciones
+  // se bloquea por diseño; desde aquí se consultan sus datos y se gestiona la agenda.
+  if (ficha?.clinica?.estado_publicacion === 'aprobada') {
+    const clinica = ficha.clinica
+    return (
+      <div className="ficha-page">
+        <CabeceraClinica onSalir={onSalir} />
+        <main className="ficha-main ficha-publicada">
+          <span className="ficha-eyebrow">CLÍNICA PUBLICADA</span>
+          <h1>{clinica.nombre}</h1>
+          <p>Tu sede ya está dada de alta y aparece en el directorio. Puedes consultar sus datos y gestionar los turnos de atención.</p>
+          <div className="ficha-publicada-acciones">
+            <Link to="/mi-clinica/citas" className="ficha-btn-primary">Ver mis citas</Link>
+            <Link to="/mi-clinica/agenda" className="ficha-btn-secondary">Gestionar agenda</Link>
+            <Link to="/mapa" className="ficha-btn-secondary">Ver en el mapa</Link>
+          </div>
+          <section className="ficha-publicada-datos" aria-label="Datos de la sede">
+            <h2>Datos de la sede</h2>
+            <dl>
+              <div><dt>Municipio</dt><dd>{clinica.municipio || 'No especificado'}</dd></div>
+              <div><dt>Dirección</dt><dd>{clinica.direccion || 'No especificada'}</dd></div>
+              <div><dt>Teléfono</dt><dd>{clinica.telefono || 'No especificado'}</dd></div>
+              <div><dt>Correo de contacto</dt><dd>{clinica.correo_contacto || 'No especificado'}</dd></div>
+            </dl>
+          </section>
+          <section className="ficha-publicada-datos" aria-label="Servicios de la sede">
+            <h2>Servicios</h2>
+            {ficha.servicios?.length
+              ? <ul>{ficha.servicios.map((servicio) => (
+                  <li key={servicio.id_servicio}>
+                    <strong>{servicio.nombre}</strong>
+                    {servicio.detalle_servicio && <p>{servicio.detalle_servicio}</p>}
+                  </li>
+                ))}</ul>
+              : <p>No hay servicios activos registrados.</p>}
+          </section>
+        </main>
+      </div>
+    )
+  }
+
   const pendiente = ficha?.postulacion?.estado === 'pendiente' || ficha?.clinica?.estado_ficha === 'pendiente_revision'
 
   if (pendiente) {
