@@ -18,6 +18,7 @@ import {
 import ModalConfirmacion from './ModalConfirmacion.jsx';
 import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js';
 import { consultarEspaciosClinica, solicitarCita } from '../../api/auth.js';
+import { validarEmail, validarTelefono } from '../../utils/validaciones.js';
 import '../../styles/Inicio.css';
 
 const ZONA_HORARIA = 'America/Mexico_City';
@@ -267,8 +268,13 @@ export default function AgendarCitaDatos({
       return;
     }
 
-    if (!correoContacto.trim() || !correoContacto.includes('@')) {
+    if (!correoContacto.trim() || !validarEmail(correoContacto)) {
       setErrorFormulario('Por favor, ingresa un correo electrónico de contacto válido.');
+      return;
+    }
+
+    if (!validarTelefono(telefono, { requerido: true })) {
+      setErrorFormulario('Ingresa un teléfono de contacto con al menos 10 dígitos.');
       return;
     }
 
@@ -305,7 +311,8 @@ export default function AgendarCitaDatos({
       !espacioSeleccionadoObj ||
       !nombres.trim() ||
       !apellidos.trim() ||
-      !correoContacto.trim()
+      !validarEmail(correoContacto) ||
+      !validarTelefono(telefono, { requerido: true })
     ) {
       setMostrarModalConfirmarCita(false);
       setErrorSolicitudCita(
@@ -645,17 +652,23 @@ export default function AgendarCitaDatos({
                       <div className="agendar-form-row">
                         <div className="agendar-field-group">
                           <label htmlFor="agendar-telefono" className="agendar-label">
-                            Teléfono
+                            Teléfono *
                           </label>
                           <input
                             id="agendar-telefono"
                             type="tel"
+                            inputMode="tel"
+                            required
                             maxLength={20}
                             value={telefono}
                             onChange={(e) => setTelefono(e.target.value)}
                             placeholder="951 000 0000"
+                            aria-describedby="agendar-telefono-ayuda"
                             className="agendar-input"
                           />
+                          <small id="agendar-telefono-ayuda" style={{ color: '#414845', fontSize: '12px' }}>
+                            Al menos 10 dígitos.
+                          </small>
                         </div>
 
                         <div className="agendar-field-group">
@@ -960,8 +973,7 @@ export default function AgendarCitaDatos({
                           </strong>
                           <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#414845' }}>
                             Folio de cita: <code>{citaRegistrada.id_cita}</code> · Estado:{' '}
-                            <strong>{citaRegistrada.estado}</strong> · Espacio reservado:{' '}
-                            <code>{citaRegistrada.id_espacio}</code>
+                            <strong>{citaRegistrada.estado}</strong>
                           </p>
                         </div>
                       </div>

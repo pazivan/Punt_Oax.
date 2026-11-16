@@ -38,10 +38,10 @@ async function llamar(ruta, { datos, token } = {}) {
 }
 
 test('registro, inicio de sesión y permisos reales contra API y BD aisladas', async () => {
-  const correo = `integracion-${randomUUID()}@ejemplo.com`;
-  const correoClinica = `  Clinica-${randomUUID()}@Ejemplo.COM  `;
+  const correo = `integracion-${randomUUID()}@puntoax.online`;
+  const correoClinica = `  Clinica-${randomUUID()}@Puntoax.Online  `;
   const correoClinicaNormalizado = correoClinica.trim().toLowerCase();
-  const correoAdmin = `admin-${randomUUID()}@ejemplo.com`;
+  const correoAdmin = `admin-${randomUUID()}@puntoax.online`;
   const password = `Clave-${randomUUID()}`;
 
   try {
@@ -62,6 +62,12 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     assert.equal((await llamar('/api/auth/registro-usuario', { datos: { correo, password } })).status, 409);
     assert.equal((await llamar('/api/auth/registro-usuario', { datos: { correo: 'inválido', password } })).status, 400);
     assert.equal((await llamar('/api/auth/registro-usuario', { datos: { correo: 42, password: null } })).status, 400);
+    assert.equal((await llamar('/api/auth/registro-usuario', {
+      datos: { correo: `debil-${randomUUID()}@puntoax.online`, password: '12345678' },
+    })).status, 400);
+    assert.equal((await llamar('/api/auth/registro-usuario', {
+      datos: { correo: `tel-${randomUUID()}@puntoax.online`, password, telefono: '951 000' },
+    })).status, 400);
     assert.equal((await llamar('/api/auth/login-usuario', { datos: { correo, password: 42 } })).status, 400);
     assert.equal((await llamar('/api/auth/login-usuario', { datos: { correo, password: 'otra-contraseña' } })).status, 401);
 
@@ -77,7 +83,10 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     const baseClinica = { nombre: 'Clínica Comunitaria San Jacinto', correo: correoClinica, password };
     for (const datos of [
       { ...baseClinica, nombre: '   ' }, { ...baseClinica, correo: 'invalido' },
-      { ...baseClinica, password: '1234567' }, { ...baseClinica, password: 'a'.repeat(73) },
+      { ...baseClinica, password: '1234567' },
+      { ...baseClinica, password: '12345678' },
+      { ...baseClinica, password: 'Abcdefg1' },
+      { ...baseClinica, password: 'a'.repeat(73) },
       { ...baseClinica, nombre: 'a'.repeat(256) },
     ]) {
       const respuesta = await llamar('/api/auth/registro-clinica', { datos });
@@ -94,7 +103,7 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     assert.equal(clinicaDb.rows[0].municipio, null);
     assert.equal((await llamar('/api/auth/registro-clinica', { datos: baseClinica })).status, 409);
     const intentoRol = await llamar('/api/auth/registro-clinica', {
-      datos: { ...baseClinica, correo: `rol-${randomUUID()}@ejemplo.com`, rol: 'administrador', estado_publicacion: 'aprobada' },
+      datos: { ...baseClinica, correo: `rol-${randomUUID()}@puntoax.online`, rol: 'administrador', estado_publicacion: 'aprobada' },
     });
     assert.equal(intentoRol.status, 201);
     assert.equal(intentoRol.cuerpo.clinica.rol, 'clinica');

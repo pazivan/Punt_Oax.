@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ArrowRight, Building2, Check, MapPin, ShieldCheck, User } from 'lucide-react';
+import { ArrowRight, Building2, Check, Eye, EyeOff, MapPin, ShieldCheck, User } from 'lucide-react';
 import '../../styles/Auth.css';
 import { guardarSesion, iniciarSesion, iniciarSesionAdmin, iniciarSesionClinica } from '../../api/auth';
 import { normalizarCorreo, validarEmail, validarRequerido } from '../../utils/validaciones';
@@ -18,6 +18,7 @@ export default function Login({
   // Sincronizado con initialAccountType mediante key en App.jsx
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const enviando = useRef(false);
@@ -240,16 +241,28 @@ export default function Login({
                   <label htmlFor="login-password" className="auth-label">
                     Contraseña
                   </label>
-                  <input
-                    id="login-password"
-                    type="password"
-                    required
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••"
-                    className="auth-input"
-                  />
+                  <div className="auth-password-wrap">
+                    <input
+                      id="login-password"
+                      type={mostrarPassword ? 'text' : 'password'}
+                      required
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••••"
+                      className="auth-input"
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      onClick={() => setMostrarPassword((visible) => !visible)}
+                      aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      aria-pressed={mostrarPassword}
+                      disabled={loading}
+                    >
+                      {mostrarPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                    </button>
+                  </div>
                 </div>
 
                 <button
