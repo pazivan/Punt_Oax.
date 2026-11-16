@@ -1628,3 +1628,4 @@ export default function PanelClinica({ onSalir }) {
     </div>
   )
 }
+

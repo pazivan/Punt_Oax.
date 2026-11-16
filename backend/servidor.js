@@ -8,7 +8,15 @@ const pool = require("./db");
 const { listarCitasClinica } = require("./citasClinica");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
 const { registrarRutasCitas } = require("./citas");
+const { registrarRutasAdminClinicas } = require("./adminClinicas");
 const { registrarRutasAgendaClinica } = require("./agendaClinica");
+const { registrarRutasDatosClinica } = require("./datosClinica");
+const {
+  MENSAJE_TELEFONO,
+  validarPassword,
+  validarTelefono,
+  verificarDominioCorreo,
+} = require("./validacionesRegistro");
 
 const app = express();
 const PUERTO = process.env.PORT || 3000;
@@ -31,7 +39,6 @@ const NOMBRES_PRINCIPALES = {
   ile: "Interrupción Legal del Embarazo (ILE)",
 };
 const REGEX_CORREO = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
-const REGEX_TELEFONO = /^[+\d()\s.-]+$/;
 const REGEX_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function procesarDocumentos(req, res, next) {
@@ -178,7 +185,7 @@ function validarEntradaFicha(body) {
 
   opcional("tipo_institucion", 30, (v) => TIPOS_INSTITUCION.has(v), "Selecciona un tipo de institución válido.");
   opcional("descripcion", 2000);
-  opcional("telefono", 20, (v) => REGEX_TELEFONO.test(v), "Usa únicamente números, espacios y los signos + ( ) . -.");
+  opcional("telefono", 20, (v) => !validarTelefono(v, { requerido: true }), MENSAJE_TELEFONO);
   opcional("correo_contacto", 255, (v) => REGEX_CORREO.test(v), "El correo de contacto no es válido.");
   opcional("sitio_web", 1000, (v) => {
     try {
@@ -1021,11 +1028,21 @@ app.post("/api/auth/registro-usuario", async (req, res) => {
       });
     }
 
-    if (password.length < 8) {
-      return res.status(400).json({
-        error: "La contraseña debe tener al menos 8 caracteres.",
-      });
+    const errorPassword = validarPassword(password);
+    if (errorPassword) {
+      return res.status(400).json({ error: errorPassword });
     }
+
+    const errorTelefono = validarTelefono(telefono);
+    if (errorTelefono) {
+      return res.status(400).json({ error: errorTelefono });
+    }
+
+    const verificacionCorreo = await verificarDominioCorreo(correo);
+    if (!verificacionCorreo.ok) {
+      return res.status(400).json({ error: verificacionCorreo.error });
+    }
+
     // 2. Hashear la contraseña
     const hash = await hashearPassword(password);
 
@@ -1041,7 +1058,13 @@ app.post("/api/auth/registro-usuario", async (req, res) => {
         correo,
         telefono,
         fecha_registro`,
-      [nombre, apellidos, correo, hash, telefono]
+      [
+        nombre,
+        apellidos,
+        correo,
+        hash,
+        typeof telefono === "string" ? telefono.trim() || null : null,
+      ]
     );
 
     const nuevoUsuario = rows[0];
@@ -1109,16 +1132,14 @@ app.post("/api/auth/registro-clinica", async (req, res) => {
     });
   }
 
-  if (password.length < 8) {
-    return res.status(400).json({
-      error: "La contraseña debe tener al menos 8 caracteres.",
-    });
+  const errorPassword = validarPassword(password);
+  if (errorPassword) {
+    return res.status(400).json({ error: errorPassword });
   }
-  // bcrypt trunca en 72 bytes: rechazar en lugar de guardar una clave parcial.
-  if (Buffer.byteLength(password, "utf8") > 72) {
-    return res.status(400).json({
-      error: "La contraseña no puede superar los 72 caracteres.",
-    });
+
+  const verificacionCorreo = await verificarDominioCorreo(correoLimpio);
+  if (!verificacionCorreo.ok) {
+    return res.status(400).json({ error: verificacionCorreo.error });
   }
 
   try {
@@ -1329,6 +1350,11 @@ app.get(
    // Rutas de citas (Sprint 6 · issue #56). Ver backend/citas.js
     registrarRutasCitas(app, { pool, autenticarToken, requerirRol });
    
+   // Revisión de clínicas por el administrador (Sprint 7 · issue #66). Ver backend/adminClinicas.js
+registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, prepararCarpetaDocumentos });
+
+// Datos de la clínica publicada desde su panel (Sprint 7 · issue #65). Ver backend/datosClinica.js
+registrarRutasDatosClinica(app, { pool, autenticarToken, requerirRol });
 app.listen(PUERTO, () => {
   console.log(`Servidor listo en http://localhost:${PUERTO}`);
 });

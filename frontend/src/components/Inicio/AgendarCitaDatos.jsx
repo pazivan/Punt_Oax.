@@ -19,7 +19,7 @@ import ModalConfirmacion from './ModalConfirmacion.jsx';
 import CampanaNotificaciones from './CampanaNotificaciones.jsx';
 import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js';
 import { consultarEspaciosClinica, solicitarCita } from '../../api/auth.js';
-import { leerDatosPerfilLocal, validarEmail } from '../../utils/validaciones.js';
+import { validarEmail, validarTelefono } from '../../utils/validaciones.js';
 import '../../styles/Inicio.css';
 
 const NOMBRE_MIN = 2;
@@ -377,6 +377,11 @@ export default function AgendarCitaDatos({
       return;
     }
 
+    if (!validarTelefono(telefono, { requerido: true })) {
+      setErrorFormulario('Ingresa un teléfono de contacto con al menos 10 dígitos.');
+      return;
+    }
+
     if (!clinicaActiva) {
       setErrorFormulario('Selecciona un centro de salud disponible para continuar.');
       return;
@@ -417,7 +422,8 @@ export default function AgendarCitaDatos({
       !espacioSeleccionadoObj ||
       !nombres.trim() ||
       !apellidos.trim() ||
-      !correoFinal.trim()
+      !validarEmail(correoContacto) ||
+      !validarTelefono(telefono, { requerido: true })
     ) {
       setMostrarModalConfirmarCita(false);
       setErrorSolicitudCita(
@@ -590,9 +596,8 @@ export default function AgendarCitaDatos({
                       type="button"
                       onClick={() => !citaRegistrada && setPasoActual(1)}
                       disabled={Boolean(citaRegistrada)}
-                      className={`agendar-step-item agendar-step-btn ${
-                        pasoActual === 1 ? 'is-active' : pasoActual > 1 ? 'is-completed' : ''
-                      }`}
+                      className={`agendar-step-item agendar-step-btn ${pasoActual === 1 ? 'is-active' : pasoActual > 1 ? 'is-completed' : ''
+                        }`}
                       aria-current={pasoActual === 1 ? 'step' : undefined}
                     >
                       <span className="agendar-step-icon" aria-hidden="true">
@@ -613,9 +618,8 @@ export default function AgendarCitaDatos({
                         }
                       }}
                       disabled={Boolean(citaRegistrada) || !nombres.trim() || !apellidos.trim()}
-                      className={`agendar-step-item agendar-step-btn ${
-                        pasoActual === 2 ? 'is-active' : pasoActual > 2 ? 'is-completed' : ''
-                      }`}
+                      className={`agendar-step-item agendar-step-btn ${pasoActual === 2 ? 'is-active' : pasoActual > 2 ? 'is-completed' : ''
+                        }`}
                       aria-current={pasoActual === 2 ? 'step' : undefined}
                     >
                       <span className="agendar-step-icon" aria-hidden="true">
@@ -646,9 +650,8 @@ export default function AgendarCitaDatos({
                         !apellidos.trim() ||
                         !espacioSeleccionadoObj
                       }
-                      className={`agendar-step-item agendar-step-btn ${
-                        pasoActual === 3 ? 'is-active' : ''
-                      }`}
+                      className={`agendar-step-item agendar-step-btn ${pasoActual === 3 ? 'is-active' : ''
+                        }`}
                       aria-current={pasoActual === 3 ? 'step' : undefined}
                     >
                       <span className="agendar-step-icon" aria-hidden="true">
@@ -773,16 +776,18 @@ export default function AgendarCitaDatos({
                           <input
                             id="agendar-telefono"
                             type="tel"
-                            inputMode="numeric"
-                            pattern="[0-9]{10}"
-                            maxLength={TELEFONO_DIGITOS}
+                            inputMode="tel"
+                            required
+                            maxLength={20}
                             value={telefono}
-                            onChange={(e) =>
-                              setTelefono(limpiarTelefonoDiezDigitos(e.target.value))
-                            }
-                            placeholder="9510000000"
+                            onChange={(e) => setTelefono(e.target.value)}
+                            placeholder="951 000 0000"
+                            aria-describedby="agendar-telefono-ayuda"
                             className="agendar-input"
                           />
+                          <small id="agendar-telefono-ayuda" style={{ color: '#414845', fontSize: '12px' }}>
+                            Al menos 10 dígitos.
+                          </small>
                         </div>
 
                         <div className="agendar-field-group">
@@ -983,9 +988,8 @@ export default function AgendarCitaDatos({
                                 aria-checked={seleccionado}
                                 disabled={!esp.habilitado}
                                 onClick={() => setIdEspacioSeleccionado(esp.id_espacio)}
-                                className={`agendar-slot-btn ${
-                                  seleccionado ? 'is-selected' : ''
-                                } ${!esp.habilitado ? 'is-disabled' : ''}`}
+                                className={`agendar-slot-btn ${seleccionado ? 'is-selected' : ''
+                                  } ${!esp.habilitado ? 'is-disabled' : ''}`}
                               >
                                 <Clock
                                   size={13}
@@ -1088,8 +1092,7 @@ export default function AgendarCitaDatos({
                           </strong>
                           <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#414845' }}>
                             Folio de cita: <code>{citaRegistrada.id_cita}</code> · Estado:{' '}
-                            <strong>{citaRegistrada.estado}</strong> · Espacio reservado:{' '}
-                            <code>{citaRegistrada.id_espacio}</code>
+                            <strong>{citaRegistrada.estado}</strong>
                           </p>
                         </div>
                       </div>

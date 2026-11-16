@@ -14,7 +14,7 @@
   min-height: 100vh;
   background: linear-gradient(0deg, #F9F9F8, #F9F9F8), #FFFFFF;
   color: #001D14;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   box-sizing: border-box;
 }
 
@@ -65,7 +65,7 @@
 }
 
 .inicio-brand {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-style: normal;
   font-weight: 700;
   font-size: 18px;
@@ -98,7 +98,7 @@
 }
 
 .inicio-nav-link {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -124,7 +124,7 @@
 }
 
 .inicio-nav-link-active-text {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 700;
   font-size: 16px;
@@ -151,7 +151,7 @@
   justify-content: center;
   padding: 8px 16px;
   height: 36px;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -171,7 +171,7 @@
   background: #001D14;
   border-radius: 8px;
   border: none;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -273,7 +273,7 @@
 }
 
 .inicio-hero-badge-text {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -287,7 +287,7 @@
 
 .inicio-hero-heading {
   margin: 0;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -311,7 +311,7 @@
 
 .inicio-hero-desc {
   margin: 0;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -349,7 +349,7 @@
 }
 
 .inicio-hero-cta-text {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -398,7 +398,7 @@
 }
 
 .inicio-hero-check-text {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 12px;
@@ -503,7 +503,7 @@
 }
 
 .inicio-floating-title {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -514,7 +514,7 @@
 }
 
 .inicio-floating-subtitle {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -597,7 +597,7 @@
   margin: 0;
   width: 100%;
   min-height: 24px;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -621,7 +621,7 @@
   margin: 0;
   width: 100%;
   min-height: 48px;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -655,7 +655,7 @@
 
 .inicio-feature-action-text {
   height: 24px;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -688,7 +688,7 @@
   min-height: 100vh;
   background: linear-gradient(0deg, #F9F9F8, #F9F9F8), #FFFFFF;
   color: #001D14;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   box-sizing: border-box;
 }
 
@@ -743,7 +743,7 @@
 }
 
 .mapa-eyebrow-text {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 600;
   font-size: 14px;
@@ -768,7 +768,7 @@
 .mapa-heading-title {
   margin: 0;
   width: 100%;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 700;
   font-size: 48px;
@@ -791,7 +791,7 @@
 .mapa-subtitle-text {
   margin: 0;
   width: 100%;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -844,7 +844,7 @@
   background: #F3F4F3;
   border: none;
   border-radius: 8px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -871,7 +871,7 @@
   background: #F3F4F3;
   border: none;
   border-radius: 8px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -906,7 +906,7 @@
   height: 36px;
   background: transparent;
   border: none;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -954,7 +954,7 @@
 }
 
 .mapa-listado-counter-text {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 14px;
@@ -1012,7 +1012,7 @@
   min-height: 24px;
   background: #D6E6E0;
   border-radius: 9999px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 12px;
@@ -1033,7 +1033,7 @@
   margin: 0;
   width: 100%;
   min-height: 24px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 600;
   font-size: 18px;
@@ -1063,7 +1063,7 @@
 }
 
 .mapa-card-location-text {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 12px;
@@ -1101,7 +1101,7 @@
   height: 20px;
   background: #C5EBDA;
   border-radius: 4px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 12px;
@@ -1130,7 +1130,7 @@
 }
 
 .mapa-card-schedule-text {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 13px;
@@ -1157,7 +1157,7 @@
 }
 
 .mapa-card-cost {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-size: 12px;
   line-height: 16px;
   display: flex;
@@ -1186,7 +1186,7 @@
   background: #001D14;
   border-radius: 8px;
   border: none;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 14px;
@@ -1205,7 +1205,7 @@
   height: 20px;
   background: transparent;
   border: none;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 600;
   font-size: 14px;
@@ -1313,7 +1313,7 @@
 }
 
 .mapa-top-overlay-text {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 700;
   font-size: 14px;
@@ -1404,7 +1404,7 @@
   min-height: 100vh;
   background: linear-gradient(0deg, #F9F9F8, #F9F9F8), #FFFFFF;
   color: #001D14;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   box-sizing: border-box;
 }
 
@@ -1476,7 +1476,7 @@
 }
 
 .detalle-back-text {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -1513,7 +1513,7 @@
   margin: 0;
   width: 100%;
   min-height: 44px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 700;
   font-size: 36px;
@@ -1528,7 +1528,7 @@
   margin: 0;
   width: 100%;
   min-height: 24px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -1583,7 +1583,7 @@
   min-height: 24px;
   background: #D6E6E0;
   border-radius: 9999px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 700;
   font-size: 12px;
@@ -1609,7 +1609,7 @@
   margin: 0;
   width: 100%;
   min-height: 32px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 700;
   font-size: 24px;
@@ -1623,7 +1623,7 @@
   margin: 0;
   width: 100%;
   min-height: 24px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -1649,7 +1649,7 @@
   margin: 0;
   width: 100%;
   min-height: 20px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 700;
   font-size: 14px;
@@ -1677,7 +1677,7 @@
   height: 28px;
   background: #D6E6E0;
   border-radius: 8px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 14px;
@@ -1747,7 +1747,7 @@
 }
 
 .detalle-data-label {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 12px;
@@ -1761,7 +1761,7 @@
   margin: 0;
   width: 100%;
   min-height: 20px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 14px;
@@ -1790,7 +1790,7 @@
   margin: 0;
   width: 100%;
   min-height: 24px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 600;
   font-size: 18px;
@@ -1804,7 +1804,7 @@
   margin: 0;
   width: 100%;
   min-height: 40px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -1831,7 +1831,7 @@
   height: 24px;
   background: #C5EBDA;
   border-radius: 8px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 700;
   font-size: 12px;
@@ -1870,7 +1870,7 @@
   margin: 0;
   width: 100%;
   min-height: 20px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -1947,7 +1947,7 @@
 }
 
 .detalle-schedule-btn-text {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -1995,7 +1995,7 @@
 .inicio-footer-text {
   margin: 0;
   height: 16px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 12px;
@@ -2162,7 +2162,7 @@
 
 .inicio-logout-modal-title {
   margin: 0;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 700;
   font-size: 20px;
   line-height: 28px;
@@ -2171,7 +2171,7 @@
 
 .inicio-logout-modal-text {
   margin: 0;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
@@ -2195,7 +2195,7 @@
   border: 1px solid #D6E6E0;
   background: #F9F9F8;
   color: #001D14;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -2209,7 +2209,7 @@
   border: none;
   background: #103328;
   color: #FFFFFF;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -2229,7 +2229,7 @@
   min-height: 100vh;
   background: linear-gradient(0deg, #F9F9F8, #F9F9F8), #FFFFFF;
   color: #001D14;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   box-sizing: border-box;
 }
 
@@ -2265,7 +2265,7 @@
 
 .info-util-title {
   margin: 0;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 700;
   font-size: 36px;
   line-height: 44px;
@@ -2276,7 +2276,7 @@
 .info-util-subtitle {
   margin: 0;
   max-width: 780px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
@@ -2299,7 +2299,7 @@
   border: 1px solid #D6E6E0;
   background: #FFFFFF;
   color: #001D14;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 600;
   font-size: 14px;
   line-height: 20px;
@@ -2343,7 +2343,7 @@
 
 .info-util-justify {
   margin: 0;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 400;
   font-size: 15px;
   line-height: 24px;
@@ -2415,7 +2415,7 @@
 
 .info-util-section-h2 {
   margin: 0;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 700;
   font-size: 24px;
   line-height: 32px;
@@ -2424,7 +2424,7 @@
 
 .info-util-section-lead {
   margin: 0;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 400;
   font-size: 15px;
   line-height: 22px;
@@ -2465,7 +2465,7 @@
 
 .info-util-box-title {
   margin: 0;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 700;
   font-size: 16px;
   line-height: 22px;
@@ -2474,7 +2474,7 @@
 
 .info-util-box-text {
   margin: 0;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 400;
   font-size: 14px;
   line-height: 22px;
@@ -2763,7 +2763,7 @@
 }
 
 .agendar-eyebrow-text {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 14px;
@@ -2786,7 +2786,7 @@
 
 .agendar-heading-title {
   margin: 0;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-style: normal;
   font-weight: 700;
   font-size: 48px;
@@ -2807,7 +2807,7 @@
 
 .agendar-subtitle-text {
   margin: 0;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -2871,7 +2871,7 @@
 }
 
 .agendar-sidebar-eyebrow {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 12px;
@@ -2885,7 +2885,7 @@
 
 .agendar-sidebar-center-name {
   margin: 0;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-style: normal;
   font-weight: 600;
   font-size: 18px;
@@ -2896,7 +2896,7 @@
 }
 
 .agendar-sidebar-municipio {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 12px;
@@ -2945,7 +2945,7 @@
 }
 
 .agendar-step-text {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -2956,7 +2956,7 @@
 }
 
 .agendar-step-item.is-active .agendar-step-text {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   color: #FFFFFF;
 }
 
@@ -3003,7 +3003,7 @@
 }
 
 .agendar-sidebar-footer-text {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 12px;
@@ -3053,7 +3053,7 @@
 }
 
 .agendar-form-step-label {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 12px;
@@ -3068,7 +3068,7 @@
 .agendar-form-title {
   margin: 0;
   padding-top: 4px;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-style: normal;
   font-weight: 600;
   font-size: 24px;
@@ -3080,7 +3080,7 @@
 
 .agendar-form-subtitle {
   margin: 0;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -3124,7 +3124,7 @@
 }
 
 .agendar-label {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 500;
   font-size: 14px;
@@ -3141,7 +3141,7 @@
   background: #F3F4F3;
   border: 1px solid transparent;
   border-radius: 8px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -3185,7 +3185,7 @@
 }
 
 .agendar-privacy-text {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 12px;
@@ -3223,7 +3223,7 @@
 }
 
 .agendar-summary-title {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-style: normal;
   font-weight: 700;
   font-size: 14px;
@@ -3234,7 +3234,7 @@
 }
 
 .agendar-summary-strong {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 700;
   font-size: 12px;
@@ -3245,7 +3245,7 @@
 }
 
 .agendar-summary-regular {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 12px;
@@ -3289,7 +3289,7 @@
   height: 20px;
   background: transparent;
   border: none;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -3318,7 +3318,7 @@
 }
 
 .agendar-submit-btn-text {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
@@ -3360,7 +3360,7 @@
   background: #F3F4F3;
   border: 1px solid transparent;
   border-radius: 8px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-size: 14px;
   color: #191C1C;
   box-sizing: border-box;
@@ -3403,7 +3403,7 @@
 }
 
 .agendar-date-day {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-weight: 700;
   font-size: 13px;
   line-height: 18px;
@@ -3411,7 +3411,7 @@
 }
 
 .agendar-date-num {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-weight: 400;
   font-size: 12px;
   line-height: 16px;
@@ -3445,7 +3445,7 @@
   background: #F3F4F3;
   border: 1px solid #E4ECE8;
   border-radius: 8px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-size: 13px;
   font-weight: 600;
   color: #001D14;
@@ -3509,7 +3509,7 @@
 
 .agendar-problem-title {
   display: block;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-weight: 700;
   font-size: 15px;
   line-height: 20px;
@@ -3519,7 +3519,7 @@
 
 .agendar-problem-message {
   margin: 0;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-size: 13px;
   line-height: 19px;
   color: #991B1B;
@@ -3543,7 +3543,7 @@
   border: none;
   background: #103328;
   color: #FFFFFF;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -3558,7 +3558,7 @@
   border: 1px solid #103328;
   background: #FFFFFF;
   color: #001D14;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -3594,7 +3594,7 @@
 
 .agendar-confirm-block-title {
   margin: 0;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-weight: 700;
   font-size: 15px;
   line-height: 20px;
@@ -3610,7 +3610,7 @@
 
 .agendar-confirm-label {
   display: block;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-size: 12px;
   font-weight: 500;
   color: #596763;
@@ -3619,7 +3619,7 @@
 
 .agendar-confirm-value {
   margin: 0;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-size: 14px;
   font-weight: 700;
   color: #191C1C;

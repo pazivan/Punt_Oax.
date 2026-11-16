@@ -11,7 +11,7 @@
   flex-direction: column;
   align-items: center;
   background-color: #F9F9F8;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   color: #191C1C;
 }
 
@@ -69,6 +69,7 @@
 }
 
 .auth-nav-link {
+  font-family: var(--sans);
   font-size: 14px;
   color: #414845;
   text-decoration: none;
@@ -86,7 +87,7 @@
   padding: 8px 24px;
   border-radius: 8px;
   border: none;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-size: 14px;
   cursor: pointer;
   transition: opacity 0.2s ease;
@@ -187,7 +188,7 @@
 }
 
 .auth-heading-hero {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-weight: 700;
   font-size: 36px;
   line-height: 44px;
@@ -196,7 +197,7 @@
 }
 
 .auth-heading-hero.hero-large {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-size: 44px;
   line-height: 52px;
   letter-spacing: -1.2px;
@@ -324,7 +325,7 @@
 }
 
 .auth-form-title {
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--serif);
   font-weight: 600;
   font-size: 26px;
   line-height: 32px;
@@ -355,7 +356,7 @@
   height: 36px;
   background-color: transparent;
   border: none;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-weight: 500;
   font-size: 14px;
   color: #414845;
@@ -391,7 +392,7 @@
 }
 
 .auth-info-text {
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   font-size: 13px;
   line-height: 18px;
   color: #596763;
@@ -425,7 +426,7 @@
   border: 1px solid rgba(193, 200, 195, 0.5);
   padding: 0 16px;
   font-size: 14px;
-  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--sans);
   color: #191C1C;
   outline: none;
   box-sizing: border-box;
@@ -542,7 +543,7 @@
   border-radius: 8px;
   border: none;
   color: #FFFFFF;
-  font-family: 'Liberation Serif', Georgia, serif;
+  font-family: var(--sans);
   font-weight: 600;
   font-size: 16px;
   cursor: pointer;
@@ -595,6 +596,7 @@
 }
 
 .auth-inline-link {
+  font-family: var(--sans);
   background: none;
   border: none;
   color: #103328;
@@ -661,4 +663,12 @@
     font-size: 28px;
     line-height: 34px;
   }
+}
+
+/* El acceso administrativo comparte el formulario, con tres opciones de rol. */
+.auth-role-toggle { gap: 4px; }
+.auth-role-toggle .auth-toggle-btn { min-width: 0; height: auto; min-height: 40px; padding: 6px 3px; font-family: inherit; font-size: 12px; }
+@media (max-width: 450px) {
+  .auth-role-toggle .auth-toggle-btn { font-size: 11px; }
+  .auth-role-toggle .auth-toggle-btn svg { display: none; }
 }

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import CampanaNotificaciones from './CampanaNotificaciones.jsx';
 import '../../styles/Inicio.css';
+import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx'
 
 const APARTADOS = [
   { id: 'panorama', etiqueta: 'Panorama general' },
@@ -205,6 +206,9 @@ export default function InformacionUtil({ sesion, onSalir }) {
   return (
     <div className="info-util-page">
       {/* Header (80px) */}
+      {sesion?.tipo === 'clinica' ? (
+      <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
+    ) : (
       <header className="inicio-header">
         <div className="inicio-header-container">
           <div className="inicio-header-left">
@@ -227,9 +231,15 @@ export default function InformacionUtil({ sesion, onSalir }) {
               <Link to="/mapa" className="inicio-nav-link">
                 Mapa de centros
               </Link>
-              <Link to="/agendar-cita" className="inicio-nav-link">
-                Agendar cita
-              </Link>
+              {sesion?.tipo === 'clinica' ? (
+              <Link to="/mi-clinica/citas" className="inicio-nav-link">
+                  Mis citas
+                </Link>
+              ) : (
+                <Link to="/agendar-cita" className="inicio-nav-link">
+                  Agendar cita
+                </Link>
+              )}
               <Link to="/informacion-util" className="inicio-nav-link active">
                 <span className="inicio-nav-link-active-text">Información útil</span>
               </Link>
@@ -260,6 +270,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
           </div>
         </div>
       </header>
+      )}
 
       {/* Main Content */}
       <main className="info-util-main">

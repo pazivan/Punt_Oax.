@@ -11,6 +11,7 @@ import {
   nombrePaciente,
 } from '../../utils/citasClinica.js'
 import '../Citas/Citas.css'
+import EncabezadoClinica from './EncabezadoClinica.jsx'
 
 const FILTROS = [
   { id: 'proximas', texto: 'Próximas' },
@@ -98,7 +99,7 @@ function DetalleCita({ cita, ahora, actualizando, error, onCerrar, onCambiarEsta
   )
 }
 
-export default function MisCitasClinica({ onSalir }) {
+export default function MisCitasClinica({ sesion, onSalir }) {
   const [citas, setCitas] = useState([])
   const [estado, setEstado] = useState('cargando')
   const [error, setError] = useState('')
@@ -165,22 +166,7 @@ export default function MisCitasClinica({ onSalir }) {
 
   return (
     <div className="citas-clinica">
-      <header className="citas-header">
-        <div className="citas-contenedor citas-nav">
-          <Link to="/mi-clinica" className="citas-marca">PuntOax</Link>
-          <nav className="citas-nav-enlaces" aria-label="Navegación institucional">
-            <Link to="/mi-clinica">Inicio</Link>
-            <Link to="/conocenos">Conócenos</Link>
-            <Link to="/informacion-util">Orientación</Link>
-            <Link to="/mi-clinica">Mi clínica</Link>
-            <span className="citas-nav-activo" aria-current="page">Mis citas</span>
-          </nav>
-          <div className="citas-nav-derecha">
-            <Link to="/mi-clinica" className="citas-panel-link">Panel de clínica</Link>
-            <button type="button" className="citas-boton-salir" onClick={onSalir}>Salir</button>
-          </div>
-        </div>
-      </header>
+      <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
 
       <main className="citas-contenedor citas-principal">
         <div className="citas-encabezado">

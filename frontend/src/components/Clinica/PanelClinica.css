@@ -1,0 +1,1124 @@
+@import './FichaClinica.css';
+
+/* ==========================================================================
+   Panel de clínica - PuntoOax (Diseño oficial de Figma: 1280px x 1006px)
+   ========================================================================== */
+.panel-clinica-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  isolation: isolate;
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(0deg, #F9F9F8, #F9F9F8), #FFFFFF;
+  color: #001D14;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+/* Header (80px) */
+.panel-clinica-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  position: fixed;
+  width: 100%;
+  height: 80px;
+  left: 0;
+  top: 0;
+  background: rgba(249, 249, 248, 0.8);
+  box-shadow: 0px 1px 8px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 20;
+  box-sizing: border-box;
+}
+
+.panel-clinica-header-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  gap: 24px;
+  width: 100%;
+  max-width: 1280px;
+  height: 80px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-header-left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 48px;
+  min-height: 24px;
+}
+
+.panel-clinica-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.4px;
+  color: #001D14;
+  text-decoration: none;
+}
+
+.panel-clinica-top-nav {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 24px;
+  min-height: 20px;
+}
+
+.panel-clinica-top-link {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  color: #414845;
+  text-decoration: none;
+}
+
+.panel-clinica-top-link:hover,
+.panel-clinica-top-link.is-current {
+  color: #001D14;
+  font-weight: 700;
+}
+
+.panel-clinica-header-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 16px;
+  height: 36px;
+}
+
+.panel-clinica-account-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 16px;
+  height: 36px;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #191C1C;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.panel-clinica-logout-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 24px;
+  height: 36px;
+  background: #001D14;
+  border-radius: 8px;
+  border: none;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #FFFFFF;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.panel-clinica-avatar-margin {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0 0 0 4px;
+  width: 36px;
+  height: 32px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-avatar {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  background: #001D14;
+  border-radius: 9999px;
+}
+
+/* Main */
+.panel-clinica-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 0 0;
+  width: 100%;
+  min-height: 894px;
+  background: #F9F9F8;
+  align-self: stretch;
+  flex: 1;
+  z-index: 0;
+  box-sizing: border-box;
+}
+
+.panel-clinica-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 48px 24px;
+  gap: 24px;
+  width: 100%;
+  max-width: 1280px;
+  min-height: 814px;
+  box-sizing: border-box;
+}
+
+/* Heading Block (1232px x 92px) */
+.panel-clinica-heading-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+  min-height: 92px;
+  align-self: stretch;
+}
+
+.panel-clinica-eyebrow-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  height: 16px;
+}
+
+.panel-clinica-eyebrow {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #414845;
+}
+
+.panel-clinica-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  min-height: 44px;
+}
+
+.panel-clinica-title {
+  margin: 0;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 44px;
+  display: flex;
+  align-items: center;
+  color: #001D14;
+}
+
+.panel-clinica-subtitle-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  min-height: 24px;
+}
+
+.panel-clinica-subtitle {
+  margin: 0;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  color: #414845;
+}
+
+/* Workspace (1232px x 602px+) */
+.panel-clinica-workspace {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+  min-height: 602px;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+/* Sidebar izquierda (#103328, width: 290px, height: 280px, padding: 24px, gap: 24px) */
+.panel-clinica-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 24px;
+  gap: 24px;
+  width: 290px;
+  min-height: 280px;
+  background: #103328;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-sidebar-title {
+  margin: 0;
+  width: 100%;
+  height: 24px;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  color: #FFFFFF;
+}
+
+.panel-clinica-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 8px;
+  width: 100%;
+  min-height: 184px;
+}
+
+.panel-clinica-sidebar-link {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 16px;
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.panel-clinica-sidebar-link:hover,
+.panel-clinica-sidebar-link.is-active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+}
+
+/* Tarjeta blanca derecha (padding: 48px, gap: 4px, min-height: 602px) */
+.panel-clinica-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 48px;
+  gap: 4px;
+  width: 100%;
+  min-height: 602px;
+  background: #FFFFFF;
+  box-shadow: 0px 10px 30px rgba(16, 51, 40, 0.06);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-badge-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  width: 100%;
+  min-height: 24px;
+}
+
+.panel-clinica-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 16px;
+  height: 24px;
+  background: #D6E6E0;
+  border-radius: 9999px;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 16px;
+  color: #596763;
+  box-sizing: border-box;
+}
+
+.panel-clinica-access-email {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  color: #596763;
+}
+
+.panel-clinica-welcome-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 0 0;
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-welcome-title {
+  margin: 0;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  display: flex;
+  align-items: center;
+  color: #001D14;
+}
+
+.panel-clinica-center-meta-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  min-height: 20px;
+}
+
+.panel-clinica-center-meta {
+  margin: 0;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  color: #414845;
+}
+
+/* Fila de 3 tarjetas de indicadores (#F3F4F3, 108px height, gap: 16px) */
+.panel-clinica-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: flex-start;
+  padding: 20px 0 0;
+  gap: 16px;
+  width: 100%;
+  min-height: 128px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 24px 24px 27px;
+  gap: 9px;
+  width: 100%;
+  min-height: 108px;
+  background: #F3F4F3;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-stat-value {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  display: flex;
+  align-items: center;
+  color: #001D14;
+}
+
+.panel-clinica-stat-label {
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  color: #414845;
+}
+
+/* Formulario de Información del centro */
+.panel-clinica-info-form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.panel-clinica-section-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 44px 0 0;
+  width: 100%;
+  min-height: 68px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-section-title {
+  margin: 0;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  color: #001D14;
+}
+
+.panel-clinica-fields-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: flex-start;
+  padding: 12px 0 0;
+  gap: 24px;
+  width: 100%;
+  min-height: 86px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-field-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+  min-height: 74px;
+}
+
+.panel-clinica-field-full {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 0 0;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.panel-clinica-label {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  color: #414845;
+}
+
+.panel-clinica-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 54px;
+  padding: 16px;
+  background: #FFFFFF;
+  border: 1px solid rgba(193, 200, 195, 0.3);
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #191C1C;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.panel-clinica-input:focus {
+  border-color: #103328;
+  box-shadow: 0 0 0 2px rgba(16, 51, 40, 0.12);
+}
+
+.panel-clinica-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 88px;
+  padding: 14px 16px;
+  background: #FFFFFF;
+  border: 1px solid rgba(193, 200, 195, 0.3);
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #191C1C;
+  resize: vertical;
+  outline: none;
+}
+
+.panel-clinica-textarea:focus {
+  border-color: #103328;
+  box-shadow: 0 0 0 2px rgba(16, 51, 40, 0.12);
+}
+
+/* Botones inferiores (padding-top: 60px, height: 112px) */
+.panel-clinica-actions-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 60px 0 0;
+  gap: 24px;
+  width: 100%;
+  min-height: 112px;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+.panel-clinica-actions-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.panel-clinica-btn-secondary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 24px;
+  min-width: 96.59px;
+  height: 52px;
+  background: #EDEEED;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #001D14;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.panel-clinica-btn-secondary:hover:not(:disabled) {
+  background: #DFE2E0;
+}
+
+.panel-clinica-btn-primary {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 24px;
+  gap: 8px;
+  min-width: 174.14px;
+  height: 52px;
+  background: #103328;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #FFFFFF;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.panel-clinica-btn-primary:hover:not(:disabled) {
+  background: #001D14;
+}
+
+.panel-clinica-btn-primary:disabled,
+.panel-clinica-btn-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.panel-clinica-full-ficha {
+  width: 100%;
+}
+
+/* Estilos para el encabezado exclusivo de Clínica, Resumen de solicitud y Mapa integrado */
+.panel-clinica-brand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: #001D14;
+  cursor: pointer;
+}
+
+.panel-clinica-brand-tag {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #D6E6E0;
+  color: #103328;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.panel-clinica-top-tab {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #414845;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.panel-clinica-top-tab:hover {
+  background: #E8F0EC;
+  color: #001D14;
+}
+
+.panel-clinica-top-tab.is-active {
+  background: #103328;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.panel-clinica-account-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 6px;
+  height: 38px;
+  border-radius: 9999px;
+  border: 1px solid #D6E6E0;
+  background: #F4F8F6;
+  max-width: 240px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-account-text {
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #001D14;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-clinica-edit-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: none;
+  background: #103328;
+  color: #FFFFFF;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.panel-clinica-edit-shortcut:hover {
+  background: #001D14;
+}
+
+.panel-clinica-back-shortcut {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #C5EBDA;
+  background: #F4F8F6;
+  color: #001D14;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.panel-clinica-summary-view {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+  margin-top: 28px;
+}
+
+.panel-clinica-summary-block {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: #F9F9F8;
+  border: 1px solid #E4ECE8;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.panel-clinica-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #E4ECE8;
+}
+
+.panel-clinica-summary-tag {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: #D6E6E0;
+  color: #001D14;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.panel-clinica-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.panel-clinica-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: #FFFFFF;
+  border: 1px solid #E5EAE7;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-summary-item.is-full {
+  grid-column: 1 / -1;
+}
+
+.panel-clinica-summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-size: 12px;
+  color: #596763;
+}
+
+.panel-clinica-summary-value {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #001D14;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.panel-clinica-ext-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #103328;
+  text-decoration: underline;
+}
+
+.panel-clinica-services-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.panel-clinica-service-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #F4FAF7;
+  border: 1px solid #C5EBDA;
+}
+
+.panel-clinica-service-box strong {
+  font-size: 13px;
+  color: #001D14;
+}
+
+.panel-clinica-service-box span {
+  font-size: 12px;
+  color: #414845;
+}
+
+.panel-clinica-schedule-list {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #001D14;
+}
+
+.panel-clinica-map-lead {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #596763;
+}
+
+.panel-clinica-focus-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: none;
+  background: #103328;
+  color: #FFFFFF;
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.panel-clinica-focus-btn:hover {
+  background: #001D14;
+}
+
+.panel-clinica-map-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.panel-clinica-map-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.panel-clinica-map-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  background: #FFFFFF;
+  border: 1.5px solid #E4ECE8;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.panel-clinica-map-item.is-selected {
+  border-color: #103328;
+  background: #F4FAF7;
+}
+
+.panel-clinica-map-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #D6E6E0;
+  color: #414845;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.panel-clinica-map-badge.is-own {
+  background: #103328;
+  color: #FFFFFF;
+}
+
+.panel-clinica-map-item-name {
+  font-size: 13px;
+  color: #001D14;
+  line-height: 1.3;
+}
+
+.panel-clinica-map-item-addr {
+  font-size: 11px;
+  color: #596763;
+}
+
+.panel-clinica-map-canvas {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #D6E6E0;
+  background: #E8F0EC;
+}
+
+.panel-clinica-pending-banner {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #F4FAF7;
+  border: 1px solid #C5EBDA;
+  font-size: 12.5px;
+  color: #103328;
+}
+
+/* Footer (112px, #F3F4F3) */
+.panel-clinica-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 0;
+  width: 100%;
+  height: 112px;
+  background: #F3F4F3;
+  align-self: stretch;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.panel-clinica-footer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px;
+  width: 100%;
+  max-width: 1280px;
+  height: 16px;
+  box-sizing: border-box;
+}
+
+.panel-clinica-footer-text {
+  margin: 0;
+  font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #414845;
+}
+
+@media (max-width: 1024px) {
+  .panel-clinica-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-clinica-sidebar {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .panel-clinica-sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-height: auto;
+  }
+
+  .panel-clinica-sidebar-link {
+    width: auto;
+  }
+
+  .panel-clinica-top-nav {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .panel-clinica-card {
+    padding: 24px;
+  }
+
+  .panel-clinica-stats-row,
+  .panel-clinica-fields-row,
+  .panel-clinica-summary-grid,
+  .panel-clinica-map-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-clinica-actions-row {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .panel-clinica-actions-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panel-clinica-btn-primary,
+  .panel-clinica-btn-secondary {
+    width: 100%;
+  }
+}
+

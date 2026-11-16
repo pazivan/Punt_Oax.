@@ -1,0 +1,3 @@
+# Reponer diariamente los cupos ITS para mantener un horizonte de 14 días.
+# El servidor usa UTC: 09:15 UTC = 03:15 en Oaxaca (America/Mexico_City).
+15 9 * * * root /usr/bin/docker exec puntoax_sprint4_backend node scripts/habilitar-citas-its.js --apply >> /var/log/puntoax-its-cupos.log 2>&1

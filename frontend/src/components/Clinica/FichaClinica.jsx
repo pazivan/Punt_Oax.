@@ -28,13 +28,9 @@ import {
   guardarBorradorClinica,
   subirDocumentosClinica,
 } from '../../api/auth'
-import MapaLeaflet from '../Inicio/MapaLeaflet.jsx'
-import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js'
-import { OAXACA, coordenadas } from '../../utils/centros.js'
-import { filtrarCitas } from '../../utils/citasClinica'
-import { validarEmail } from '../../utils/validaciones'
-import '../../styles/Inicio.css'
+import { validarEmail, validarTelefono } from '../../utils/validaciones'
 import './FichaClinica.css'
+import EncabezadoClinica from './EncabezadoClinica.jsx'
 
 const DIAS = [
   { numero: 0, nombre: 'Domingo' },
@@ -156,11 +152,8 @@ function faltantesLocales(form, documentos) {
 }
 
 function validarInformacion(form) {
-  if (!form.nombre.trim()) {
-    return 'El nombre de la clínica es obligatorio.'
-  }
-  if (form.telefono.trim() && !/^[+\d()\s.-]+$/.test(form.telefono.trim())) {
-    return 'El teléfono solo puede incluir números, espacios y los signos + ( ) . -'
+  if (form.telefono.trim() && !validarTelefono(form.telefono)) {
+    return 'El teléfono debe tener al menos 10 dígitos y solo puede incluir números, espacios y los signos + ( ) . -'
   }
   if (form.correo_contacto.trim() && !validarEmail(form.correo_contacto)) {
     return 'El correo de contacto no es válido.'
@@ -287,7 +280,7 @@ function CabeceraClinica({ vistaActiva, onCambiarVista, onSalir, nombreClinica }
   )
 }
 
-export default function FichaClinica({ onSalir }) {
+export default function FichaClinica({ sesion, onSalir }) {
   const [ficha, setFicha] = useState(null)
   const [form, setForm] = useState(null)
   const [citasClinica, setCitasClinica] = useState([])
@@ -464,6 +457,105 @@ export default function FichaClinica({ onSalir }) {
           <button type="button" className="ficha-btn-primary" onClick={cargarFicha}>
             Reintentar
           </button>
+          <Link to="/mapa" className="ficha-inline-link">Volver al mapa</Link>
+        </main>
+      </div>
+    )
+  }
+
+  // Las sedes aprobadas ya tienen ficha publicada. El editor de postulaciones
+  // se bloquea por diseño; desde aquí se consultan sus datos y se gestiona la agenda.
+  if (ficha?.clinica?.estado_publicacion === 'aprobada') {
+    const clinica = ficha.clinica
+    return (
+      <div className="ficha-page">
+        <CabeceraClinica sesion={sesion} onSalir={onSalir} />
+        <main className="ficha-main ficha-publicada">
+          <span className="ficha-eyebrow">CLÍNICA PUBLICADA</span>
+          <h1>{clinica.nombre}</h1>
+          <p>Tu sede ya está dada de alta y aparece en el directorio. Puedes consultar sus datos y gestionar los turnos de atención.</p>
+          <div className="ficha-publicada-acciones">
+            <Link to="/mi-clinica/citas" className="ficha-btn-primary">Ver mis citas</Link>
+            <Link to="/mi-clinica/agenda" className="ficha-btn-secondary">Gestionar agenda</Link>
+            <Link to="/mapa" className="ficha-btn-secondary">Ver en el mapa</Link>
+          </div>
+          <section className="ficha-publicada-datos" aria-label="Datos de la sede">
+            <h2>Datos de la sede</h2>
+            <dl>
+              <div><dt>Municipio</dt><dd>{clinica.municipio || 'No especificado'}</dd></div>
+              <div><dt>Dirección</dt><dd>{clinica.direccion || 'No especificada'}</dd></div>
+              <div><dt>Teléfono</dt><dd>{clinica.telefono || 'No especificado'}</dd></div>
+              <div><dt>Correo de contacto</dt><dd>{clinica.correo_contacto || 'No especificado'}</dd></div>
+            </dl>
+          </section>
+          <section className="ficha-publicada-datos" aria-label="Servicios de la sede">
+            <h2>Servicios</h2>
+            {ficha.servicios?.length
+              ? <ul>{ficha.servicios.map((servicio) => (
+                <li key={servicio.id_servicio}>
+                  <strong>{servicio.nombre}</strong>
+                  {servicio.detalle_servicio && <p>{servicio.detalle_servicio}</p>}
+                </li>
+              ))}</ul>
+              : <p>No hay servicios activos registrados.</p>}
+          </section>
+        </main>
+      </div>
+    )
+  }
+
+  const pendiente = ficha?.postulacion?.estado === 'pendiente' || ficha?.clinica?.estado_ficha === 'pendiente_revision'
+
+  if (pendiente) {
+    return (
+      <div className="ficha-page">
+        <CabeceraClinica sesion={sesion} onSalir={onSalir} />
+        <main className="ficha-pending">
+          <div className="ficha-pending-icon" aria-hidden="true">
+            <CheckCircle2 size={40} />
+          </div>
+          <span className="ficha-eyebrow">POSTULACIÓN ENVIADA</span>
+          <h1>Tu postulación fue enviada correctamente</h1>
+          <p className="ficha-pending-copy">
+            La ficha de <strong>{ficha.clinica?.nombre}</strong> está pendiente de revisión.
+            No necesitas enviarla de nuevo.
+          </p>
+          <dl className="ficha-pending-details">
+            <div>
+              <dt>Estado</dt>
+              <dd>Pendiente de revisión</dd>
+            </div>
+            <div>
+              <dt>Fecha de envío</dt>
+              <dd>{formatearFecha(ficha.postulacion?.fecha_solicitud) || 'Registrada'}</dd>
+            </div>
+            <div>
+              <dt>Publicación</dt>
+              <dd>No aparece en el mapa ni en el directorio hasta ser aprobada.</dd>
+            </div>
+          </dl>
+          <p className="ficha-pending-note">
+            La revisión administrativa, las notificaciones y la edición autorizada
+            se habilitarán en una etapa posterior.
+          </p>
+          <div className="ficha-pending-actions">
+            <Link to="/mapa" className="ficha-btn-secondary">Ver mapa</Link>
+            <button type="button" className="ficha-btn-primary" onClick={onSalir}>Cerrar sesión</button>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (!ficha?.clinica?.puede_editar) {
+    return (
+      <div className="ficha-page">
+        <CabeceraClinica sesion={sesion} onSalir={onSalir} />
+        <main className="ficha-state-card">
+          <ShieldCheck size={30} aria-hidden="true" />
+          <h1>La ficha no está disponible para edición</h1>
+          <p>La clínica ya no puede modificarse desde este flujo en su estado actual.</p>
+          <Link to="/mapa" className="ficha-inline-link">Volver al mapa</Link>
         </main>
       </div>
     )
@@ -754,9 +846,8 @@ export default function FichaClinica({ onSalir }) {
               <nav className="panel-clinica-sidebar-nav">
                 <button
                   type="button"
-                  className={`panel-clinica-sidebar-link ${
-                    vistaActiva === 'inicio' ? 'is-active' : ''
-                  }`}
+                  className={`panel-clinica-sidebar-link ${vistaActiva === 'inicio' ? 'is-active' : ''
+                    }`}
                   onClick={() => setVistaActiva('inicio')}
                 >
                   <LayoutDashboard size={15} color="#FFFFFF" aria-hidden="true" />
@@ -765,9 +856,8 @@ export default function FichaClinica({ onSalir }) {
 
                 <button
                   type="button"
-                  className={`panel-clinica-sidebar-link ${
-                    vistaActiva === 'editar' ? 'is-active' : ''
-                  }`}
+                  className={`panel-clinica-sidebar-link ${vistaActiva === 'editar' ? 'is-active' : ''
+                    }`}
                   onClick={() => setVistaActiva('editar')}
                 >
                   <Edit3 size={15} color="#FFFFFF" aria-hidden="true" />
@@ -1102,16 +1192,14 @@ export default function FichaClinica({ onSalir }) {
                             <button
                               key={centro.id_clinica}
                               type="button"
-                              className={`panel-clinica-map-item ${
-                                activo ? 'is-selected' : ''
-                              }`}
+                              className={`panel-clinica-map-item ${activo ? 'is-selected' : ''
+                                }`}
                               onClick={() => setClinicaMapaSeleccionada(centro)}
                             >
                               <div className="panel-clinica-map-item-top">
                                 <span
-                                  className={`panel-clinica-map-badge ${
-                                    centro.esMiCentro ? 'is-own' : ''
-                                  }`}
+                                  className={`panel-clinica-map-badge ${centro.esMiCentro ? 'is-own' : ''
+                                    }`}
                                 >
                                   {centro.esMiCentro ? 'TU CENTRO' : centro.municipio || 'Oaxaca'}
                                 </span>

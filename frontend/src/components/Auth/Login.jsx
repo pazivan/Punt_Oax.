@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { ArrowRight, Building2, Check, MapPin, User } from 'lucide-react';
+import { ArrowRight, Building2, Check, Eye, EyeOff, MapPin, ShieldCheck, User } from 'lucide-react';
 import '../../styles/Auth.css';
-import { guardarSesion, iniciarSesion, iniciarSesionClinica } from '../../api/auth';
+import { guardarSesion, iniciarSesion, iniciarSesionAdmin, iniciarSesionClinica } from '../../api/auth';
 import { normalizarCorreo, validarEmail, validarRequerido } from '../../utils/validaciones';
 
 export default function Login({
@@ -12,12 +12,13 @@ export default function Login({
   initialAccountType = 'usuario',
 }) {
   const [accountType, setAccountType] = useState(
-    initialAccountType === 'clinica' ? 'clinica' : 'usuario'
+    ['usuario', 'clinica', 'administrador'].includes(initialAccountType) ? initialAccountType : 'usuario'
   );
 
   // Sincronizado con initialAccountType mediante key en App.jsx
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const enviando = useRef(false);
@@ -50,7 +51,9 @@ export default function Login({
     try {
       const respuesta = accountType === 'clinica'
         ? await iniciarSesionClinica(email.trim(), password)
-        : await iniciarSesion(email.trim(), password);
+        : accountType === 'administrador'
+          ? await iniciarSesionAdmin(email.trim(), password)
+          : await iniciarSesion(email.trim(), password);
       const sesion = guardarSesion(respuesta, accountType);
       onLogin(sesion);
     } catch (err) {
@@ -88,9 +91,11 @@ export default function Login({
             </button>
           </div>
           <div className="auth-header-actions">
-            <button type="button" onClick={() => onSwitchToRegister(accountType)} disabled={loading} className="auth-btn-outline">
-              Registro de cuenta
-            </button>
+            {accountType !== 'administrador' && (
+              <button type="button" onClick={() => onSwitchToRegister(accountType)} disabled={loading} className="auth-btn-outline">
+                Registro de cuenta
+              </button>
+            )}
             <div className="auth-avatar-circle" aria-hidden="true">
               <User size={16} />
             </div>
@@ -105,11 +110,12 @@ export default function Login({
           <section className="auth-left-panel">
             <div>
               <span className="auth-badge-top">
-                {accountType === 'clinica' ? 'ÁREA CLÍNICA' : 'ACCESO PUNTOAX'}
+                {accountType === 'clinica' ? 'ÁREA CLÍNICA' : accountType === 'administrador' ? 'ACCESO ADMINISTRATIVO' : 'ACCESO PUNTOAX'}
               </span>
               <h1 className="auth-heading-hero">
                 {accountType === 'clinica'
                   ? 'Todo tu centro en un mismo espacio.'
+                  : accountType === 'administrador' ? 'Gestiona las solicitudes de clínicas.'
                   : 'Bienvenido de nuevo.'}
               </h1>
               <p className="auth-subtext-hero">
@@ -154,12 +160,13 @@ export default function Login({
           <section className="auth-right-panel">
             <div className="auth-form-inner">
               <span className="auth-subtitle-small">
-                {accountType === 'clinica' ? 'BIENVENIDO DE NUEVO' : 'TU CUENTA'}
+                {accountType === 'clinica' ? 'BIENVENIDO DE NUEVO' : accountType === 'administrador' ? 'ADMINISTRACIÓN' : 'TU CUENTA'}
               </span>
               <h2 className="auth-form-title">Iniciar sesión</h2>
               <p className="auth-form-instruction">
                 {accountType === 'clinica'
                   ? 'Inicia sesión con tu cuenta de clínica.'
+                  : accountType === 'administrador' ? 'Ingresa con las credenciales de administración asignadas.'
                   : 'Selecciona el tipo de cuenta con el que deseas continuar.'}
               </p>
 
@@ -203,6 +210,17 @@ export default function Login({
                   <Building2 size={15} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} aria-hidden="true" />
                   Soy clínica
                 </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  role="tab"
+                  aria-selected={accountType === 'administrador'}
+                  className={`auth-toggle-btn ${accountType === 'administrador' ? 'active' : ''}`}
+                  onClick={() => { setAccountType('administrador'); setError('') }}
+                >
+                  <ShieldCheck size={15} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} aria-hidden="true" />
+                  Administrador
+                </button>
               </div>
 
               {/* Formulario */}
@@ -230,16 +248,28 @@ export default function Login({
                   <label htmlFor="login-password" className="auth-label">
                     Contraseña
                   </label>
-                  <input
-                    id="login-password"
-                    type="password"
-                    required
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••"
-                    className="auth-input"
-                  />
+                  <div className="auth-password-wrap">
+                    <input
+                      id="login-password"
+                      type={mostrarPassword ? 'text' : 'password'}
+                      required
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••••"
+                      className="auth-input"
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      onClick={() => setMostrarPassword((visible) => !visible)}
+                      aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      aria-pressed={mostrarPassword}
+                      disabled={loading}
+                    >
+                      {mostrarPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                    </button>
+                  </div>
                 </div>
 
                 <button
@@ -259,14 +289,14 @@ export default function Login({
               </form>
 
               {/* Enlace inferior */}
-              <div className="auth-bottom-links">
+              {accountType !== 'administrador' && <div className="auth-bottom-links">
                 <p className="auth-switch-text">
                   ¿Aún no registras tu cuenta?{' '}
                   <button type="button" onClick={() => onSwitchToRegister(accountType)} disabled={loading} className="auth-inline-link">
                     Crear cuenta
                   </button>
                 </p>
-              </div>
+              </div>}
             </div>
           </section>
         </div>

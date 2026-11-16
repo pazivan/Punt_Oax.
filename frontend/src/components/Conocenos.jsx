@@ -3,7 +3,7 @@ import { ArrowRight, HeartHandshake, MapPin, ShieldCheck } from 'lucide-react'
 import './Conocenos.css'
 
 export default function Conocenos({ sesion, perfil, onSalir }) {
-  const rutaCuenta = perfil?.rol === 'clinica' ? '/mi-clinica' : '/cuenta'
+  const rutaCuenta = perfil?.rol === 'clinica' ? '/mi-clinica' : perfil?.rol === 'administrador' ? '/admin' : '/cuenta'
 
   return <div className="conocenos-page">
     <header className="conocenos-header">
@@ -45,7 +45,7 @@ export default function Conocenos({ sesion, perfil, onSalir }) {
       <section className="conocenos-details" aria-label="Sobre el proyecto">
         <article><MapPin size={24} aria-hidden="true" /><h2>Encuentra centros</h2><p>Inicia sesión para consultar el mapa y las fichas de los centros disponibles en Oaxaca.</p></article>
         <article><HeartHandshake size={24} aria-hidden="true" /><h2>Conoce sus servicios</h2><p>Revisa la información registrada sobre servicios y horarios; confirma siempre los datos con el centro antes de acudir.</p></article>
-        <article><ShieldCheck size={24} aria-hidden="true" /><h2>Publicación revisada</h2><p>Las clínicas nuevas no aparecen automáticamente. La postulación y la revisión administrativa son funciones pendientes.</p></article>
+        <article><ShieldCheck size={24} aria-hidden="true" /><h2>Publicación revisada</h2><p>Las clínicas nuevas pasan por una revisión administrativa antes de aparecer en el directorio público.</p></article>
       </section>
     </main>
   </div>
