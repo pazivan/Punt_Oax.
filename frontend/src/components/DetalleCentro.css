@@ -11,7 +11,7 @@
   background: #f9f9f8;
   color: var(--detalle-texto);
   color-scheme: light;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--sans);
   font-size: 14px;
   line-height: 1.5;
   box-sizing: border-box;
@@ -30,7 +30,7 @@
   align-items: center;
   gap: 44px;
 }
-.detalle-logo { font-family: Georgia, serif; font-weight: 700; font-size: 18px; text-decoration: none; white-space: nowrap; }
+.detalle-logo { font-family: var(--serif); font-weight: 700; font-size: 18px; text-decoration: none; white-space: nowrap; }
 .detalle-nav { display: flex; align-items: center; gap: 12px; flex: 1; }
 .detalle-nav a, .detalle-nav span { display: inline-block; font-size: 13px; padding: 11px 14px; text-decoration: none; white-space: nowrap; }
 .detalle-nav span { color: #69716c; cursor: default; }
@@ -77,7 +77,7 @@
 .detalle-mapa-enlace { display: inline-block; color: #496a5e !important; font-size: 12px; margin: 8px 0 21px; text-decoration: underline; }
 .detalle-ubicacion h3 { font-size: 17px; margin-top: 8px; margin-bottom: 6px; }
 .detalle-ayuda { color: #626c65 !important; font-size: 13px; margin-bottom: 23px !important; }
-.detalle-btn-agendar { display: flex; width: 100%; align-items: center; justify-content: center; gap: 10px; background: #00271c; color: #fff; border: none; border-radius: 8px; font: 14px Arial, sans-serif; padding: 15px; }
+.detalle-btn-agendar { display: flex; width: 100%; align-items: center; justify-content: center; gap: 10px; background: #00271c; color: #fff; border: none; border-radius: 8px; font: 14px var(--sans); padding: 15px; }
 .detalle-btn-agendar:disabled { opacity: .84; cursor: not-allowed; }
 .detalle-accion-nota { color: #758079 !important; font-size: 11px; text-align: center; margin-top: 8px !important; }
 .detalle-footer { background: #f1f3f1; padding: 38px 20px; font-size: 11px; color: #606b63; text-align: center; }

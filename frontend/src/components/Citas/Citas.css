@@ -10,7 +10,7 @@
   flex-direction: column;
   background: #f9f9f8;
   color: var(--citas-verde-oscuro);
-  font-family: 'Nimbus Sans', Arial, Helvetica, sans-serif;
+  font-family: var(--sans);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -18,7 +18,7 @@
 .citas-clinica h1, .citas-clinica h2, .citas-clinica h3, .citas-clinica p { margin: 0; }
 .citas-clinica h1, .citas-clinica h2, .citas-clinica h3 {
   color: var(--citas-verde-oscuro);
-  font-family: 'Liberation Serif', Georgia, 'Times New Roman', serif;
+  font-family: var(--serif);
   font-weight: 700;
   letter-spacing: -.025em;
 }
@@ -37,7 +37,7 @@
 .citas-marca {
   white-space: nowrap;
   color: var(--citas-verde-oscuro);
-  font: 700 21px/1 'Liberation Serif', Georgia, serif;
+  font: 700 21px/1 var(--serif);
 }
 .citas-nav-enlaces { display: flex; align-items: center; gap: 7px; flex: 1; }
 .citas-nav-enlaces a, .citas-nav-activo {
@@ -117,7 +117,7 @@
 .citas-modal-datos div { padding: 12px 0; display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 12px; border-bottom: 1px solid var(--citas-borde); }
 .citas-modal-datos dt { color: #66716a; font-size: 12px; }
 .citas-modal-datos dd { margin: 0; color: #143a2d; font-size: 14px; overflow-wrap: anywhere; }
-.citas-folio-largo { font-family: monospace; font-size: 12px !important; }
+.citas-folio-largo { font-family: var(--mono); font-size: 12px !important; }
 .citas-modal-nota { background: #eef3ef; padding: 14px 16px; border-radius: 8px; font-size: 12px; color: #475d53; margin-bottom: 22px !important; }
 .citas-alerta { margin: 0 0 14px !important; padding: 12px 14px; border-radius: 8px; font-size: 13px; }
 .citas-alerta--ok { background: #e4f2ea; border: 1px solid #c4e2d2; color: #1f5a40; }
