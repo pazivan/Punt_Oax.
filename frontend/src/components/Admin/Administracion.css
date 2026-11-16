@@ -1,5 +1,5 @@
 /* PuntOax · Sprint 7 · Administración de clínicas. Aislado por prefijo admin-. */
-.admin-app { --admin-verde: #103328; --admin-oscuro: #001d14; --admin-linea: #e4e9e5; --admin-texto: #1c3028; --admin-secundario: #728178; display: flex; min-height: 100vh; background: #f8faf8; color: var(--admin-texto); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
+.admin-app { --admin-verde: #103328; --admin-oscuro: #001d14; --admin-linea: #e4e9e5; --admin-texto: #1c3028; --admin-secundario: #728178; display: flex; min-height: 100vh; background: #f8faf8; color: var(--admin-texto); font-family: var(--sans); font-size: 14px; }
 .admin-app * { box-sizing: border-box; }
 .admin-app button, .admin-app input, .admin-app textarea { font: inherit; }
 .admin-app button { cursor: pointer; }
@@ -7,9 +7,9 @@
 .admin-app button:disabled { opacity: .58; cursor: not-allowed; }
 .admin-app button:focus-visible, .admin-app a:focus-visible, .admin-app input:focus-visible, .admin-app textarea:focus-visible { outline: 3px solid #5eaa87; outline-offset: 2px; }
 .admin-aside { width: 270px; flex: 0 0 270px; background: #103328; color: #f6faf7; display: flex; flex-direction: column; min-height: 100vh; padding: 31px 15px 22px; }
-.admin-logo { display: flex; align-items: center; gap: 12px; margin: 0 13px 54px; text-decoration: none; font-family: Georgia, serif; font-size: 24px; font-weight: 700; line-height: 1.1; }
+.admin-logo { display: flex; align-items: center; gap: 12px; margin: 0 13px 54px; text-decoration: none; font-family: var(--serif); font-size: 24px; font-weight: 700; line-height: 1.1; }
 .admin-logo-icon { width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; color: #103328; background: #d3eadd; }
-.admin-logo small { display: block; margin-top: 6px; color: #a5c6b3; font: 600 9px 'Segoe UI',sans-serif; letter-spacing: 1.8px; }
+.admin-logo small { display: block; margin-top: 6px; color: #a5c6b3; font: 600 9px var(--sans); letter-spacing: 1.8px; }
 .admin-aside-grupo { color: #a6bcb0; padding: 0 16px; margin-bottom: 12px; font-weight: 700; font-size: 10px; letter-spacing: 1.5px; }
 .admin-aside-nav { display: flex; flex-direction: column; gap: 5px; }
 .admin-aside-enlace { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 10px; color: #bcd6c8 !important; text-decoration: none; font-size: 13px; font-weight: 500; background: transparent; border: 0; text-align: left; width: 100%; }
@@ -50,7 +50,7 @@
 .admin-panel-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 25px 26px 17px; }
 .admin-panel-header h2 { font-size: 21px; line-height: 1.3; font-weight: 710; margin: 7px 0 5px; color: #143626; letter-spacing: -.35px; }
 .admin-panel-header p { font-size: 13px; color: var(--admin-secundario); line-height: 1.5; }
-.admin-contador { font: 700 12px 'Segoe UI',sans-serif; color: #25674b; background: #e8f4ec; padding: 4px 9px; border-radius: 20px; vertical-align: middle; margin-left: 3px; }
+.admin-contador { font: 700 12px var(--sans); color: #25674b; background: #e8f4ec; padding: 4px 9px; border-radius: 20px; vertical-align: middle; margin-left: 3px; }
 .admin-herramientas { padding: 0 26px 18px; display: flex; align-items: center; gap: 20px; justify-content: space-between; flex-wrap: wrap; }
 .admin-filtros { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 .admin-filtro { border: 1px solid transparent; background: transparent; color: #6b7d71; border-radius: 8px; padding: 9px 11px; font-size: 12px; font-weight: 600; }

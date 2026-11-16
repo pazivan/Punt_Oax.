@@ -1,5 +1,13 @@
 # PuntOax · Frontend
 
+## Tipografías
+
+Las fuentes originales sin modificar se incluyen en `public/fonts/`: Nimbus Sans
+(URW Software / (URW)++ Design & Development, AGPL-3 con excepción de fuente)
+y Liberation Serif (Google Corporation / Red Hat, Inc., SIL OFL-1.1).
+Los avisos de copyright, la excepción y el texto completo de las licencias
+acompañan los archivos en `public/fonts/licenses/`.
+
 ## Ejecutar en desarrollo
 
 Desde `frontend/`:
