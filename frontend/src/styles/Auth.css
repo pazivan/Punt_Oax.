@@ -576,6 +576,68 @@
   padding: 0;
 }
 
+.auth-correo-fijo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 10px;
+  background: #d6e6e0;
+  overflow-wrap: anywhere;
+}
+
+.auth-correo-fijo strong {
+  font-size: 18px;
+  color: #103328;
+}
+
+.auth-correo-fijo small,
+.auth-codigo-casillas + small {
+  color: #414845;
+  line-height: 1.5;
+}
+
+.auth-codigo-casillas {
+  display: flex;
+  justify-content: space-between;
+  gap: clamp(4px, 1.5vw, 12px);
+  max-width: 390px;
+  width: 100%;
+}
+
+.auth-codigo-casilla {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 16%;
+  height: clamp(44px, 12vw, 56px);
+  border: 2px solid #9fbab0;
+  border-radius: 9px;
+  background: white;
+  color: #103328;
+  font: 700 clamp(20px, 6vw, 26px)/1 var(--sans);
+  text-align: center;
+  transition: border-color .15s, box-shadow .15s, background-color .15s;
+}
+
+.auth-codigo-casilla:focus-visible,
+.auth-codigo-casilla.enfocada {
+  outline: 2px solid #103328;
+  outline-offset: 2px;
+  border-color: #103328;
+  box-shadow: 0 0 0 3px #d6e6e0;
+}
+
+.auth-codigo-casillas.tiene-error .auth-codigo-casilla {
+  border-color: #b42318;
+  background: #fff6f5;
+}
+
+.auth-codigo-casillas.es-correcto .auth-codigo-casilla {
+  border-color: #237554;
+  background: #e5f5ed;
+}
+
 .auth-public-link {
   font-size: 13px;
   color: #414845;

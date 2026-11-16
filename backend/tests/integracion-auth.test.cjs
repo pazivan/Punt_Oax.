@@ -44,6 +44,8 @@ function ultimoCorreo(correo) {
 async function verificarCuenta(rol, correo) {
   const codigo = ultimoCorreo(correo).textContent.match(/Código: (\d{6})/)[1];
   assert.equal((await llamar('/api/auth/verificar-correo', { datos: { rol, correo, codigo } })).status, 200);
+  assert.equal(ultimoCorreo(correo).subject, rol === 'usuario'
+    ? '¡Bienvenido a PuntOax!' : 'Tu cuenta de clínica en PuntOax ha sido creada');
 }
 
 test('registro, inicio de sesión y permisos reales contra API y BD aisladas', async () => {

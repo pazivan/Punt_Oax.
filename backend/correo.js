@@ -25,13 +25,59 @@ function comparar(a, b) {
 function escapar(texto) {
   return String(texto).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
+function marcoCorreo(contenido) {
+  return `<html lang="es"><body style="margin:0;padding:32px 16px;background:#f3f4f3;color:#103328;font-family:Arial,sans-serif">
+    <div style="max-width:560px;margin:auto;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #d6e6e0">
+      <div style="padding:24px 32px;background:#103328;color:#fff;font-size:22px;font-weight:bold">PuntOax</div>
+      <div style="padding:32px;line-height:1.65">${contenido}</div>
+    </div></body></html>`;
+}
 function plantilla(titulo, mensaje, accion) {
   const texto = `${titulo}\n\n${mensaje}\n\n${accion || ''}\n\nSi no solicitaste esto, ignora este correo.\nPuntOax`;
   const accionHtml = accion?.startsWith('https://')
     ? `<a href="${escapar(accion)}">Restablecer contraseña</a>`
     : escapar(accion || '');
   return { subject: `PuntOax · ${titulo}`, textContent: texto,
-    htmlContent: `<html><body><h1>${escapar(titulo)}</h1><p>${escapar(mensaje)}</p><p>${accionHtml}</p><p>Si no solicitaste esto, ignora este correo.</p><p>PuntOax</p></body></html>` };
+    htmlContent: marcoCorreo(`<h1 style="margin-top:0">${escapar(titulo)}</h1><p>${escapar(mensaje)}</p><p>${accionHtml}</p><p>Si no solicitaste esto, ignora este correo.</p><p>PuntOax</p>`) };
+}
+const BIENVENIDAS = {
+  usuario: {
+    subject: '¡Bienvenido a PuntOax!',
+    parrafos: [
+      '¡Hola!',
+      '¡Te damos la bienvenida a PuntOax!',
+      'Tu cuenta ha sido verificada correctamente y ya puedes comenzar a explorar nuestra plataforma.',
+      'PuntOax es un proyecto que busca facilitar el acceso a información sobre centros de salud en Oaxaca, permitiendo consultar ubicaciones, horarios y servicios disponibles desde un mismo lugar.',
+      'Nuestro objetivo es ayudarte a encontrar información clara, accesible y organizada para que puedas tomar decisiones informadas sobre tu atención.',
+      'Desde tu cuenta podrás explorar el directorio, consultar información de los centros y utilizar las funciones disponibles de la plataforma.',
+      'Gracias por formar parte de PuntOax.',
+    ],
+    enlace: 'Explorar PuntOax',
+  },
+  clinica: {
+    subject: 'Tu cuenta de clínica en PuntOax ha sido creada',
+    parrafos: [
+      '¡Hola!',
+      'Te damos la bienvenida a PuntOax.',
+      'Tu correo electrónico ha sido verificado correctamente y tu cuenta de clínica ya está registrada.',
+      'Por el momento, la información de tu centro permanecerá en estado de borrador y no aparecerá públicamente hasta completar el proceso de revisión y aprobación correspondiente.',
+      'Puedes iniciar sesión para consultar y administrar las funciones disponibles para tu cuenta.',
+      'Gracias por participar en PuntOax y contribuir a que la información sobre los servicios de salud en Oaxaca sea más accesible.',
+    ],
+  },
+};
+function plantillaBienvenida(rol) {
+  const datos = BIENVENIDAS[rol];
+  if (!datos) throw new Error('Tipo de bienvenida inválido');
+  const enlace = 'https://puntoax.online';
+  return {
+    subject: datos.subject,
+    textContent: [...datos.parrafos, ...(datos.enlace ? [`${datos.enlace}: ${enlace}`] : []), 'Equipo PuntOax'].join('\n\n'),
+    htmlContent: marcoCorreo(`<h1 style="font-size:24px;margin-top:0">${escapar(datos.subject)}</h1>` +
+      datos.parrafos.map((parrafo) => `<p>${escapar(parrafo)}</p>`).join('') +
+      (datos.enlace ? `<p><a href="${enlace}" style="display:inline-block;padding:12px 20px;background:#103328;color:#fff;border-radius:8px;text-decoration:none">${escapar(datos.enlace)}</a></p>` : '') +
+      '<p><strong>Equipo PuntOax</strong></p>'),
+  };
 }
 function crearProveedor() {
   // Solo se permite el simulador en una base de pruebas local explícita.
@@ -40,6 +86,9 @@ function crearProveedor() {
       ['localhost', '127.0.0.1'].includes(process.env.PGHOST)) {
     const fs = require('node:fs/promises');
     return { listo: () => true, enviar: async (correo, contenido) => {
+      if (process.env.PUNTOAX_TEST_FAIL_WELCOME === '1' && Object.values(BIENVENIDAS).some(({ subject }) => subject === contenido.subject)) {
+        throw new Error('Fallo simulado de bienvenida');
+      }
       await fs.appendFile(process.env.PUNTOAX_MOCK_MAIL_FILE, JSON.stringify({ correo, ...contenido }) + '\n', { mode: 0o600 });
     } };
   }
@@ -168,6 +217,11 @@ function registrarRutasCorreo(app, { pool, hashearPassword, validarPassword, pro
       await db.query(`UPDATE ${tabla} SET correo_verificado_en=now() WHERE ${id}=$1`, [cuenta.id]);
       await db.query(`DELETE FROM desafios_correo WHERE rol=$1 AND cuenta_id=$2 AND tipo='verificacion'`, [datos.rol, cuenta.id]);
       await db.query('COMMIT');
+      // Solo el primer intento que cambia el estado envía bienvenida. No se
+      // revierte la verificación ni se expone el error si falla el proveedor.
+      if (permitido(cuenta.correo)) {
+        try { await proveedor.enviar(cuenta.correo, plantillaBienvenida(datos.rol)); } catch { /* cuenta funcional */ }
+      }
       res.json({ mensaje: 'Correo verificado. Ya puedes iniciar sesión.' });
     } catch (error) { await db.query('ROLLBACK').catch(() => {}); throw error; }
     finally { db.release(); }
@@ -210,4 +264,4 @@ function registrarRutasCorreo(app, { pool, hashearPassword, validarPassword, pro
   return { enviarDesafio, proveedor, limiteIp };
 }
 
-module.exports = { registrarRutasCorreo, crearProveedor, plantilla, permitido };
+module.exports = { registrarRutasCorreo, crearProveedor, plantilla, plantillaBienvenida, permitido };

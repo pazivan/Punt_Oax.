@@ -2,6 +2,8 @@
 
 Esta rama implementa exclusivamente verificación de correo y recuperación de contraseña. No envía notificaciones de citas ni recordatorios. Las cuentas anteriores a la migración `009` quedan marcadas como verificadas; los registros nuevos requieren código antes de iniciar sesión. Si el proveedor no está configurado, los registros nuevos fallan de forma explícita sin crear la cuenta. Una cuenta no verificada puede introducir su código en `/verificar-correo` o solicitar un reenvío.
 
+Al verificar por primera vez, se envía una bienvenida distinta a usuarios y clínicas con HTML y texto. La verificación se confirma antes de intentar la bienvenida: un fallo del proveedor no bloquea la cuenta y repetir el código no reenvía el mensaje. La pantalla muestra el correo parcialmente oculto, no permite editarlo durante la verificación y ofrece volver a registrar la cuenta con una dirección corregida; esta acción exige introducir otra vez la contraseña y crea una cuenta nueva, dejando la anterior pendiente sin verificar.
+
 ## Configuración, solo en el backend
 
 Tras autorización **separada** para desplegar, aplicar migración `009` y configurar en un secreto de entorno no versionado:

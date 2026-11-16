@@ -12,14 +12,14 @@ import {
   validarRequerido,
 } from '../../utils/validaciones';
 
-export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar, initialAccountType = 'usuario' }) {
+export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar, initialAccountType = 'usuario', initialEmail = '' }) {
   const [accountType, setAccountType] = useState(
     initialAccountType === 'clinica' ? 'clinica' : 'usuario'
   );
 
   // Sincronizado con initialAccountType mediante key en App.jsx
   const [nombreClinica, setNombreClinica] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);

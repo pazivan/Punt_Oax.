@@ -4,7 +4,8 @@ const { randomUUID } = require('node:crypto');
 const fs = require('node:fs');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-const { plantilla, permitido } = require('../correo');
+const { spawn } = require('node:child_process');
+const { plantilla, plantillaBienvenida, permitido } = require('../correo');
 
 if (process.env.PUNTOAX_TEST_DB !== '1' || !process.env.PGDATABASE?.startsWith('puntoax_s4_test') ||
     !['localhost', '127.0.0.1'].includes(process.env.PGHOST) ||
@@ -33,6 +34,21 @@ test('plantillas HTML/texto escapan contenido y mantienen enlace para recuperaci
   assert.equal(permitido('alguien@demo.puntoax.invalid'), false);
 });
 
+test('bienvenidas separadas no incluyen códigos, credenciales ni información médica', () => {
+  const usuario = plantillaBienvenida('usuario');
+  const clinica = plantillaBienvenida('clinica');
+  assert.equal(usuario.subject, '¡Bienvenido a PuntOax!');
+  assert.equal(clinica.subject, 'Tu cuenta de clínica en PuntOax ha sido creada');
+  for (const mensaje of [usuario, clinica]) {
+    assert.match(mensaje.htmlContent, /PuntOax/);
+    assert.match(mensaje.textContent, /Equipo PuntOax/);
+    assert.doesNotMatch(mensaje.textContent, /contraseña|token|Código:|cita|diagnóstico/i);
+  }
+  assert.match(usuario.htmlContent, /href="https:\/\/puntoax\.online"/);
+  assert.match(clinica.textContent, /borrador/);
+  assert.doesNotMatch(clinica.htmlContent, /href="https:\/\/puntoax\.online"/);
+});
+
 test('códigos: completar tras registro, consumo único, caducidad, intentos y límites de reenvío', async () => {
   const correo = `verificacion-${randomUUID()}@puntoax.online`;
   try {
@@ -59,10 +75,61 @@ test('códigos: completar tras registro, consumo único, caducidad, intentos y l
     await pool.query(`UPDATE desafios_correo SET ultimo_envio=now()-interval '61 seconds' WHERE cuenta_id=$1`, [rows[0].id_usuario]);
     await api('reenviar-verificacion', { rol: 'usuario', correo });
     const tercero = correoEnviado(correo).at(-1).textContent.match(/Código: (\d{6})/)[1];
+    const previo = correoEnviado(correo).length;
     assert.equal((await api('verificar-correo', { rol: 'usuario', correo, codigo: tercero })).status, 200);
+    assert.equal(correoEnviado(correo).length, previo + 1);
+    assert.equal(correoEnviado(correo).at(-1).subject, '¡Bienvenido a PuntOax!');
     assert.equal((await api('verificar-correo', { rol: 'usuario', correo, codigo: tercero })).status, 400);
+    assert.equal(correoEnviado(correo).length, previo + 1);
     assert.equal((await api('login-usuario', { correo, password })).status, 200);
   } finally { await pool.end(); }
+});
+
+test('bienvenida de clínica solo tras verificar; reintentos no duplican el correo', async () => {
+  const correo = `bienvenida-clinica-${randomUUID()}@puntoax.online`;
+  const alta = await api('registro-clinica', { nombre: 'Centro local', correo, password });
+  assert.equal(alta.status, 201);
+  const enviados = correoEnviado(correo);
+  assert.equal(enviados.length, 1);
+  const codigo = enviados[0].textContent.match(/Código: (\d{6})/)[1];
+  assert.equal((await api('verificar-correo', { rol: 'clinica', correo, codigo })).status, 200);
+  assert.equal(correoEnviado(correo).length, 2);
+  assert.equal(correoEnviado(correo).at(-1).subject, 'Tu cuenta de clínica en PuntOax ha sido creada');
+  assert.equal((await api('verificar-correo', { rol: 'clinica', correo, codigo })).status, 400);
+  assert.equal((await api('reenviar-verificacion', { rol: 'clinica', correo })).status, 200);
+  assert.equal(correoEnviado(correo).length, 2);
+  assert.equal((await api('login-clinica', { correo, password })).status, 200);
+});
+
+test('si el proveedor rechaza la bienvenida, la cuenta verificada sigue operativa', async () => {
+  const puerto = 33087;
+  const servidor = spawn(process.execPath, ['servidor.js'], {
+    cwd: require('node:path').resolve(__dirname, '..'),
+    env: { ...process.env, PORT: String(puerto), BREVO_API_KEY: '', PUNTOAX_TEST_FAIL_WELCOME: '1',
+      JWT_SECRET: 'clave_aislada_pruebas_bienvenida_1234567890', PUNTOAX_VERIFICAR_DOMINIO_CORREO: '0' },
+    stdio: 'ignore',
+  });
+  try {
+    let listo = false;
+    for (let i = 0; i < 40; i++) {
+      try { listo = (await fetch(`http://127.0.0.1:${puerto}/health`)).ok; if (listo) break; } catch { /* arranque */ }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    assert.equal(listo, true, 'el servidor simulado debe iniciar');
+    const correo = `fallo-bienvenida-${randomUUID()}@puntoax.online`;
+    const enviar = async (ruta, datos) => {
+      const r = await fetch(`http://127.0.0.1:${puerto}/api/auth/${ruta}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+      });
+      return r.status;
+    };
+    assert.equal(await enviar('registro-usuario', { correo, password }), 201);
+    const codigo = correoEnviado(correo).at(-1).textContent.match(/Código: (\d{6})/)[1];
+    assert.equal(await enviar('verificar-correo', { rol: 'usuario', correo, codigo }), 200);
+    assert.equal(correoEnviado(correo).length, 1);
+    assert.equal(await enviar('verificar-correo', { rol: 'usuario', correo, codigo }), 400);
+    assert.equal(await enviar('login-usuario', { correo, password }), 200);
+  } finally { servidor.kill(); }
 });
 
 test('recuperación de tres roles, respuesta no enumeradora y revocación de JWT previos', async () => {

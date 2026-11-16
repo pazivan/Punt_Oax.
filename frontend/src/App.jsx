@@ -150,8 +150,9 @@ function App() {
 
   if (pathname === '/registro') {
     return <Register
-      key={tipoRegistro}
-      initialAccountType={tipoRegistro}
+      key={estadoRuta?.tipo || tipoRegistro}
+      initialAccountType={estadoRuta?.tipo || tipoRegistro}
+      initialEmail={estadoRuta?.correo || ''}
       onSwitchToLogin={(mensaje = '', tipo = 'usuario') => {
         setMensajeAuth(typeof mensaje === 'string' ? mensaje : '')
         setTipoRegistro(tipo === 'clinica' ? 'clinica' : 'usuario')
