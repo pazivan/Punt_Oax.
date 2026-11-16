@@ -57,3 +57,24 @@ export function validarTelefono(valor, { requerido = false } = {}) {
 export function validarNombreClinica(nombre) {
   return validarRequerido(nombre) && nombre.trim().length <= NOMBRE_MAX
 }
+
+export function obtenerClavePerfilLocal(correo) {
+  const limpio = typeof correo === 'string' ? correo.trim().toLowerCase() : ''
+  return limpio ? `puntoax-perfil-datos:${limpio}` : 'puntoax-perfil-datos:anonimo'
+}
+
+export function leerDatosPerfilLocal(correo) {
+  try {
+    const guardado = localStorage.getItem(obtenerClavePerfilLocal(correo))
+    if (!guardado) return { nombre: '', apellidos: '', telefono: '' }
+    const parsed = JSON.parse(guardado)
+    return {
+      nombre: typeof parsed?.nombre === 'string' ? parsed.nombre : '',
+      apellidos: typeof parsed?.apellidos === 'string' ? parsed.apellidos : '',
+      telefono: typeof parsed?.telefono === 'string' ? parsed.telefono : '',
+    }
+  } catch {
+    return { nombre: '', apellidos: '', telefono: '' }
+  }
+}
+

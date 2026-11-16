@@ -8,7 +8,8 @@ import {
   Star,
   User,
 } from 'lucide-react';
-import '../../styles/Inicio.css';
+import CampanaNotificaciones, { BannerRecordatorioCitas } from './CampanaNotificaciones.jsx';
+import '../../css/Inicio.css';
 
 /**
  * Inicio - Ventana de inicio para usuario autenticado según diseño de Figma (1280x932).
@@ -30,7 +31,15 @@ export default function Inicio({ sesion, onSalir }) {
         <div className="inicio-header-container">
           <div className="inicio-header-left">
             <div className="inicio-brand-wrap">
-              <span className="inicio-brand">PuntOax</span>
+              <span className="inicio-brand">
+                <img
+                  src="/logo-puntoax.svg"
+                  alt=""
+                  className="inicio-brand-logo"
+                  aria-hidden="true"
+                />
+                <span>PuntOax</span>
+              </span>
             </div>
 
             <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
@@ -56,12 +65,17 @@ export default function Inicio({ sesion, onSalir }) {
           </div>
 
           <div className="inicio-header-right">
+            <CampanaNotificaciones sesion={sesion} />
+
             <Link
-              to="/cuenta"
-              className="inicio-header-account-link"
+              to="/mi-perfil"
+              className="inicio-header-profile-link"
               title={nombreOCorreo}
             >
-              Mi cuenta
+              <span className="inicio-avatar-circle" aria-hidden="true">
+                <User size={14} color="#FFFFFF" />
+              </span>
+              <span>Mi perfil</span>
             </Link>
 
             <button
@@ -71,12 +85,6 @@ export default function Inicio({ sesion, onSalir }) {
             >
               Salir
             </button>
-
-            <div className="inicio-avatar-margin">
-              <div className="inicio-avatar-circle" aria-hidden="true">
-                <User size={14} color="#FFFFFF" />
-              </div>
-            </div>
           </div>
         </div>
       </header>
@@ -84,6 +92,8 @@ export default function Inicio({ sesion, onSalir }) {
       {/* Main (padding-top: 80px) */}
       <main className="inicio-main">
         <div className="inicio-container">
+          <BannerRecordatorioCitas sesion={sesion} />
+
           {/* Bloque superior (1232px x 368px) */}
           <section className="inicio-hero-section" aria-labelledby="inicio-hero-heading">
             {/* Columna izquierda (height: 292px, gap: 24px) */}
@@ -139,6 +149,12 @@ export default function Inicio({ sesion, onSalir }) {
             {/* Columna derecha: Background+Shadow (height: 368px, padding: 24px) */}
             <div className="inicio-hero-right-card">
               <div className="inicio-hero-preview-frame">
+                <img
+                  src="/img/oaxaca-panel-ilustracion.svg"
+                  alt=""
+                  className="inicio-hero-preview-img"
+                  aria-hidden="true"
+                />
                 <div className="inicio-hero-preview-gradient" aria-hidden="true" />
 
                 {/* Overlay+Shadow+OverlayBlur (178.5px x 64px) */}

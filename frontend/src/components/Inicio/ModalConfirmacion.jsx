@@ -1,5 +1,5 @@
 import { AlertCircle } from 'lucide-react';
-import '../../styles/Inicio.css';
+import '../../css/Inicio.css';
 
 /**
  * ModalConfirmacion - Componente reutilizable de ventana emergente de advertencia / confirmación.

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import './DetalleCentro.css';
+import '../css/DetalleCentro.css';
 
 // Íconos SVG ligeros: no requieren dependencias adicionales.
 function Icono({ tipo, size = 17 }) {

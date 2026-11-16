@@ -2,14 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   AlertCircle, ArrowRight, CalendarDays, Clock3, MapPin,
-  RefreshCw, ShieldCheck, X,
+  RefreshCw, ShieldCheck, User, X,
 } from 'lucide-react'
 import { cancelarCitaUsuario, consultarCitasUsuario } from '../../api/auth.js'
 import TarjetaCita from './TarjetaCita.jsx'
+import CampanaNotificaciones from '../Inicio/CampanaNotificaciones.jsx'
 import {
   ETIQUETAS_ESTADO, filtrarCitas, formatearFechaCita,
 } from '../../utils/citasClinica.js'
-import './Citas.css'
+import '../../css/Inicio.css'
+import '../../css/Citas.css'
 
 const FILTROS = [
   { id: 'proximas', texto: 'Próximas' },
@@ -173,7 +175,15 @@ export default function MisCitasUsuario({ onSalir }) {
     <div className="citas-clinica citas-usuario">
       <header className="citas-header">
         <div className="citas-contenedor citas-nav">
-          <Link to="/cuenta" className="citas-marca">PuntOax</Link>
+          <Link to="/cuenta" className="citas-marca">
+            <img
+              src="/logo-puntoax.svg"
+              alt=""
+              className="inicio-brand-logo"
+              aria-hidden="true"
+            />
+            <span>PuntOax</span>
+          </Link>
           <nav className="citas-nav-enlaces" aria-label="Navegación de paciente">
             <Link to="/cuenta">Inicio</Link>
             <Link to="/mapa">Mapa de centros</Link>
@@ -182,7 +192,13 @@ export default function MisCitasUsuario({ onSalir }) {
             <Link to="/informacion-util">Información útil</Link>
           </nav>
           <div className="citas-nav-derecha">
-            <Link to="/cuenta" className="citas-panel-link">Mi cuenta</Link>
+            <CampanaNotificaciones citasPreCargadas={citas} />
+            <Link to="/mi-perfil" className="inicio-header-profile-link">
+              <span className="inicio-avatar-circle" aria-hidden="true">
+                <User size={14} color="#FFFFFF" />
+              </span>
+              <span>Mi perfil</span>
+            </Link>
             <button type="button" className="citas-boton-salir" onClick={onSalir}>Salir</button>
           </div>
         </div>

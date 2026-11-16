@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { bloquearDiaClinica, cambiarCupoClinica, consultarAgendaClinica, crearCupoClinica, guardarHorariosAgenda } from '../../api/auth.js'
-import '../Citas/Citas.css'
+import EncabezadoClinica from './EncabezadoClinica.jsx'
+import '../../css/Citas.css'
 
 const fechaMexico = (valor) => {
   const partes = new Intl.DateTimeFormat('es-MX', {
@@ -15,7 +16,7 @@ const horaMexico = (valor) => new Intl.DateTimeFormat('es-MX', {
 }).format(new Date(valor))
 const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
-export default function AgendaClinica() {
+export default function AgendaClinica({ sesion, onSalir }) {
   const [agenda, setAgenda] = useState(null)
   const [servicio, setServicio] = useState('')
   const [fecha, setFecha] = useState('')
@@ -59,7 +60,10 @@ export default function AgendaClinica() {
     return fechaMaxima.toISOString().slice(0, 10)
   })()
 
-  return <main className="citas-contenedor citas-principal">
+  return (
+    <div className="citas-clinica">
+      <EncabezadoClinica sesion={sesion} onSalir={onSalir} modoPostulacion={false} />
+      <main className="citas-contenedor citas-principal">
     <Link to="/mi-clinica/citas">← Mis citas</Link>
     <h1>Gestionar agenda</h1>
     <p>Crea cupos concretos para ITS o ILE durante los próximos 15 días. No se generan citas automáticamente ni se supone cuánto dura cada atención.</p>
@@ -119,5 +123,7 @@ export default function AgendaClinica() {
         </li>)}</ul>
       </section>
     </>}
-  </main>
+      </main>
+    </div>
+  )
 }
