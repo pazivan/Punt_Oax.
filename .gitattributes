@@ -1,0 +1,2 @@
+# Copias literales de las dos hojas; preservar CRLF y espacios dentro de celdas.
+backend/data/aborto-fuentes/*.csv -whitespace
