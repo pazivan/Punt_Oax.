@@ -297,6 +297,16 @@ export default function AgendarCitaDatos({
       return;
     }
 
+    // La fecha y el horario se muestran preseleccionados (primer día/hora
+    // disponible), pero el estado solo se llenaba al hacer clic. Al confirmar,
+    // la validación fallaba aunque la pantalla mostrara una fecha y una hora.
+    if (!fechaSeleccionadaIso && fechaSeleccionadaObj) {
+      setFechaSeleccionadaIso(fechaSeleccionadaObj.isoFecha);
+    }
+    if (!idEspacioSeleccionado) {
+      setIdEspacioSeleccionado(espacioSeleccionadoObj.id_espacio);
+    }
+
     setPasoActual(3);
   };
 
@@ -305,9 +315,13 @@ export default function AgendarCitaDatos({
     setErrorSolicitudCita('');
     setErrorFormulario('');
 
+    // La fecha visible es la que se preseleccionó en el paso 2; si el estado
+    // quedó vacío por un cambio de servicio, se usa la fecha mostrada.
+    const fechaConfirmada = fechaSeleccionadaIso || fechaSeleccionadaObj?.isoFecha;
+
     if (
       !clinicaActiva ||
-      !fechaSeleccionadaIso ||
+      !fechaConfirmada ||
       !espacioSeleccionadoObj ||
       !nombres.trim() ||
       !apellidos.trim() ||
