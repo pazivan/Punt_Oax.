@@ -17,7 +17,8 @@
     "migrate": "node scripts/migrador.js up",
     "migrate:down": "node scripts/migrador.js down",
     "migrate:status": "node scripts/migrador.js status",
-    "migrate:reset": "node scripts/migrador.js reset"
+    "migrate:reset": "node scripts/migrador.js reset",
+    "admin:crear": "node scripts/crear-admin.js"
   },
   "keywords": [],
   "author": "",

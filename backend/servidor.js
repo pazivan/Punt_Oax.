@@ -1410,3 +1410,19 @@ registrarRutasDatosClinica(app, { pool, autenticarToken, requerirRol });
 app.listen(PUERTO, () => {
   console.log(`Servidor listo en http://localhost:${PUERTO}`);
 });
+
+// Aviso si la base no tiene administradores: la semilla 002 (cuentas demo)
+// no se aplica por defecto, así que /admin no tendría con qué iniciar sesión.
+pool
+  .query("SELECT 1 FROM administradores LIMIT 1")
+  .then(({ rowCount }) => {
+    if (rowCount === 0) {
+      console.warn(
+        "Aviso: no hay administradores en la base de datos. " +
+          "Crea uno con: npm run admin:crear -- --correo=... --password='...'"
+      );
+    }
+  })
+  .catch((error) => {
+    console.warn("No se pudo verificar si existen administradores:", error.message);
+  });
