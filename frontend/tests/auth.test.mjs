@@ -3,14 +3,20 @@ import { test } from 'node:test'
 import {
   cerrarSesion, consultarPerfil, guardarSesion, iniciarSesion,
   iniciarSesionClinica, leerSesion, registrarClinica, registrarUsuario,
-  verificarCorreo, reenviarVerificacion, solicitarRecuperacion, restablecerPassword,
+  verificarCorreo, reenviarVerificacion, solicitarRecuperacion, restablecerPassword, revocarSesion,
 } from '../src/api/auth.js'
 
 const almacen = new Map()
+const compartido = new Map()
 globalThis.sessionStorage = {
   getItem: (clave) => almacen.get(clave) ?? null,
   setItem: (clave, valor) => almacen.set(clave, valor),
   removeItem: (clave) => almacen.delete(clave),
+}
+globalThis.localStorage = {
+  getItem: (clave) => compartido.get(clave) ?? null,
+  setItem: (clave, valor) => compartido.set(clave, valor),
+  removeItem: (clave) => compartido.delete(clave),
 }
 
 function simular(estado, cuerpo, { sinJson = false } = {}) {
@@ -93,6 +99,35 @@ test('login usuario y clínica usan sus rutas y estructuras de respuesta', async
   assert.equal(llamadas[0].ruta, '/api/auth/login-clinica')
   assert.equal(clinica.cuenta.correo, 'c@ejemplo.com')
   assert.equal(leerSesion().token, 'jwt-c')
+  assert.equal(almacen.has('puntoax-sesion'), false, 'el JWT ya no queda aislado en la pestaña')
+  assert.equal(JSON.parse(compartido.get('puntoax-sesion')).token, 'jwt-c')
+})
+
+test('la sesión existente se migra una vez; cerrar sesión no resucita copias antiguas', () => {
+  cerrarSesion()
+  compartido.delete('puntoax-sesion-compartida')
+  almacen.set('puntoax-sesion', JSON.stringify({ token: 'jwt-antiguo', cuenta: {}, tipo: 'usuario' }))
+  assert.equal(leerSesion().token, 'jwt-antiguo')
+  assert.equal(almacen.has('puntoax-sesion'), false)
+  almacen.set('puntoax-sesion', JSON.stringify({ token: 'jwt-antiguo', cuenta: {}, tipo: 'usuario' }))
+  cerrarSesion()
+  assert.equal(leerSesion(), null)
+  assert.equal(almacen.has('puntoax-sesion'), false)
+})
+
+test('logout revoca el token en el backend y mantiene el cierre local aun si falla la red', async () => {
+  guardarSesion({ token: 'jwt-u', usuario: {} }, 'usuario')
+  let llamadas = simular(200, { mensaje: 'Sesión cerrada.' })
+  assert.equal(await revocarSesion(), true)
+  assert.equal(llamadas[0].ruta, '/api/auth/cerrar-sesion')
+  assert.equal(llamadas[0].opciones.headers.Authorization, 'Bearer jwt-u')
+  cerrarSesion()
+  assert.equal(leerSesion(), null)
+  guardarSesion({ token: 'jwt-c', clinica: {} }, 'clinica')
+  globalThis.fetch = async () => { throw new Error('sin red') }
+  assert.equal(await revocarSesion(), false)
+  cerrarSesion()
+  assert.equal(leerSesion(), null)
 })
 
 test('perfil usa Bearer; 401/403 limpian sesión y cerrar sesión la elimina', async () => {

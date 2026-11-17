@@ -4,6 +4,7 @@ const { test } = require('node:test');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const fs = require('node:fs');
+const jwt = require('jsonwebtoken');
 
 // Rechazar cualquier ejecución accidental contra una base compartida.
 if (process.env.PUNTOAX_TEST_DB !== '1' ||
@@ -26,9 +27,9 @@ if (!process.env.PUNTOAX_TEST_API_PORT || !Number.isInteger(puerto) ||
 }
 const url = `http://127.0.0.1:${puerto}`;
 
-async function llamar(ruta, { datos, token } = {}) {
+async function llamar(ruta, { datos, token, metodo } = {}) {
   const respuesta = await fetch(`${url}${ruta}`, {
-    method: datos ? 'POST' : 'GET',
+    method: metodo || (datos ? 'POST' : 'GET'),
     headers: {
       ...(datos ? { 'Content-Type': 'application/json' } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -92,6 +93,12 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     assert.equal((await llamar('/api/admin/panel-prueba', { token: usuario.cuerpo.token })).status, 403);
     assert.equal((await llamar('/api/auth/perfil', { token: 'inválido' })).status, 403);
     assert.equal((await llamar('/api/auth/perfil')).status, 401);
+    const otroUsuario = await llamar('/api/auth/login-usuario', { datos: { correo, password } });
+    assert.equal(otroUsuario.status, 200);
+    const idUsuario = (await pool.query('SELECT id_usuario FROM usuarios WHERE correo=$1', [correo])).rows[0].id_usuario;
+    const tokenAnterior = jwt.sign({ id: idUsuario, rol: 'usuario', correo }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    assert.equal((await llamar('/api/auth/perfil', { token: tokenAnterior })).status, 200,
+      'los JWT emitidos antes de agregar version_sesion siguen siendo válidos hasta el logout');
 
     // El registro vigente crea únicamente la cuenta; la ficha se completa después.
     const baseClinica = { nombre: 'Clínica Comunitaria San Jacinto', correo: correoClinica, password };
@@ -145,6 +152,8 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     const directorio = await llamar('/api/clinicas');
     assert.equal(directorio.status, 200);
     assert.equal(directorio.cuerpo.some(c => c.id_clinica === clinicaId), false);
+    const otraClinica = await llamar('/api/auth/login-clinica', { datos: { correo: correoClinicaNormalizado, password } });
+    assert.equal(otraClinica.status, 200);
 
     // ---------------------------------------------------------------
     // Acceso administrativo (Jonathan)
@@ -155,6 +164,27 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     const admin = await llamar('/api/auth/login-admin', { datos: { correo: correoAdmin, password } });
     assert.equal(admin.status, 200);
     assert.equal((await llamar('/api/admin/panel-prueba', { token: admin.cuerpo.token })).status, 200);
+    const otroAdmin = await llamar('/api/auth/login-admin', { datos: { correo: correoAdmin, password } });
+    assert.equal(otroAdmin.status, 200);
+
+    for (const [rol, principal, otro, ruta, datos] of [
+      ['usuario', usuario.cuerpo.token, otroUsuario.cuerpo.token, 'login-usuario', { correo, password }],
+      ['clinica', clinica.cuerpo.token, otraClinica.cuerpo.token, 'login-clinica', { correo: correoClinicaNormalizado, password }],
+      ['administrador', admin.cuerpo.token, otroAdmin.cuerpo.token, 'login-admin', { correo: correoAdmin, password }],
+    ]) {
+      assert.equal((await llamar('/api/auth/cerrar-sesion', { metodo: 'POST' })).status, 401);
+      const cierre = await fetch(`${url}/api/auth/cerrar-sesion`, {
+        method: 'POST', headers: { Authorization: `Bearer ${principal}` },
+      });
+      assert.equal(cierre.status, 200, rol);
+      assert.equal((await llamar('/api/auth/perfil', { token: principal })).status, 403, rol);
+      assert.equal((await llamar('/api/auth/perfil', { token: otro })).status, 403, rol);
+      const rutaProtegida = rol === 'usuario' ? '/api/citas'
+        : rol === 'clinica' ? '/api/clinicas/mi-ficha' : '/api/admin/panel-prueba';
+      assert.equal((await llamar(rutaProtegida, { token: otro })).status, 403, rol);
+      if (rol === 'usuario') assert.equal((await llamar('/api/auth/perfil', { token: tokenAnterior })).status, 403);
+      assert.equal((await llamar('/api/auth/' + ruta, { datos })).status, 200, rol);
+    }
   } finally {
     await pool.end();
   }

@@ -16,7 +16,7 @@ import AgendaClinica from './components/Clinica/AgendaClinica.jsx'
 import MisCitasUsuario from './components/Citas/MisCitasUsuario.jsx'
 import Administracion from './components/Admin/Administracion.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
-import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
+import { cerrarSesion, consultarPerfil, leerSesion, revocarSesion } from './api/auth.js'
 import { borrarVerificacionPendiente, guardarVerificacionPendiente, leerVerificacionPendiente } from './api/verificacionPendiente.js'
 import './App.css'
 
@@ -95,14 +95,38 @@ function App() {
         }
       })
     return () => { activo = false }
+  }, [sesion, pathname])
+
+  useEffect(() => {
+    function sincronizarSesion(evento) {
+      if (evento?.type === 'storage' && evento.key !== 'puntoax-sesion' && evento.key !== null) return
+      if (evento?.type === 'visibilitychange' && document.visibilityState !== 'visible') return
+      const actual = leerSesion()
+      if (actual?.token === sesion?.token) return
+      consultaPerfil.current++
+      setSesion(actual)
+      setPerfil(null)
+      setVerificandoPerfil(Boolean(actual))
+      setErrorPerfil('')
+      if (!actual && sesion) setMensajeAuth('La sesión se cerró en otra ventana. Inicia sesión de nuevo.')
+    }
+    window.addEventListener('storage', sincronizarSesion)
+    window.addEventListener('focus', sincronizarSesion)
+    document.addEventListener('visibilitychange', sincronizarSesion)
+    return () => {
+      window.removeEventListener('storage', sincronizarSesion)
+      window.removeEventListener('focus', sincronizarSesion)
+      document.removeEventListener('visibilitychange', sincronizarSesion)
+    }
   }, [sesion])
 
   function salir() {
     setMostrarConfirmacionSalir(true)
   }
 
-  function confirmarSalir() {
+  async function confirmarSalir() {
     consultaPerfil.current++
+    const revocacion = revocarSesion(sesion?.token)
     cerrarSesion()
     setMostrarConfirmacionSalir(false)
     setSesion(null)
@@ -110,6 +134,9 @@ function App() {
     setErrorPerfil('')
     setMensajeAuth('')
     navigate('/login', { replace: true })
+    if (!await revocacion) {
+      setMensajeAuth('Se cerró la sesión en este navegador, pero no se pudo confirmar el cierre en el servidor. Comprueba tu conexión.')
+    }
   }
 
   const modalConfirmacionSalir = (
@@ -125,6 +152,10 @@ function App() {
   )
 
   if (pathname === '/login') {
+    if (sesion) {
+      if (verificandoPerfil) return <p role="status">Verificando tu sesión…</p>
+      if (perfil) return <Navigate to={sesion.tipo === 'clinica' ? '/mi-clinica' : sesion.tipo === 'administrador' ? '/admin' : '/cuenta'} replace />
+    }
     return <Login
       key={tipoRegistro}
       initialAccountType={tipoRegistro}
