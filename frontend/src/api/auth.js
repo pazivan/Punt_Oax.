@@ -76,18 +76,37 @@ export const restablecerPassword = (rol, correo, token, password) =>
 
 // El almacenamiento de la sesión queda concentrado aquí para poder sustituirlo.
 const CLAVE_SESION = 'puntoax-sesion'
+const CLAVE_MIGRACION = 'puntoax-sesion-compartida'
 
 export function leerSesion() {
   try {
-    const sesion = JSON.parse(sessionStorage.getItem(CLAVE_SESION))
-    return sesion && typeof sesion.token === 'string' && sesion.token &&
-      (['usuario', 'clinica', 'administrador'].includes(sesion.tipo)) &&
-      sesion.cuenta && typeof sesion.cuenta === 'object' && !Array.isArray(sesion.cuenta)
-      ? sesion
-      : null
+    let valor = localStorage.getItem(CLAVE_SESION)
+    // Migración de las sesiones existentes. La marca evita resucitar una copia
+    // vieja de sessionStorage después de cerrar sesión en otra pestaña.
+    if (!valor && !localStorage.getItem(CLAVE_MIGRACION)) {
+      const anterior = sessionStorage.getItem(CLAVE_SESION)
+      const sesionAnterior = validarSesion(anterior)
+      if (sesionAnterior) {
+        localStorage.setItem(CLAVE_SESION, JSON.stringify(sesionAnterior))
+        valor = localStorage.getItem(CLAVE_SESION)
+        localStorage.setItem(CLAVE_MIGRACION, '1')
+      }
+    }
+    sessionStorage.removeItem(CLAVE_SESION)
+    return validarSesion(valor)
   } catch {
     return null
   }
+}
+
+function validarSesion(valor) {
+  try {
+    const sesion = JSON.parse(valor)
+    return sesion && typeof sesion.token === 'string' && sesion.token &&
+      ['usuario', 'clinica', 'administrador'].includes(sesion.tipo) &&
+      sesion.cuenta && typeof sesion.cuenta === 'object' && !Array.isArray(sesion.cuenta)
+      ? sesion : null
+  } catch { return null }
 }
 
 export function guardarSesion(respuesta, tipo) {
@@ -101,7 +120,9 @@ export function guardarSesion(respuesta, tipo) {
   }
   const sesion = { token: respuesta.token, cuenta, tipo }
   try {
-    sessionStorage.setItem(CLAVE_SESION, JSON.stringify(sesion))
+    localStorage.setItem(CLAVE_MIGRACION, '1')
+    localStorage.setItem(CLAVE_SESION, JSON.stringify(sesion))
+    sessionStorage.removeItem(CLAVE_SESION)
   } catch {
     throw new Error('No se pudo guardar la sesión en este navegador.')
   }
@@ -109,7 +130,27 @@ export function guardarSesion(respuesta, tipo) {
 }
 
 export function cerrarSesion() {
-  sessionStorage.removeItem(CLAVE_SESION)
+  try {
+    localStorage.setItem(CLAVE_MIGRACION, '1')
+    localStorage.removeItem(CLAVE_SESION)
+  } finally {
+    sessionStorage.removeItem(CLAVE_SESION)
+  }
+}
+
+export async function revocarSesion(token = leerSesion()?.token) {
+  if (!token) return true
+  const controlador = new AbortController()
+  const plazo = setTimeout(() => controlador.abort(), 8000)
+  try {
+    const respuesta = await fetch('/api/auth/cerrar-sesion', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controlador.signal,
+    })
+    return respuesta.ok || respuesta.status === 401 || respuesta.status === 403
+  } catch { return false }
+  finally { clearTimeout(plazo) }
 }
 
 export async function enviarConSesion(ruta, opciones = {}) {

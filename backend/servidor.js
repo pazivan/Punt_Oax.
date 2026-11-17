@@ -1355,6 +1355,29 @@ app.post("/api/auth/login-admin", async (req, res) => {
   }
 });
 
+// Cerrar sesión invalida todos los JWT previos de esta cuenta (también los
+// abiertos en otras ventanas o dispositivos). No modifica su rol ni contraseña.
+app.post("/api/auth/cerrar-sesion", autenticarToken, async (req, res) => {
+  const cuentas = {
+    usuario: ['usuarios', 'id_usuario'],
+    clinica: ['clinicas', 'id_clinica'],
+    administrador: ['administradores', 'id_administrador'],
+  };
+  const cuenta = cuentas[req.usuario.rol];
+  if (!cuenta) return res.status(403).json({ error: "Sesión inválida." });
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE ${cuenta[0]} SET version_sesion = version_sesion + 1
+       WHERE ${cuenta[1]} = $1 AND version_sesion = $2`,
+      [req.usuario.id, req.usuario.version_sesion ?? 0]
+    );
+    if (!rowCount) return res.status(403).json({ error: "Sesión inválida." });
+    return res.json({ mensaje: "Sesión cerrada." });
+  } catch {
+    return res.status(503).json({ error: "No se pudo cerrar la sesión en el servidor." });
+  }
+});
+
 // 4. Ruta protegida: Consulta de perfil actual (Cualquier rol autenticado)
 app.get("/api/auth/perfil", autenticarToken, (req, res) => {
   res.json({
