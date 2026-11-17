@@ -19,6 +19,12 @@
  * ============================================================================
  */
 
+// auth.js exige JWT_SECRET al importarse. La suite solo firma/valida tokens en
+// memoria, no toca la base ni producción, así que usa una clave local de prueba.
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  process.env.JWT_SECRET = "clave-local-solo-pruebas-roles-admin-2026";
+}
+
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const express = require("express");
@@ -174,10 +180,16 @@ test("6. Pipeline completo en Express: las rutas administrativas responden 403 a
   const baseUrl = `http://127.0.0.1:${puerto}`;
 
   try {
-    // 6.1 Petición sin sesión -> 401
+    // 6.1 Petición sin sesión -> 401 en todas las rutas administrativas
     usuarioPrueba = null;
-    const resSinToken = await fetch(`${baseUrl}/api/admin/solicitudes`);
-    assert.equal(resSinToken.status, 401, "Sin token debe responder 401");
+    for (const clave of RUTAS_ADMIN_ACORDADAS) {
+      const [metodo, path] = clave.split(" ");
+      const url = `${baseUrl}${path.replace(":id", "00000000-0000-0000-0000-000000000000")}`;
+      const resSinToken = await fetch(url, { method: metodo });
+      assert.equal(resSinToken.status, 401, `Sin sesión debe responder 401 en ${clave}`);
+      const body = await resSinToken.json();
+      assert.match(body.error, /no autorizado|token/i, `El 401 de ${clave} debe explicar falta de token`);
+    }
 
     // 6.2 Petición con rol 'usuario' -> 403
     usuarioPrueba = { id: "user-1", rol: "usuario" };
