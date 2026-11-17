@@ -1,5 +1,10 @@
 /**
  * Revisión de clínicas por el administrador (Sprint 7 · Kelly · issue #66)
+ * Control de acceso y restricción de acciones por rol (Sprint 7 · Jonathan · issue #69 · Punto 4.7.4)
+ *
+ * Apoyo y coordinación:
+ *   - Kelly (#66): Rutas, controladores de revisión, transiciones y consulta de documentos.
+ *   - Jonathan (#69): Restricción de acciones y protección de rutas con autenticarToken + requerirRol(["administrador"]).
  *
  * La clínica ya envía su postulación con POST /api/clinicas/mi-ficha/postulacion
  * (queda en solicitudes_clinicas con estado 'pendiente' y una copia de la ficha
@@ -263,8 +268,18 @@ function registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, 
       obtenerDocumento(pool, req.params.id, prepararCarpetaDocumentos)));
 }
 
+// Rutas administrativas protegidas acordadas con Kelly (Issue #66 / Issue #69 · Punto 4.7.4)
+const RUTAS_ADMIN_ACORDADAS = [
+  "GET /api/admin/solicitudes",
+  "GET /api/admin/solicitudes/:id",
+  "GET /api/admin/documentos/:id",
+  "PATCH /api/admin/solicitudes/:id",
+  "PATCH /api/admin/clinicas/:id/visibilidad",
+];
+
 module.exports = {
   registrarRutasAdminClinicas,
+  RUTAS_ADMIN_ACORDADAS,
   listarSolicitudes,
   consultarSolicitud,
   resolverSolicitud,

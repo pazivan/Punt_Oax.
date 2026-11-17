@@ -7,6 +7,7 @@
     "start": "node servidor.js",
     "test": "node probar-db.js",
     "test:citas-modelo": "node --test tests/citas-modelo.test.cjs",
+    "test:roles-admin": "node --test tests/restringir-acciones-rol.test.cjs",
     "test:validaciones": "node --test tests/validaciones-registro.test.cjs",
     "test:migrations": "node --test tests/migraciones.test.cjs",
     "test:importer": "node --test tests/importador-filtracion.test.cjs",
