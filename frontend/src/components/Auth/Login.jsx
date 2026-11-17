@@ -3,6 +3,8 @@ import { ArrowRight, Building2, Check, Eye, EyeOff, MapPin, ShieldCheck, User } 
 import '../../styles/Auth.css';
 import { guardarSesion, iniciarSesion, iniciarSesionAdmin, iniciarSesionClinica } from '../../api/auth';
 import { normalizarCorreo, validarEmail, validarRequerido } from '../../utils/validaciones';
+import { Link, useNavigate } from 'react-router-dom';
+import { leerVerificacionPendiente } from '../../api/verificacionPendiente';
 
 export default function Login({
   onSwitchToRegister,
@@ -22,6 +24,7 @@ export default function Login({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const enviando = useRef(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,7 +60,8 @@ export default function Login({
       const sesion = guardarSesion(respuesta, accountType);
       onLogin(sesion);
     } catch (err) {
-      setError(err.message);
+      if (err.requiere_verificacion) navigate('/verificar-correo', { state: { rol: accountType, correo: correoLimpio } });
+      else setError(err.message);
     } finally {
       enviando.current = false;
       setLoading(false);
@@ -280,6 +284,18 @@ export default function Login({
                   )}
                 </button>
               </form>
+              <p><Link to="/recuperar" state={{ rol: accountType, correo: email.trim() }}>¿Olvidaste tu contraseña?</Link></p>
+              {accountType !== 'administrador' && <p><button type="button" className="auth-inline-link" onClick={() => {
+                const correoLimpio = normalizarCorreo(email)
+                const pendiente = leerVerificacionPendiente()
+                if (!validarEmail(correoLimpio) && !pendiente) {
+                  setError('Escribe tu correo arriba para continuar con la verificación.')
+                  document.getElementById('login-email')?.focus()
+                  return
+                }
+                const destino = validarEmail(correoLimpio) ? { rol: accountType, correo: correoLimpio } : pendiente
+                navigate('/verificar-correo', { state: destino })
+              }}>¿Aún no verificas tu correo?</button></p>}
 
               {/* Enlace inferior */}
               {accountType !== 'administrador' && <div className="auth-bottom-links">

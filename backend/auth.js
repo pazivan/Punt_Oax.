@@ -7,6 +7,7 @@
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const pool = require("./db");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
@@ -47,7 +48,7 @@ async function verificarPassword(password, hash) {
  * @param {'usuario' | 'clinica' | 'administrador'} payload.rol - Rol autorizado
  * @returns {string} Token JWT
  */
-function generarToken({ id, correo, rol }) {
+function generarToken({ id, correo, rol, version_sesion = 0 }) {
   if (!["usuario", "clinica", "administrador"].includes(rol)) {
     throw new Error(`Rol no válido para generación de token: ${rol}`);
   }
@@ -57,6 +58,7 @@ function generarToken({ id, correo, rol }) {
       id,
       correo,
       rol,
+      version_sesion,
     },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
@@ -77,15 +79,33 @@ function autenticarToken(req, res, next) {
     });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, usuarioDecodificado) => {
+  jwt.verify(token, JWT_SECRET, async (err, usuarioDecodificado) => {
     if (err) {
       return res.status(403).json({
         error: "Token inválido o expirado. Inicie sesión nuevamente.",
       });
     }
 
-    req.usuario = usuarioDecodificado;
-    next();
+    const cuentas = {
+      usuario: ['usuarios', 'id_usuario'],
+      clinica: ['clinicas', 'id_clinica'],
+      administrador: ['administradores', 'id_administrador'],
+    };
+    const tipo = cuentas[usuarioDecodificado.rol];
+    if (!tipo || !/^[0-9a-f-]{36}$/i.test(usuarioDecodificado.id || '')) {
+      return res.status(403).json({ error: "Token inválido o expirado." });
+    }
+    try {
+      const { rows } = await pool.query(`SELECT version_sesion${usuarioDecodificado.rol === 'administrador' ? '' : ', correo_verificado_en'} FROM ${tipo[0]} WHERE ${tipo[1]}=$1`, [usuarioDecodificado.id]);
+      if (!rows[0] || rows[0].version_sesion !== (usuarioDecodificado.version_sesion ?? 0) ||
+          (usuarioDecodificado.rol !== 'administrador' && !rows[0].correo_verificado_en)) {
+        return res.status(403).json({ error: "Sesión inválida. Inicia sesión nuevamente." });
+      }
+      req.usuario = usuarioDecodificado;
+      next();
+    } catch {
+      res.status(503).json({ error: "No se pudo verificar la sesión." });
+    }
   });
 }
 

@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import Login from './components/Auth/Login.jsx'
 import Register from './components/Auth/Register.jsx'
+import CorreoCuenta from './components/Auth/CorreoCuenta.jsx'
 import Inicio from './components/Inicio/Inicio.jsx'
 import MapaCentros from './components/Inicio/MapaCentros.jsx'
 import InformacionUtil from './components/Inicio/InformacionUtil.jsx'
@@ -16,12 +17,14 @@ import MisCitasUsuario from './components/Citas/MisCitasUsuario.jsx'
 import Administracion from './components/Admin/Administracion.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { cerrarSesion, consultarPerfil, leerSesion } from './api/auth.js'
+import { borrarVerificacionPendiente, guardarVerificacionPendiente, leerVerificacionPendiente } from './api/verificacionPendiente.js'
 import './App.css'
 
 function App() {
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const { pathname, state: estadoRuta } = useLocation()
   const [sesion, setSesion] = useState(leerSesion)
+  const [verificacionPendiente, setVerificacionPendiente] = useState(leerVerificacionPendiente)
   const [mensajeAuth, setMensajeAuth] = useState('')
   const [tipoRegistro, setTipoRegistro] = useState('usuario')
   const [perfil, setPerfil] = useState(null)
@@ -132,6 +135,8 @@ function App() {
       }}
       onBackToPublic={() => navigate('/conocenos')}
       onLogin={(nuevaSesion) => {
+        borrarVerificacionPendiente()
+        setVerificacionPendiente(null)
         setPerfil(null)
         setVerificandoPerfil(true)
         setSesion(nuevaSesion)
@@ -140,24 +145,39 @@ function App() {
         // La ficha se consulta de nuevo en el servidor dentro de /mi-clinica.
         navigate(nuevaSesion?.tipo === 'clinica' ? '/mi-clinica' : nuevaSesion?.tipo === 'administrador' ? '/admin' : '/cuenta')
       }}
-      mensaje={mensajeAuth}
+      mensaje={estadoRuta?.aviso || mensajeAuth}
     />
   }
+  if (pathname === '/verificar-correo') return <CorreoCuenta modo="verificar"
+    onVerificada={() => { borrarVerificacionPendiente(); setVerificacionPendiente(null) }}
+    onCambiarCorreo={() => { borrarVerificacionPendiente(); setVerificacionPendiente(null) }} />
+  if (pathname === '/recuperar') return <CorreoCuenta modo="solicitar" />
+  if (pathname === '/restablecer') return <CorreoCuenta modo="restablecer" />
 
   if (pathname === '/registro') {
     return <Register
-      key={tipoRegistro}
-      initialAccountType={tipoRegistro}
+      key={estadoRuta?.tipo || tipoRegistro}
+      initialAccountType={estadoRuta?.tipo || tipoRegistro}
+      initialEmail={estadoRuta?.correo || ''}
       onSwitchToLogin={(mensaje = '', tipo = 'usuario') => {
         setMensajeAuth(typeof mensaje === 'string' ? mensaje : '')
         setTipoRegistro(tipo === 'clinica' ? 'clinica' : 'usuario')
         navigate('/login')
       }}
       onBackToPublic={() => navigate('/conocenos')}
+      onVerificar={(rol, correo) => {
+        guardarVerificacionPendiente(rol, correo)
+        setVerificacionPendiente(leerVerificacionPendiente())
+        navigate('/verificar-correo', { state: { rol, correo } })
+      }}
     />
   }
 
   if (pathname === '/' || pathname === '/conocenos') {
+    const pendienteActual = verificacionPendiente || leerVerificacionPendiente()
+    if (!sesion && pendienteActual) {
+      return <Navigate to="/verificar-correo" state={pendienteActual} replace />
+    }
     return (
       <>
         <Conocenos sesion={sesion} perfil={perfil} onSalir={salir} />

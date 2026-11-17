@@ -20,6 +20,7 @@ async function leerRespuesta(respuesta) {
       : mensajeError(respuesta.status))
     if (contenido && typeof contenido === 'object') {
       error.campos = contenido.campos
+      error.requiere_verificacion = contenido.requiere_verificacion
       error.faltantes = contenido.faltantes
     }
     throw error
@@ -67,6 +68,11 @@ export function iniciarSesionClinica(correo, password) {
 export function iniciarSesionAdmin(correo, password) {
   return enviarAuth('/api/auth/login-admin', { correo, password })
 }
+export const verificarCorreo = (rol, correo, codigo) => enviarAuth('/api/auth/verificar-correo', { rol, correo, codigo })
+export const reenviarVerificacion = (rol, correo) => enviarAuth('/api/auth/reenviar-verificacion', { rol, correo })
+export const solicitarRecuperacion = (rol, correo) => enviarAuth('/api/auth/solicitar-recuperacion', { rol, correo })
+export const restablecerPassword = (rol, correo, token, password) =>
+  enviarAuth('/api/auth/restablecer-password', { rol, correo, token, password })
 
 // El almacenamiento de la sesión queda concentrado aquí para poder sustituirlo.
 const CLAVE_SESION = 'puntoax-sesion'

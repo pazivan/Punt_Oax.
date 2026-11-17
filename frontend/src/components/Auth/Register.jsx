@@ -12,17 +12,14 @@ import {
   validarRequerido,
 } from '../../utils/validaciones';
 
-const MENSAJE_CLINICA_CREADA =
-  'Tu cuenta de clínica fue creada correctamente. Ya puedes iniciar sesión para completar los datos de tu clínica.';
-
-export default function Register({ onSwitchToLogin, onBackToPublic, initialAccountType = 'usuario' }) {
+export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar, initialAccountType = 'usuario', initialEmail = '' }) {
   const [accountType, setAccountType] = useState(
     initialAccountType === 'clinica' ? 'clinica' : 'usuario'
   );
 
   // Sincronizado con initialAccountType mediante key en App.jsx
   const [nombreClinica, setNombreClinica] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
@@ -88,10 +85,12 @@ export default function Register({ onSwitchToLogin, onBackToPublic, initialAccou
           correo: correoLimpio,
           password,
         });
-        onSwitchToLogin(MENSAJE_CLINICA_CREADA, 'clinica');
+        setPassword(''); setConfirmPassword('');
+        onVerificar('clinica', correoLimpio);
       } else {
         await registrarUsuario(email.trim(), password);
-        onSwitchToLogin('Cuenta creada. Ya puedes iniciar sesión.', 'usuario');
+        setPassword(''); setConfirmPassword('');
+        onVerificar('usuario', correoLimpio);
       }
     } catch (err) {
       setError(err.message);
