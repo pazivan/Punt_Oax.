@@ -51,3 +51,15 @@ export function filtrarCitas(citas, filtro, ahora = Date.now()) {
     return filtro === 'proximas' ? aValid - bValid : bValid - aValid
   })
 }
+
+export function calcularTiempoRestanteCita(fechaHoraInicio, ahora = Date.now()) {
+  const destino = new Date(fechaHoraInicio).getTime()
+  if (!Number.isFinite(destino)) return { esUrgente: false, etiqueta: 'Horario por confirmar' }
+  const minutos = Math.ceil((destino - ahora) / 60000)
+  if (minutos <= 0) return { esUrgente: false, etiqueta: 'En curso o finalizada' }
+  if (minutos < 60) return { esUrgente: true, etiqueta: `Faltan ${minutos} min` }
+  const horas = Math.floor(minutos / 60)
+  if (horas < 24) return { esUrgente: true, etiqueta: `Faltan ${horas} h` }
+  const dias = Math.floor(horas / 24)
+  return { esUrgente: dias <= 2, etiqueta: `Faltan ${dias} días` }
+}

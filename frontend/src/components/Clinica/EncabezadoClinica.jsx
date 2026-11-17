@@ -10,6 +10,8 @@ export default function EncabezadoClinica({ sesion, onSalir }) {
     { ruta: '/mi-clinica', texto: 'Inicio' },
     { ruta: '/mapa', texto: 'Mapa de centros' },
     { ruta: '/mi-clinica/citas', texto: 'Mis citas' },
+    { ruta: '/mi-clinica/agenda', texto: 'Agenda' },
+    { ruta: '/panel-clinica', texto: 'Panel' },
     { ruta: '/informacion-util', texto: 'Información útil' },
   ]
 

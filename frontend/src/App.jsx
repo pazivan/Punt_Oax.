@@ -5,12 +5,14 @@ import Login from './components/Auth/Login.jsx'
 import Register from './components/Auth/Register.jsx'
 import CorreoCuenta from './components/Auth/CorreoCuenta.jsx'
 import Inicio from './components/Inicio/Inicio.jsx'
+import MiPerfil from './components/Inicio/MiPerfil.jsx'
 import MapaCentros from './components/Inicio/MapaCentros.jsx'
 import InformacionUtil from './components/Inicio/InformacionUtil.jsx'
 import AgendarCitaDatos from './components/Inicio/AgendarCitaDatos.jsx'
 import ModalConfirmacion from './components/Inicio/ModalConfirmacion.jsx'
 import Conocenos from './components/Conocenos.jsx'
 import FichaClinica from './components/Clinica/FichaClinica.jsx'
+import PanelClinica from './components/Clinica/PanelClinica.jsx'
 import MisCitasClinica from './components/Clinica/MisCitasClinica.jsx'
 import AgendaClinica from './components/Clinica/AgendaClinica.jsx'
 import MisCitasUsuario from './components/Citas/MisCitasUsuario.jsx'
@@ -304,6 +306,30 @@ function App() {
           rolesPermitidos={['usuario']}
         >
           <MisCitasUsuario onSalir={salir} />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
+  }
+
+  if (pathname === '/mi-perfil') {
+    return (
+      <>
+        <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
+          error={errorPerfil} rolesPermitidos={['usuario']}>
+          <MiPerfil sesion={sesion} perfil={perfil} onSalir={salir} />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
+  }
+
+  if (pathname === '/panel-clinica') {
+    return (
+      <>
+        <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
+          error={errorPerfil} rolesPermitidos={['clinica']}>
+          <PanelClinica sesion={sesion} onSalir={salir} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>

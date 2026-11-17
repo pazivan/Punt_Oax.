@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  nombrePaciente, folioCita, esProxima, filtrarCitas, formatearFechaCita,
+  nombrePaciente, folioCita, esProxima, filtrarCitas, formatearFechaCita, calcularTiempoRestanteCita,
 } from '../src/utils/citasClinica.js'
 
 const pasado = '2026-11-05T08:00:00.000Z'
@@ -30,4 +30,10 @@ test('datos opcionales se muestran como pendientes, no inventados', () => {
 
 test('formatea fechas en hora local de México, no en hora del servidor', () => {
   assert.match(formatearFechaCita('2026-11-10T15:00:00.000Z'), /09:00/)
+})
+
+test('el recordatorio solo considera citas confirmadas futuras y calcula el tiempo restante', () => {
+  assert.deepEqual(filtrarCitas(citas, 'proximas', ahora).map(c => c.id_cita), ['a'])
+  assert.equal(calcularTiempoRestanteCita(new Date(ahora + 30 * 60000), ahora).etiqueta, 'Faltan 30 min')
+  assert.equal(calcularTiempoRestanteCita('fecha inválida', ahora).etiqueta, 'Horario por confirmar')
 })
