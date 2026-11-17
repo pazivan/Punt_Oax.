@@ -9,6 +9,7 @@ import {
   User,
 } from 'lucide-react';
 import '../../styles/Inicio.css';
+import CampanaNotificaciones, { BannerRecordatorioCitas } from './CampanaNotificaciones.jsx';
 
 /**
  * Inicio - Ventana de inicio para usuario autenticado según diseño de Figma (1280x932).
@@ -56,12 +57,13 @@ export default function Inicio({ sesion, onSalir }) {
           </div>
 
           <div className="inicio-header-right">
+            <CampanaNotificaciones sesion={sesion} />
             <Link
-              to="/cuenta"
+              to="/mi-perfil"
               className="inicio-header-account-link"
               title={nombreOCorreo}
             >
-              Mi cuenta
+              Mi perfil
             </Link>
 
             <button
@@ -84,6 +86,7 @@ export default function Inicio({ sesion, onSalir }) {
       {/* Main (padding-top: 80px) */}
       <main className="inicio-main">
         <div className="inicio-container">
+          <BannerRecordatorioCitas sesion={sesion} />
           {/* Bloque superior (1232px x 368px) */}
           <section className="inicio-hero-section" aria-labelledby="inicio-hero-heading">
             {/* Columna izquierda (height: 292px, gap: 24px) */}

@@ -279,6 +279,7 @@ export default function FichaClinica({ sesion, onSalir }) {
           <h1>{clinica.nombre}</h1>
           <p>Tu sede ya está dada de alta y aparece en el directorio. Puedes consultar sus datos y gestionar los turnos de atención.</p>
           <div className="ficha-publicada-acciones">
+            <Link to="/panel-clinica" className="ficha-btn-primary">Abrir panel de clínica</Link>
             <Link to="/mi-clinica/citas" className="ficha-btn-primary">Ver mis citas</Link>
             <Link to="/mi-clinica/agenda" className="ficha-btn-secondary">Gestionar agenda</Link>
             <Link to="/mapa" className="ficha-btn-secondary">Ver en el mapa</Link>

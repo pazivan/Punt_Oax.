@@ -19,6 +19,7 @@ import ModalConfirmacion from './ModalConfirmacion.jsx';
 import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js';
 import { consultarEspaciosClinica, solicitarCita } from '../../api/auth.js';
 import { validarEmail, validarTelefono } from '../../utils/validaciones.js';
+import { leerPerfilLocal } from '../../utils/perfilLocal.js';
 import '../../styles/Inicio.css';
 
 const ZONA_HORARIA = 'America/Mexico_City';
@@ -115,9 +116,9 @@ export default function AgendarCitaDatos({
   const [pasoActual, setPasoActual] = useState(1);
 
   // Datos del Paso 1 (tabla `usuarios`)
-  const [nombres, setNombres] = useState(nombreSesion);
-  const [apellidos, setApellidos] = useState('');
-  const [telefono, setTelefono] = useState('');
+  const [nombres, setNombres] = useState(() => leerPerfilLocal(sesion?.cuenta?.id).nombre || nombreSesion);
+  const [apellidos, setApellidos] = useState(() => leerPerfilLocal(sesion?.cuenta?.id).apellidos);
+  const [telefono, setTelefono] = useState(() => leerPerfilLocal(sesion?.cuenta?.id).telefono);
   const [correoContacto, setCorreoContacto] = useState(correoSesion);
 
   // Espacios reales de la sede (`espacios_disponibles` -> `clinicas_servicios` -> `servicios`).
