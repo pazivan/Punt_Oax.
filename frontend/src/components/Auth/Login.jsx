@@ -4,6 +4,7 @@ import '../../styles/Auth.css';
 import { guardarSesion, iniciarSesion, iniciarSesionAdmin, iniciarSesionClinica } from '../../api/auth';
 import { normalizarCorreo, validarEmail, validarRequerido } from '../../utils/validaciones';
 import { Link, useNavigate } from 'react-router-dom';
+import { leerVerificacionPendiente } from '../../api/verificacionPendiente';
 
 export default function Login({
   onSwitchToRegister,
@@ -284,7 +285,17 @@ export default function Login({
                 </button>
               </form>
               <p><Link to="/recuperar" state={{ rol: accountType, correo: email.trim() }}>¿Olvidaste tu contraseña?</Link></p>
-              {accountType !== 'administrador' && <p><Link to="/verificar-correo" state={{ rol: accountType, correo: email.trim() }}>¿Aún no verificas tu correo?</Link></p>}
+              {accountType !== 'administrador' && <p><button type="button" className="auth-inline-link" onClick={() => {
+                const correoLimpio = normalizarCorreo(email)
+                const pendiente = leerVerificacionPendiente()
+                if (!validarEmail(correoLimpio) && !pendiente) {
+                  setError('Escribe tu correo arriba para continuar con la verificación.')
+                  document.getElementById('login-email')?.focus()
+                  return
+                }
+                const destino = validarEmail(correoLimpio) ? { rol: accountType, correo: correoLimpio } : pendiente
+                navigate('/verificar-correo', { state: destino })
+              }}>¿Aún no verificas tu correo?</button></p>}
 
               {/* Enlace inferior */}
               {accountType !== 'administrador' && <div className="auth-bottom-links">
