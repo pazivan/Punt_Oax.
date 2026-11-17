@@ -116,9 +116,9 @@ export default function AgendarCitaDatos({
   const [pasoActual, setPasoActual] = useState(1);
 
   // Datos del Paso 1 (tabla `usuarios`)
-  const [nombres, setNombres] = useState(() => leerPerfilLocal(sesion?.cuenta?.id_usuario).nombre || nombreSesion);
-  const [apellidos, setApellidos] = useState(() => leerPerfilLocal(sesion?.cuenta?.id_usuario).apellidos);
-  const [telefono, setTelefono] = useState(() => leerPerfilLocal(sesion?.cuenta?.id_usuario).telefono);
+  const [nombres, setNombres] = useState(() => leerPerfilLocal(sesion?.cuenta?.id).nombre || nombreSesion);
+  const [apellidos, setApellidos] = useState(() => leerPerfilLocal(sesion?.cuenta?.id).apellidos);
+  const [telefono, setTelefono] = useState(() => leerPerfilLocal(sesion?.cuenta?.id).telefono);
   const [correoContacto, setCorreoContacto] = useState(correoSesion);
 
   // Espacios reales de la sede (`espacios_disponibles` -> `clinicas_servicios` -> `servicios`).

@@ -22,19 +22,17 @@ import './CampanaNotificaciones.css';
  * Calcula en el frontend cuánto tiempo falta para cada cita confirmada a partir
  * de los datos devueltos por GET /api/citas (consultarCitasUsuario).
  */
-export default function CampanaNotificaciones({ sesion, citasPreCargadas = null }) {
+export default function CampanaNotificaciones({ sesion }) {
   const esUsuarioNormal = !sesion?.tipo || sesion?.tipo === 'usuario';
   const [abierto, setAbierto] = useState(false);
   const [citasInternas, setCitasInternas] = useState([]);
   const [errorCitas, setErrorCitas] = useState(false);
-  const [cargando, setCargando] = useState(
-    () => Boolean(esUsuarioNormal && !Array.isArray(citasPreCargadas))
-  );
+  const [cargando, setCargando] = useState(() => Boolean(esUsuarioNormal));
   const [ahora, setAhora] = useState(() => Date.now());
   const contenedorRef = useRef(null);
 
   useEffect(() => {
-    if (!esUsuarioNormal || Array.isArray(citasPreCargadas)) return undefined;
+    if (!esUsuarioNormal) return undefined;
 
     let activo = true;
     // Actualizar al abrir: una reserva o cancelación pudo ocurrir en otra vista.
@@ -55,7 +53,7 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null 
     return () => {
       activo = false;
     };
-  }, [esUsuarioNormal, citasPreCargadas, abierto]);
+  }, [esUsuarioNormal, abierto]);
 
   // Actualiza el reloj cada minuto para mantener al día el cálculo de "cuánto falta"
   useEffect(() => {
@@ -83,10 +81,9 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null 
     };
   }, [abierto]);
 
-  const fuenteCitas = Array.isArray(citasPreCargadas) ? citasPreCargadas : citasInternas;
   const citasProximas = useMemo(
-    () => filtrarCitas(fuenteCitas, 'proximas', ahora),
-    [fuenteCitas, ahora]
+    () => filtrarCitas(citasInternas, 'proximas', ahora),
+    [citasInternas, ahora]
   );
 
   if (!esUsuarioNormal) return null;

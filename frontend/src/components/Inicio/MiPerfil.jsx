@@ -7,7 +7,7 @@ import '../../styles/Inicio.css'
 import './MiPerfil.css'
 
 export default function MiPerfil({ sesion, perfil, onSalir }) {
-  const id = sesion?.cuenta?.id_usuario
+  const id = sesion?.cuenta?.id || perfil?.id
   const [datos, setDatos] = useState(() => leerPerfilLocal(id))
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
