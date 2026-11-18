@@ -841,3 +841,73 @@
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   Ajustes móviles de las vistas de citas (paciente y clínica)
+   ========================================================================== */
+@media (max-width: 900px) {
+  .citas-clinica .citas-principal,
+  .citas-usuario .citas-principal {
+    padding-top: 26px;
+    padding-bottom: 56px;
+  }
+}
+
+@media (max-width: 560px) {
+  .citas-usuario .citas-nav {
+    gap: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .citas-usuario .citas-marca {
+    font-size: 18px;
+  }
+
+  .citas-usuario .citas-nav-derecha {
+    gap: 8px;
+  }
+
+  .citas-usuario .inicio-header-profile-link {
+    padding: 4px;
+  }
+
+  .citas-usuario .inicio-header-profile-link > span:not(.inicio-avatar-circle) {
+    display: none;
+  }
+
+  .citas-usuario .citas-boton-salir {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .citas-usuario .citas-nav-enlaces {
+    gap: 4px;
+  }
+
+  .citas-usuario .citas-nav-enlaces a,
+  .citas-usuario .citas-nav-activo {
+    padding: 8px 10px;
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 750px) {
+  .citas-kpis-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .citas-kpi-card {
+    padding: 14px;
+  }
+
+  .citas-horas-panel {
+    max-height: none;
+  }
+
+  .citas-horas-timeline {
+    overflow-y: visible;
+    padding-right: 0;
+  }
+}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, User } from 'lucide-react';
 import ListadoClinicas from './ListadoClinicas.jsx';
@@ -41,6 +41,11 @@ export default function MapaCentros({
   );
   const [clinicaEnDetalle, setClinicaEnDetalle] = useState(null);
   const [clinicaEnAgendar, setClinicaEnAgendar] = useState(null);
+
+  // Al abrir o cerrar las vistas de detalle/agenda se empieza desde el inicio.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [clinicaEnDetalle, clinicaEnAgendar]);
 
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
   const esAdmin = sesion?.tipo === 'administrador';
@@ -227,6 +232,7 @@ export default function MapaCentros({
                   to={rutaPerfil}
                   className="inicio-header-profile-link"
                   title={nombreOCorreo}
+                  aria-label={esAdmin ? 'Administración' : 'Mi perfil'}
                 >
                   <span className="inicio-avatar-circle" aria-hidden="true">
                     <User size={14} color="#FFFFFF" />

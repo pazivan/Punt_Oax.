@@ -7,6 +7,7 @@ const { randomUUID, createHash } = require("node:crypto");
 const pool = require("./db");
 const { listarCitasClinica } = require("./citasClinica");
 const { fichaPublica } = require("./catalogoPublico");
+const { actualizarEnlacesInformacion } = require("./enlacesInformacion");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
 const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
@@ -246,7 +247,8 @@ async function cargarFicha(idClinica, db = pool) {
   const clinicaResultado = await db.query(
     `SELECT c.id_clinica, c.nombre, c.correo_acceso, c.descripcion, c.tipo_institucion,
        c.telefono, c.correo_contacto, c.sitio_web, c.municipio, c.localidad, c.direccion,
-       c.codigo_postal, c.ubicacion_maps_url, c.estado_publicacion, c.fecha_registro
+       c.codigo_postal, c.ubicacion_maps_url, c.enlaces_informacion,
+       c.estado_publicacion, c.fecha_registro
      FROM clinicas c
      WHERE c.id_clinica = $1`,
     [idClinica]
@@ -461,6 +463,25 @@ app.get(
       console.error("Error al consultar la ficha de la clínica:", error.message);
       if (responderErrorEsquema(res, error)) return;
       return res.status(500).json({ error: "No se pudo obtener la ficha de tu clínica." });
+    }
+  }
+);
+
+// Las fuentes se pueden mantener sin modificar la ficha sujeta a revisión.
+app.put(
+  "/api/clinicas/mi-ficha/enlaces",
+  autenticarToken,
+  requerirRol(["clinica"]),
+  async (req, res) => {
+    try {
+      const { status, body } = await actualizarEnlacesInformacion(
+        pool, req.usuario.id, req.body
+      );
+      return res.status(status).json(body);
+    } catch (err) {
+      console.error("Error al guardar fuentes de información:", err.message);
+      if (responderErrorEsquema(res, err)) return;
+      return res.status(500).json({ error: "No se pudieron guardar las fuentes de información." });
     }
   }
 );
@@ -867,6 +888,7 @@ app.get("/api/clinicas", async (req, res) => {
         c.revision_catalogo,
         c.region,
         c.fuente_origen AS fuente,
+        c.enlaces_informacion,
         c.horario_texto AS horario,
         c.ubicacion_maps_url AS ubicacion_maps,
         c.nivel_atencion,
@@ -964,6 +986,7 @@ app.get("/api/clinicas/:id", async (req, res) => {
         c.telefono, c.correo_contacto, c.sitio_web,
         c.municipio, c.localidad, c.direccion, c.codigo_postal,
         c.id_origen, c.clues, c.revision_catalogo, c.region, c.fuente_origen AS fuente,
+        c.enlaces_informacion,
         c.horario_texto AS horario, c.ubicacion_maps_url AS ubicacion_maps,
         c.nivel_atencion, c.situacion_ubicacion, c.verificacion_datos,
         c.datos_por_confirmar,

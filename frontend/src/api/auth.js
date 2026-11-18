@@ -250,6 +250,14 @@ export function guardarBorradorClinica(datos) {
   })
 }
 
+export function guardarEnlacesInformacion(enlaces) {
+  return enviarConSesion('/api/clinicas/mi-ficha/enlaces', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enlaces }),
+  })
+}
+
 export async function subirDocumentosClinica(archivos) {
   const formulario = new FormData()
   for (const archivo of archivos) formulario.append('documentos', archivo)

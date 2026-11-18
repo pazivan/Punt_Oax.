@@ -1,0 +1,46 @@
+.fuentes-clinica {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid #c5ebda;
+  border-radius: 12px;
+  background: #fff;
+}
+.fuentes-clinica h3 { margin: 0 0 8px; color: #001d14; font-size: 18px; }
+.fuentes-clinica-lista { min-width: 0; margin: 0; padding: 0; border: 0; }
+.fuentes-clinica p { color: #414845; line-height: 1.5; }
+.fuentes-clinica-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid #e2eae6;
+}
+.fuentes-clinica-campos { min-width: 0; display: grid; gap: 6px; }
+.fuentes-clinica-campos label { color: #414845; font-size: 13px; }
+.fuentes-clinica-campos input {
+  width: 100%; min-width: 0; box-sizing: border-box;
+  padding: 12px; border: 1px solid #c1c8c3; border-radius: 8px;
+  font: inherit;
+}
+.fuentes-clinica-acciones { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.fuentes-clinica button, .fuentes-clinica-vista {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 14px; min-height: 42px; border-radius: 8px;
+  border: 1px solid #103328; background: #103328; color: white;
+  font: inherit; font-size: 13px; cursor: pointer; text-decoration: none;
+}
+.fuentes-clinica-acciones button:first-child, .fuentes-clinica-quitar {
+  background: white !important; color: #103328 !important;
+}
+.fuentes-clinica button:disabled { opacity: .5; cursor: not-allowed; }
+.fuentes-clinica-vista { grid-column: 1 / -1; justify-self: start; background: #f4faf7; color: #103328; }
+.fuentes-clinica .fuentes-clinica-error { color: #a02525; }
+.fuentes-clinica .fuentes-clinica-exito { color: #196044; }
+@media (max-width: 700px) {
+  .fuentes-clinica { padding: 16px; }
+  .fuentes-clinica-item { grid-template-columns: minmax(0, 1fr); }
+  .fuentes-clinica-vista { grid-column: 1; }
+}

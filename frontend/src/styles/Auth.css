@@ -726,3 +726,146 @@
   box-shadow: 0 0 0 3px #d6e6e0;
 }
 
+
+/* ==========================================================================
+   Responsividad móvil del módulo de autenticación
+   ========================================================================== */
+@media (max-width: 640px) {
+  .auth-header {
+    height: auto;
+    min-height: 64px;
+  }
+
+  .auth-header-container {
+    padding: 10px 16px;
+    gap: 10px;
+  }
+
+  .auth-brand-group {
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .auth-brand-title {
+    font-size: 18px;
+  }
+
+  .auth-brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .auth-nav-link {
+    display: none;
+  }
+
+  .auth-header-actions {
+    gap: 8px;
+  }
+
+  .auth-btn-outline {
+    padding: 8px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .auth-main {
+    padding: 24px 14px 32px;
+    align-items: flex-start;
+  }
+
+  .auth-left-panel {
+    padding: 24px 20px;
+    gap: 16px;
+  }
+
+  .auth-right-panel {
+    padding: 26px 20px;
+  }
+
+  .auth-map-preview-box,
+  .auth-features-list {
+    display: none;
+  }
+
+  .auth-heading-hero {
+    font-size: 26px;
+    line-height: 32px;
+  }
+
+  .auth-submit-btn {
+    height: 48px;
+  }
+}
+
+@media (max-width: 400px) {
+  .auth-avatar-circle {
+    display: none;
+  }
+
+  .auth-header-container {
+    padding: 8px 12px;
+  }
+
+  .auth-btn-outline {
+    padding: 8px 10px;
+    font-size: 12.5px;
+  }
+
+  .auth-left-panel,
+  .auth-right-panel {
+    padding: 20px 14px;
+  }
+}
+
+/* ==========================================================================
+   Verificación y recuperación de cuenta
+   ========================================================================== */
+.auth-simple-page {
+  justify-content: center;
+  background: #f3f6f4;
+}
+
+.auth-simple-page .auth-main {
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 40px 16px;
+}
+
+.auth-simple-page .auth-right-panel {
+  flex: 0 1 560px;
+  width: 100%;
+  padding: 40px 38px;
+  border: 1px solid #e3e9e5;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(16, 51, 40, .08);
+}
+
+.auth-simple-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto 26px;
+  color: #001d14;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.4px;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .auth-simple-page .auth-main {
+    padding: 20px 12px 28px;
+  }
+
+  .auth-simple-page .auth-right-panel {
+    padding: 28px 20px;
+  }
+
+  .auth-simple-brand {
+    margin-bottom: 20px;
+    font-size: 18px;
+  }
+}

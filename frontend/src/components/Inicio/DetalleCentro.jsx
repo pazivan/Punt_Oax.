@@ -13,7 +13,7 @@ import {
 import CampanaNotificaciones from './CampanaNotificaciones.jsx';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
 import '../../styles/Inicio.css';
-import { normalizarUrlExterna } from '../../utils/enlaces.js';
+import { normalizarUrlExterna, urlEnTexto } from '../../utils/enlaces.js';
 
 /**
  * DetalleCentro - Ventana "Detalle de centro - PuntoOax" según diseño oficial de Figma (1280x1218),
@@ -58,7 +58,16 @@ export default function DetalleCentro({
   const linksRelacionados = Array.isArray(clinica.links_relacionados)
     ? clinica.links_relacionados.filter(Boolean)
     : [];
-  const fuenteUrl = normalizarUrlExterna(clinica.fuente);
+  const fuenteUrl = urlEnTexto(clinica.fuente);
+  const enlacesGestionados = Array.isArray(clinica.enlaces_informacion)
+    ? clinica.enlaces_informacion : [];
+  const fuentes = [
+    ...(fuenteUrl ? [{ titulo: 'Fuente original', url: fuenteUrl }] : []),
+    ...linksRelacionados.map((texto, indice) => ({
+      titulo: `Enlace relacionado ${indice + 1}`, url: urlEnTexto(texto),
+    })),
+    ...enlacesGestionados,
+  ].filter(({ url }) => normalizarUrlExterna(url));
   const mapaUrl = normalizarUrlExterna(clinica.ubicacion_maps);
   const correoContacto = typeof clinica.correo_contacto === 'string'
     ? clinica.correo_contacto.trim()
@@ -132,6 +141,7 @@ export default function DetalleCentro({
                   to={rutaPerfil}
                   className="inicio-header-profile-link"
                   title={nombreOCorreo}
+                  aria-label={esAdmin ? 'Administración' : 'Mi perfil'}
                 >
                   <span className="inicio-avatar-circle" aria-hidden="true">
                     <User size={14} color="#FFFFFF" />
@@ -316,44 +326,27 @@ export default function DetalleCentro({
                 {/* Fila 5: Fuente y Links relacionados */}
                 <div className="detalle-data-box detalle-data-box-full">
                   <div className="detalle-data-label-row">
-                    <span className="detalle-data-label">Fuente y Links relacionados</span>
+                    <span className="detalle-data-label">Fuentes de información</span>
                   </div>
-                  {fuenteUrl ? (
-                    <a
-                      href={fuenteUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="info-util-source-link"
-                      style={{ wordBreak: 'break-word' }}
-                    >
-                      <span>{clinica.fuente}</span>
-                      <ExternalLink size={12} aria-hidden="true" />
-                    </a>
-                  ) : (
-                    <p className="detalle-data-value" style={{ wordBreak: 'break-word' }}>
-                      {clinica.fuente || 'No especificada'}
-                    </p>
+                  {clinica.fuente && !fuenteUrl && (
+                    <p className="detalle-data-value">{clinica.fuente}</p>
                   )}
-                  {linksRelacionados.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
-                      {linksRelacionados.map((url) => {
-                        const href = normalizarUrlExterna(url)
-                        if (!href) return null
-                        return (
-                          <a
-                            key={url}
-                            href={href}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="info-util-source-link"
-                            style={{ padding: '6px 12px', fontSize: '12px' }}
-                          >
-                            <span>Abrir link relacionado</span>
-                            <ExternalLink size={12} aria-hidden="true" />
-                          </a>
-                        )
-                      })}
+                  {fuenteUrl && clinica.fuente !== fuenteUrl && (
+                    <p className="detalle-data-value">{clinica.fuente}</p>
+                  )}
+                  {fuentes.length ? (
+                    <div className="detalle-fuentes-lista">
+                      {fuentes.map(({ titulo, url }, indice) => (
+                        <a key={`${indice}-${url}`} href={normalizarUrlExterna(url)}
+                          target="_blank" rel="noopener noreferrer"
+                          className="info-util-source-link detalle-fuente-boton">
+                          <span>{titulo}</span>
+                          <ExternalLink size={14} aria-hidden="true" />
+                        </a>
+                      ))}
                     </div>
+                  ) : !clinica.fuente && (
+                    <p className="detalle-data-value">No especificadas</p>
                   )}
                 </div>
               </div>

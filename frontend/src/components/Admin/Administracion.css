@@ -180,3 +180,109 @@
 @media (max-width: 670px) { .admin-app { display: block; } .admin-aside { width: 100%; min-height: initial; padding: 14px 16px 13px; } .admin-logo { margin: 0 0 12px; font-size: 20px; } .admin-logo-icon { width: 36px; height: 36px; } .admin-aside-grupo, .admin-aside-pie { display: none; } .admin-aside-nav { flex-direction: row; overflow-x: auto; gap: 5px; padding-bottom: 4px; } .admin-aside-enlace { white-space: nowrap; width: auto; flex-shrink: 0; padding: 10px 11px; } .admin-aside-enlace svg { width: 15px; } .admin-header { min-height: 105px; padding: 18px 20px; align-items: flex-start; } .admin-header-acciones { gap: 7px; } .admin-salir-movil { display: inline-grid; } .admin-avatar { display: none; } .admin-cuerpo { padding: 20px 15px 35px; } .admin-bienvenida { padding: 24px 21px; } .admin-bienvenida-icon { display: none; } .admin-resumen { gap: 10px; } .admin-metrica { min-height: 132px; padding: 13px 15px; } .admin-metrica > strong { font-size: 25px; } .admin-panel-header { padding: 20px 17px 13px; } .admin-herramientas { padding: 0 17px 15px; } .admin-buscador { width: 100%; } .admin-detalle-hero { flex-wrap: wrap; padding: 17px; } .admin-detalle-hero > .admin-estado { margin-left: 0; } .admin-detalle-icon { flex-basis: 52px; height: 52px; } .admin-detalle-hero h2 { font-size: 20px; } .admin-detalle-bloque { padding: 19px; } .admin-detalle-lateral { display: flex; flex-direction: column; } .admin-detalle-lateral > * { width: 100%; } }
 @media (max-width: 400px) { .admin-header h1 { font-size: 21px; } .admin-header p { font-size: 12px; } .admin-header .admin-btn { padding: 8px; font-size: 0 !important; } .admin-header .admin-btn svg { width: 19px; } .admin-resumen { grid-template-columns: 1fr 1fr; } .admin-campos { grid-template-columns: 1fr; } .admin-documento { flex-wrap: wrap; } .admin-documento .admin-btn { margin-left: auto; } }
 @media (prefers-reduced-motion: reduce) { .admin-girar { animation: none; } }
+
+/* ==========================================================================
+   Ajustes móviles: navegación visible y tablas como tarjetas
+   ========================================================================== */
+@media (max-width: 910px) {
+  .admin-aside-nav {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    row-gap: 6px;
+  }
+
+  .admin-aside-enlace {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+  }
+
+  .admin-header {
+    min-height: 0;
+    align-items: center;
+    padding: 16px;
+  }
+
+  .admin-header h1 {
+    font-size: 21px;
+  }
+
+  .admin-tabla-wrap {
+    overflow-x: visible;
+  }
+
+  .admin-tabla,
+  .admin-tabla tbody,
+  .admin-tabla tr,
+  .admin-tabla td {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-tabla thead {
+    display: none;
+  }
+
+  .admin-tabla tr {
+    padding: 14px 17px;
+    border-top: 1px solid #ebefec;
+  }
+
+  .admin-tabla tbody tr:hover {
+    background: transparent;
+  }
+
+  .admin-tabla td {
+    display: grid;
+    grid-template-columns: 86px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 5px 0;
+    border: 0;
+    font-size: 12px;
+    text-align: left;
+  }
+
+  .admin-tabla td::before {
+    content: attr(data-label);
+    padding-top: 2px;
+    color: #7a8980;
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+  }
+
+  .admin-tabla td[data-label] > * {
+    min-width: 0;
+  }
+
+  .admin-tabla td.admin-tabla-accion {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 12px;
+  }
+
+  .admin-tabla td.admin-tabla-accion::before {
+    content: none;
+  }
+
+  .admin-fila-clinica {
+    min-width: 0;
+  }
+
+  .admin-fila-clinica strong,
+  .admin-fila-clinica small {
+    overflow-wrap: anywhere;
+  }
+
+  .admin-celda-icon {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 910px) {
+  .admin-tabla td .admin-estado,
+  .admin-tabla td .admin-celda-icon {
+    justify-self: start;
+  }
+}

@@ -20,6 +20,7 @@ import {
   leerSesion,
 } from '../../api/auth'
 import EncabezadoClinica from './EncabezadoClinica.jsx'
+import FuentesInformacion from './FuentesInformacion.jsx'
 import MapaLeaflet from '../Inicio/MapaLeaflet.jsx'
 import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js'
 import { OAXACA, coordenadas } from '../../utils/centros.js'
@@ -1136,6 +1137,7 @@ export default function PanelClinica({ sesion, onSalir }) {
                   </div>
                 </form>
               )}
+              <FuentesInformacion iniciales={ficha?.clinica?.enlaces_informacion} />
             </div>
           </div>
         </div>
