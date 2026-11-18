@@ -43,7 +43,9 @@ export default function MapaCentros({
   const [clinicaEnAgendar, setClinicaEnAgendar] = useState(null);
 
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
-  const rutaInicio = sesion ? '/cuenta' : '/';
+  const esAdmin = sesion?.tipo === 'administrador';
+  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/cuenta') : '/';
+  const rutaPerfil = esAdmin ? '/admin' : '/mi-perfil';
 
   const municipiosDisponibles = useMemo(() => {
     const conjunto = new Set();
@@ -194,6 +196,10 @@ export default function MapaCentros({
               <Link to="/mi-clinica/citas" className="inicio-nav-link">
                   Mis citas
                 </Link>
+              ) : esAdmin ? (
+                <Link to="/admin" className="inicio-nav-link">
+                  Administración
+                </Link>
               ) : (
                 <>
                   <Link to="/agendar-cita" className="inicio-nav-link">
@@ -218,14 +224,14 @@ export default function MapaCentros({
                 <CampanaNotificaciones sesion={sesion} />
 
                 <Link
-                  to="/mi-perfil"
+                  to={rutaPerfil}
                   className="inicio-header-profile-link"
                   title={nombreOCorreo}
                 >
                   <span className="inicio-avatar-circle" aria-hidden="true">
                     <User size={14} color="#FFFFFF" />
                   </span>
-                  <span>Mi perfil</span>
+                  <span>{esAdmin ? 'Administración' : 'Mi perfil'}</span>
                 </Link>
 
                 <button
