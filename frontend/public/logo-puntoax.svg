@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Logo de PuntOax Oaxaca">
+  <defs>
+    <linearGradient id="oaxBg" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#194D3B" />
+      <stop offset="55%" stop-color="#103328" />
+      <stop offset="100%" stop-color="#001D14" />
+    </linearGradient>
+    <linearGradient id="oaxPin" x1="18" y1="9" x2="46" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#C5EBDA" />
+    </linearGradient>
+    <linearGradient id="oaxAgave" x1="12" y1="30" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#C5EBDA" />
+      <stop offset="100%" stop-color="#76B097" />
+    </linearGradient>
+  </defs>
+
+  <!-- Escudo principal en verde cantera/bosque de Oaxaca -->
+  <rect x="2.5" y="2.5" width="59" height="59" rx="15" fill="url(#oaxBg)" stroke="#C5EBDA" stroke-width="2.2" />
+
+  <!-- Sol / Rosetón mixteco-zapoteco sutil de fondo -->
+  <circle cx="32" cy="24" r="18" fill="#C5EBDA" fill-opacity="0.08" />
+  <circle cx="32" cy="24" r="14" stroke="#C5EBDA" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="2 2" />
+
+  <!-- Silueta de la Sierra de Oaxaca al fondo -->
+  <path
+    d="M6 46L17 35L26 41L38 33L49 40L58 35V49H6V46Z"
+    fill="#09261C"
+    stroke="#5F9A81"
+    stroke-width="1.1"
+    stroke-linejoin="round"
+  />
+
+  <!-- Pencas de Agave / Maguey Oaxaqueño abrazando el pin central -->
+  <path
+    d="M32 45C24.5 44 16.5 39 12 31C17.5 32.5 23.5 36.5 27.5 42"
+    fill="url(#oaxAgave)"
+    opacity="0.9"
+  />
+  <path
+    d="M32 45C39.5 44 47.5 39 52 31C46.5 32.5 40.5 36.5 36.5 42"
+    fill="url(#oaxAgave)"
+    opacity="0.9"
+  />
+  <path
+    d="M28 45C21.5 41.5 16.5 34.5 15.5 25.5C20.5 28.5 24.8 34.5 28.5 41.5"
+    stroke="#C5EBDA"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <path
+    d="M36 45C42.5 41.5 47.5 34.5 48.5 25.5C43.5 28.5 39.2 34.5 35.5 41.5"
+    stroke="#C5EBDA"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+
+  <!-- Pin central ("Punto" de salud en Oaxaca) -->
+  <path
+    d="M32 8.5C23.44 8.5 16.5 15.44 16.5 24C16.5 33.8 28.6 43.4 30.88 45.14C31.54 45.65 32.46 45.65 33.12 45.14C35.4 43.4 47.5 33.8 47.5 24C47.5 15.44 40.56 8.5 32 8.5Z"
+    fill="url(#oaxPin)"
+    stroke="#001D14"
+    stroke-width="1.5"
+  />
+
+  <!-- Círculo interior verde profundo -->
+  <circle cx="32" cy="23.5" r="9.5" fill="#001D14" />
+
+  <!-- Cruz médica con pétalos de rosetón oaxaqueño -->
+  <path
+    d="M32 18V29M26.5 23.5H37.5"
+    stroke="#C5EBDA"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+  <circle cx="32" cy="23.5" r="2" fill="#FFFFFF" />
+
+  <!-- Franja inferior de Greca Zapoteca escalonada (Mitla, Oaxaca) -->
+  <path
+    d="M10 53H15V50H19V53H24V50H28V53H32H36V50H40V53H45V50H49V53H54"
+    stroke="#C5EBDA"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

@@ -8,6 +8,7 @@ import {
   ExternalLink,
   User,
 } from 'lucide-react';
+import CampanaNotificaciones from './CampanaNotificaciones.jsx';
 import '../../styles/Inicio.css';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx'
 
@@ -21,67 +22,175 @@ const APARTADOS = [
 
 const FUENTES_OFICIALES = [
   {
-    id: 'codigo-penal-oaxaca',
-    institucion: 'H. Congreso del Estado Libre y Soberano de Oaxaca',
-    titulo: 'Código Penal para el Estado Libre y Soberano de Oaxaca (Artículos 312 al 316)',
-    descripcion:
-      'Reforma aprobada en septiembre de 2019 que despenaliza la interrupción del embarazo hasta las 12 semanas de gestación en Oaxaca y define las excluyentes de responsabilidad penal.',
-    url: 'https://www.congresooaxaca.gob.mx',
-    etiquetaUrl: 'congresooaxaca.gob.mx',
-  },
-  {
-    id: 'nom-046',
-    institucion: 'Secretaría de Salud / CNDH (Diario Oficial de la Federación)',
-    titulo: 'Norma Oficial Mexicana NOM-046-SSA2-2005 (Violencia familiar, sexual y contra las mujeres)',
-    descripcion:
-      'Establece la obligación de todas las instituciones públicas de salud de garantizar la interrupción voluntaria del embarazo en casos de violación sin requerir denuncia ni autorización judicial previa.',
-    url: 'https://www.cndh.org.mx/DocTR/2016/JUR/A70/01/JUR-20170331-NOR19.pdf',
-    etiquetaUrl: 'cndh.org.mx — NOM-046-SSA2-2005',
-  },
-  {
     id: 'lineamiento-aborto-seguro',
-    institucion: 'Centro Nacional de Equidad de Género y Salud Reproductiva (CNEGSR)',
+    institucion: 'Centro Nacional de Equidad de Género y Salud Reproductiva (2022)',
     titulo: 'Lineamiento Técnico para la Atención del Aborto Seguro en México',
     descripcion:
       'Protocolo clínico federal de la Secretaría de Salud que regula los procedimientos seguros con medicamentos (mifepristona y misoprostol) y Aspiración Manual Endouterina (AMEU).',
+    citaParentetica1: '(Centro Nacional de Equidad de Género y Salud Reproductiva [CNEGSR], 2022)',
+    citaParenteticaSub: '(CNEGSR, 2022)',
+    citaNarrativa: 'Centro Nacional de Equidad de Género y Salud Reproductiva (CNEGSR, 2022)',
+    referenciaApa: {
+      autor: 'Centro Nacional de Equidad de Género y Salud Reproductiva.',
+      anio: '(2022).',
+      tituloCursiva: 'Lineamiento técnico para la atención del aborto seguro en México',
+      edicionFuente: '(Ed. 2022). Secretaría de Salud.',
+      url: 'https://www.gob.mx/salud/cnegsr',
+    },
     url: 'https://www.gob.mx/salud/cnegsr',
     etiquetaUrl: 'gob.mx/salud/cnegsr',
   },
   {
     id: 'cofepris-licencias',
-    institucion: 'Comisión Federal para la Protección contra Riesgos Sanitarios (COFEPRIS)',
+    institucion: 'Comisión Federal para la Protección contra Riesgos Sanitarios (2024)',
     titulo: 'Consulta de Licencias Sanitarias, Avisos de Funcionamiento y Registros Sanitarios',
     descripcion:
       'Portal federal para verificar permisos sanitarios de clínicas, consultorios, laboratorios e insumos diagnósticos como pruebas rápidas de VIH y sífilis.',
+    citaParentetica1: '(Comisión Federal para la Protección contra Riesgos Sanitarios [COFEPRIS], 2024)',
+    citaParenteticaSub: '(COFEPRIS, 2024)',
+    citaNarrativa: 'Comisión Federal para la Protección contra Riesgos Sanitarios (COFEPRIS, 2024)',
+    referenciaApa: {
+      autor: 'Comisión Federal para la Protección contra Riesgos Sanitarios.',
+      anio: '(2024).',
+      tituloCursiva: 'Consulta de registros sanitarios, licencias sanitarias y avisos de funcionamiento.',
+      edicionFuente: 'Gobierno de México.',
+      url: 'https://www.gob.mx/cofepris',
+    },
     url: 'https://www.gob.mx/cofepris',
     etiquetaUrl: 'gob.mx/cofepris',
   },
   {
+    id: 'codigo-penal-oaxaca',
+    institucion: 'H. Congreso del Estado Libre y Soberano de Oaxaca (2019)',
+    titulo: 'Código Penal para el Estado Libre y Soberano de Oaxaca (Artículos 312 al 316)',
+    descripcion:
+      'Reforma aprobada el 25 de septiembre de 2019 (Decreto Núm. 806) que despenaliza la interrupción del embarazo hasta las 12 semanas de gestación en Oaxaca y define las excluyentes de responsabilidad penal.',
+    citaParentetica1: '(Código Penal para el Estado Libre y Soberano de Oaxaca, 2019, arts. 312–316)',
+    citaParenteticaSub: '(Código Penal de Oaxaca, 2019, art. 312)',
+    citaNarrativa: 'Código Penal para el Estado Libre y Soberano de Oaxaca (2019, arts. 312–316)',
+    referenciaApa: {
+      autor: 'H. Congreso del Estado Libre y Soberano de Oaxaca.',
+      anio: '(2019, 24 de octubre).',
+      tituloCursiva: 'Decreto Núm. 806 por el que se reforman los artículos 312, 313, 315 y 316 del Código Penal para el Estado Libre y Soberano de Oaxaca.',
+      edicionFuente: 'Periódico Oficial del Gobierno del Estado de Oaxaca.',
+      url: 'https://www.congresooaxaca.gob.mx',
+    },
+    url: 'https://www.congresooaxaca.gob.mx',
+    etiquetaUrl: 'congresooaxaca.gob.mx',
+  },
+  {
+    id: 'oms-directrices',
+    institucion: 'Organización Mundial de la Salud (2022)',
+    titulo: 'Directrices sobre la atención para el aborto',
+    descripcion:
+      'Estándares médicos internacionales sobre seguridad clínica, esquemas farmacológicos avalados, manejo del dolor y acompañamiento centrado en la persona.',
+    citaParentetica1: '(Organización Mundial de la Salud [OMS], 2022)',
+    citaParenteticaSub: '(OMS, 2022)',
+    citaNarrativa: 'Organización Mundial de la Salud (OMS, 2022)',
+    referenciaApa: {
+      autor: 'Organización Mundial de la Salud.',
+      anio: '(2022).',
+      tituloCursiva: 'Directrices sobre la atención para el aborto.',
+      edicionFuente: '',
+      url: 'https://www.who.int/es/publications/i/item/9789240039483',
+    },
+    url: 'https://www.who.int/es/publications/i/item/9789240039483',
+    etiquetaUrl: 'who.int — Directrices OMS',
+  },
+  {
     id: 'sep-cedulas',
-    institucion: 'Secretaría de Educación Pública (SEP)',
+    institucion: 'Secretaría de Educación Pública (2024)',
     titulo: 'Registro Nacional de Profesionistas — Consulta de Cédula Profesional',
     descripcion:
-      'Buscador público oficial para comprobar que el personal médico o de enfermería que brinda la atención cuenta con título y cédula profesional vigente.',
+      'Buscador público oficial de la Dirección General de Profesiones para comprobar que el personal médico o de enfermería cuenta con título y cédula profesional vigente.',
+    citaParentetica1: '(Secretaría de Educación Pública [SEP], 2024)',
+    citaParenteticaSub: '(SEP, 2024)',
+    citaNarrativa: 'Secretaría de Educación Pública (SEP, 2024)',
+    referenciaApa: {
+      autor: 'Secretaría de Educación Pública.',
+      anio: '(2024).',
+      tituloCursiva: 'Registro Nacional de Profesionistas: Consulta de cédulas profesionales.',
+      edicionFuente: 'Dirección General de Profesiones.',
+      url: 'https://cedulaprofesional.sep.gob.mx',
+    },
     url: 'https://cedulaprofesional.sep.gob.mx',
     etiquetaUrl: 'cedulaprofesional.sep.gob.mx',
   },
   {
+    id: 'nom-039',
+    institucion: 'Secretaría de Salud (2014)',
+    titulo: 'Norma Oficial Mexicana NOM-039-SSA2-2014, Para la prevención y control de las infecciones de transmisión sexual',
+    descripcion:
+      'Regula los procedimientos de diagnóstico clínico y de laboratorio para sífilis (pruebas treponémicas y VDRL/RPR), gonorrea, clamidia, VPH, herpes genital y tricomoniasis.',
+    citaParentetica1: '(Secretaría de Salud, 2014)',
+    citaParenteticaSub: '(Secretaría de Salud, 2014)',
+    citaNarrativa: 'Secretaría de Salud (2014)',
+    referenciaApa: {
+      autor: 'Secretaría de Salud.',
+      anio: '(2014, 1 de junio).',
+      tituloCursiva: 'Norma Oficial Mexicana NOM-039-SSA2-2014, Para la prevención y control de las infecciones de transmisión sexual.',
+      edicionFuente: 'Diario Oficial de la Federación.',
+      url: 'https://www.dof.gob.mx',
+    },
+    url: 'https://www.dof.gob.mx',
+    etiquetaUrl: 'dof.gob.mx — NOM-039-SSA2-2014',
+  },
+  {
+    id: 'nom-046',
+    institucion: 'Secretaría de Salud (2016)',
+    titulo: 'Norma Oficial Mexicana NOM-046-SSA2-2005. Violencia familiar, sexual y contra las mujeres. Criterios para la prevención y atención',
+    descripcion:
+      'Establece la obligación de todas las instituciones públicas de salud de garantizar la interrupción voluntaria del embarazo en casos de violación sin requerir denuncia ni autorización judicial previa.',
+    citaParentetica1: '(Secretaría de Salud, 2016)',
+    citaParenteticaSub: '(Secretaría de Salud, 2016)',
+    citaNarrativa: 'Secretaría de Salud (2016)',
+    referenciaApa: {
+      autor: 'Secretaría de Salud.',
+      anio: '(2016, 24 de marzo).',
+      tituloCursiva: 'Modificación de la Norma Oficial Mexicana NOM-046-SSA2-2005, Violencia familiar, sexual y contra las mujeres. Criterios para la prevención y atención.',
+      edicionFuente: 'Diario Oficial de la Federación.',
+      url: 'https://www.cndh.org.mx/DocTR/2016/JUR/A70/01/JUR-20170331-NOR19.pdf',
+    },
+    url: 'https://www.cndh.org.mx/DocTR/2016/JUR/A70/01/JUR-20170331-NOR19.pdf',
+    etiquetaUrl: 'cndh.org.mx — NOM-046-SSA2-2005',
+  },
+  {
     id: 'censida-nom010',
-    institucion: 'Centro Nacional para la Prevención y el Control del VIH y el Sida (CENSIDA)',
-    titulo: 'NOM-010-SSA2-2018 para la Prevención y el Control de la Infección por VIH',
+    institucion: 'Secretaría de Salud y CENSIDA (2018)',
+    titulo: 'NOM-010-SSA2-2018, Para la prevención y el control de la infección por Virus de la Inmunodeficiencia Humana',
     descripcion:
       'Garantiza que las pruebas de detección de VIH e ITS sean voluntarias, confidenciales, gratuitas en el sector público y acompañadas de consejería sin discriminación.',
+    citaParentetica1: '(Secretaría de Salud & Centro Nacional para la Prevención y el Control del VIH y el Sida [CENSIDA], 2018)',
+    citaParenteticaSub: '(Secretaría de Salud & CENSIDA, 2018)',
+    citaNarrativa: 'Secretaría de Salud y el Centro Nacional para la Prevención y el Control del VIH y el Sida (CENSIDA, 2018)',
+    referenciaApa: {
+      autor: 'Secretaría de Salud & Centro Nacional para la Prevención y el Control del VIH y el Sida.',
+      anio: '(2018, 28 de abril).',
+      tituloCursiva: 'Norma Oficial Mexicana NOM-010-SSA2-2018, Para la prevención y el control de la infección por Virus de la Inmunodeficiencia Humana.',
+      edicionFuente: 'Diario Oficial de la Federación.',
+      url: 'https://www.gob.mx/censida',
+    },
     url: 'https://www.gob.mx/censida',
     etiquetaUrl: 'gob.mx/censida',
   },
   {
-    id: 'oms-directrices',
-    institucion: 'Organización Mundial de la Salud (OMS)',
-    titulo: 'Directrices sobre la atención para el aborto (Edición actualizada)',
+    id: 'scjn-criterios',
+    institucion: 'Suprema Corte de Justicia de la Nación (2021 / 2023)',
+    titulo: 'Acción de Inconstitucionalidad 148/2017 y Amparo en Revisión 267/2023',
     descripcion:
-      'Estándares médicos internacionales sobre seguridad clínica, esquemas farmacológicos avalados, manejo del dolor y acompañamiento centrado en la persona.',
-    url: 'https://www.who.int/es/publications/i/item/9789240039483',
-    etiquetaUrl: 'who.int — Directrices OMS',
+      'Sentencias constitucionales mediante las cuales la SCJN declaró inconstitucional la penalización absoluta del aborto voluntario y ordenó la prestación del servicio en instituciones federales de salud.',
+    citaParentetica1: '(Suprema Corte de Justicia de la Nación [SCJN], 2021, 2023)',
+    citaParenteticaSub: '(SCJN, 2021, 2023)',
+    citaNarrativa: 'Suprema Corte de Justicia de la Nación (SCJN, 2021, 2023)',
+    referenciaApa: {
+      autor: 'Suprema Corte de Justicia de la Nación.',
+      anio: '(2021, 7 de septiembre).',
+      tituloCursiva: 'Sentencia dictada por el Tribunal Pleno en la Acción de Inconstitucionalidad 148/2017.',
+      edicionFuente: 'Semanario Judicial de la Federación.',
+      url: 'https://www.scjn.gob.mx',
+    },
+    url: 'https://www.scjn.gob.mx',
+    etiquetaUrl: 'scjn.gob.mx',
   },
 ];
 
@@ -105,7 +214,13 @@ export default function InformacionUtil({ sesion, onSalir }) {
           <div className="inicio-header-left">
             <div className="inicio-brand-wrap">
               <Link to="/cuenta" className="inicio-brand" style={{ textDecoration: 'none' }}>
-                PuntOax
+                <img
+                  src="/logo-puntoax.svg"
+                  alt=""
+                  className="inicio-brand-logo"
+                  aria-hidden="true"
+                />
+                <span>PuntOax</span>
               </Link>
             </div>
 
@@ -132,12 +247,17 @@ export default function InformacionUtil({ sesion, onSalir }) {
           </div>
 
           <div className="inicio-header-right">
+            <CampanaNotificaciones sesion={sesion} />
+
             <Link
-              to="/cuenta"
-              className="inicio-header-account-link"
+              to="/mi-perfil"
+              className="inicio-header-profile-link"
               title={nombreOCorreo}
             >
-              Mi cuenta
+              <span className="inicio-avatar-circle" aria-hidden="true">
+                <User size={14} color="#FFFFFF" />
+              </span>
+              <span>Mi perfil</span>
             </Link>
 
             <button
@@ -147,12 +267,6 @@ export default function InformacionUtil({ sesion, onSalir }) {
             >
               Salir
             </button>
-
-            <div className="inicio-avatar-margin">
-              <div className="inicio-avatar-circle" aria-hidden="true">
-                <User size={14} color="#FFFFFF" />
-              </div>
-            </div>
           </div>
         </div>
       </header>
@@ -214,10 +328,10 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     Guía básica de salud sexual y reproductiva en Oaxaca
                   </h2>
                   <p className="info-util-justify">
-                    Contar con información clara, científica y respaldada por la ley te permite tomar decisiones autónomas sobre tu salud. En Oaxaca, los servicios públicos de detección de infecciones de transmisión sexual (ITS) y de Interrupción Legal del Embarazo (ILE) son derechos protegidos por normativas estatales y federales.
+                    Contar con información clara, científica y respaldada por la ley permite tomar decisiones autónomas sobre la salud. En Oaxaca, los servicios públicos de detección de infecciones de transmisión sexual (ITS) y de Interrupción Legal del Embarazo (ILE) son derechos protegidos por normativas estatales y federales (H. Congreso del Estado Libre y Soberano de Oaxaca, 2019; Secretaría de Salud, 2016).
                   </p>
                   <p className="info-util-justify">
-                    Las unidades públicas de los Servicios de Salud de Oaxaca (SSO), IMSS-Bienestar y los CAPASITS brindan atención gratuita, mientras que las clínicas privadas y organizaciones acreditadas deben operar bajo licencia sanitaria de COFEPRIS. Esta guía reúne lo esencial sobre qué respalda la ley, qué métodos y estudios se realizan, cómo comprobar que un centro sea legal y cuáles son las fuentes oficiales.
+                    Las unidades públicas brindan atención gratuita conforme a los protocolos del Centro Nacional de Equidad de Género y Salud Reproductiva (CNEGSR, 2022) y del Centro Nacional para la Prevención y el Control del VIH y el Sida (CENSIDA, 2018), mientras que las clínicas privadas y organizaciones acreditadas deben operar bajo licencia sanitaria de la Comisión Federal para la Protección contra Riesgos Sanitarios (COFEPRIS, 2024).
                   </p>
                 </div>
 
@@ -237,42 +351,42 @@ export default function InformacionUtil({ sesion, onSalir }) {
                 <article className="info-util-box">
                   <h3 className="info-util-box-title">1. Derecho garantizado</h3>
                   <p className="info-util-box-text">
-                    En Oaxaca la interrupción voluntaria es legal hasta las 12 semanas y las pruebas de ITS son gratuitas en unidades públicas.
+                    En Oaxaca la interrupción voluntaria del embarazo es legal hasta las 12 semanas completas de gestación y las pruebas de detección de ITS son gratuitas en unidades públicas (H. Congreso del Estado Libre y Soberano de Oaxaca, 2019, art. 312; Secretaría de Salud & CENSIDA, 2018).
                   </p>
                 </article>
 
                 <article className="info-util-box">
                   <h3 className="info-util-box-title">2. Clínicas verificables</h3>
                   <p className="info-util-box-text">
-                    Todo centro legal cuenta con licencia de COFEPRIS y personal médico con cédula profesional registrada ante la SEP.
+                    Todo establecimiento legal cuenta con permiso sanitario vigente y personal de salud con cédula profesional registrada ante la Secretaría de Educación Pública (SEP, 2024; COFEPRIS, 2024).
                   </p>
                 </article>
 
                 <article className="info-util-box">
                   <h3 className="info-util-box-title">3. Privacidad absoluta</h3>
                   <p className="info-util-box-text">
-                    Tus datos personales y diagnósticos están protegidos por las normas oficiales NOM-010 y NOM-046.
+                    Los datos personales, el motivo de consulta y los diagnósticos forman parte del expediente clínico confidencial protegido por la normativa sanitaria federal (Secretaría de Salud, 2016; Secretaría de Salud & CENSIDA, 2018).
                   </p>
                 </article>
 
                 <article className="info-util-box">
                   <h3 className="info-util-box-title">4. Métodos seguros de ILE</h3>
                   <p className="info-util-box-text">
-                    En los centros autorizados se emplean únicamente métodos avalados por la OMS: régimen medicamentoso (mifepristona y misoprostol) y Aspiración Manual Endouterina (AMEU).
+                    En los centros autorizados se emplean únicamente métodos clínicos recomendados por la Organización Mundial de la Salud (OMS, 2022) y el CNEGSR (2022): régimen medicamentoso (mifepristona y misoprostol) y Aspiración Manual Endouterina (AMEU).
                   </p>
                 </article>
 
                 <article className="info-util-box">
                   <h3 className="info-util-box-title">5. Tamizaje de ITS y VIH</h3>
                   <p className="info-util-box-text">
-                    Detección oportuna de VIH, sífilis, hepatitis B y C, VPH, clamidia y gonorrea mediante pruebas rápidas en 15 minutos y estudios confirmatorios de laboratorio.
+                    Detección oportuna de VIH, sífilis, hepatitis B y C, VPH, clamidia y gonorrea mediante pruebas rápidas y estudios confirmatorios de laboratorio conforme a las Normas Oficiales Mexicanas vigentes (Secretaría de Salud, 2014; Secretaría de Salud & CENSIDA, 2018).
                   </p>
                 </article>
 
                 <article className="info-util-box">
                   <h3 className="info-util-box-title">6. Red pública y comunitaria</h3>
                   <p className="info-util-box-text">
-                    Directorio integrado por CAPASITS, Hospitales Generales, Centros de Salud Urbanos de los SSO, IMSS-Bienestar y clínicas comunitarias verificadas.
+                    De acuerdo con la Suprema Corte de Justicia de la Nación (SCJN, 2021, 2023) y el CNEGSR (2022), las instituciones públicas de salud deben garantizar servicios seguros, oportunos y libres de discriminación.
                   </p>
                 </article>
               </div>
@@ -289,10 +403,10 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     Interrupción Legal del Embarazo (ILE) en Oaxaca: ¿Qué dice la ley?
                   </h2>
                   <p className="info-util-justify">
-                    En septiembre de 2019, Oaxaca se convirtió en la segunda entidad federativa de México en despenalizar el aborto por decisión voluntaria durante el primer trimestre de gestación.
+                    En septiembre de 2019, Oaxaca se convirtió en la segunda entidad federativa de México en despenalizar el aborto por decisión voluntaria durante el primer trimestre de gestación (H. Congreso del Estado Libre y Soberano de Oaxaca, 2019).
                   </p>
                   <p className="info-util-justify">
-                    Además del respaldo jurídico estatal y federal, las instituciones de salud operan bajo el <strong>Lineamiento Técnico para la Atención del Aborto Seguro en México (CNEGSR)</strong> y las directrices de la <strong>OMS</strong>.
+                    Además del respaldo jurídico estatal y federal, las instituciones de salud operan bajo el <em>Lineamiento técnico para la atención del aborto seguro en México</em> (Centro Nacional de Equidad de Género y Salud Reproductiva [CNEGSR], 2022) y las directrices clínicas de la Organización Mundial de la Salud (OMS, 2022).
                   </p>
                 </div>
 
@@ -314,7 +428,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     1. Hasta las 12 semanas por libre decisión (Código Penal de Oaxaca, Art. 312)
                   </h3>
                   <p className="info-util-box-text">
-                    En el estado de Oaxaca, las mujeres y personas con capacidad de gestar tienen derecho a interrumpir su embarazo de forma libre, autónoma y voluntaria <strong>hasta las 12 semanas completas de gestación</strong> (contadas a partir del primer día de la última menstruación), sin necesidad de justificar el motivo.
+                    En el estado de Oaxaca, las mujeres y personas con capacidad de gestar tienen derecho a interrumpir su embarazo de forma libre, autónoma y voluntaria <strong>hasta las 12 semanas completas de gestación</strong> (contadas a partir del primer día de la última menstruación), sin necesidad de justificar el motivo (H. Congreso del Estado Libre y Soberano de Oaxaca, 2019, art. 312).
                   </p>
                 </article>
 
@@ -323,7 +437,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     2. Atención por violencia sexual sin denuncia previa (NOM-046-SSA2-2005)
                   </h3>
                   <p className="info-util-box-text">
-                    De acuerdo con la <strong>Norma Oficial Mexicana NOM-046-SSA2-2005</strong>, de cumplimiento obligatorio en todo el país, cuando un embarazo es resultado de violencia sexual, todas las instituciones públicas de salud deben brindar la interrupción médica <strong>sin exigir denuncia ante el Ministerio Público ni autorización judicial</strong>; basta con una solicitud por escrito bajo protesta de decir verdad.
+                    De acuerdo con la Secretaría de Salud (2016), en la <strong>Norma Oficial Mexicana NOM-046-SSA2-2005</strong>, cuando un embarazo es resultado de violencia sexual, todas las instituciones públicas de salud deben brindar la interrupción médica <strong>sin exigir denuncia ante el Ministerio Público ni autorización judicial</strong>; basta con una solicitud por escrito bajo protesta de decir verdad.
                   </p>
                 </article>
 
@@ -332,7 +446,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     3. Causales legales sin límite de semanas (Código Penal de Oaxaca, Art. 316)
                   </h3>
                   <p className="info-util-box-text">
-                    Además de las primeras 12 semanas por decisión voluntaria, la ley oaxaqueña establece excluyentes de responsabilidad penal en cualquier etapa cuando:
+                    Además de las primeras 12 semanas por decisión voluntaria, la legislación estatal establece excluyentes de responsabilidad penal en cualquier etapa gestacional cuando (H. Congreso del Estado Libre y Soberano de Oaxaca, 2019, art. 316):
                   </p>
                   <ul className="info-util-list">
                     <li>El embarazo sea consecuencia de una violación o de inseminación artificial no consentida.</li>
@@ -346,7 +460,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     4. Criterio de la Suprema Corte de Justicia de la Nación (SCJN)
                   </h3>
                   <p className="info-util-box-text">
-                    En las sentencias históricas <strong>AI 148/2017</strong> y <strong>Amparo en Revisión 267/2023</strong>, la SCJN declaró inconstitucional la criminalización absoluta del aborto y determinó que las instituciones federales de salud (IMSS, ISSSTE, IMSS-Bienestar) deben brindar el servicio de forma segura y sin discriminación.
+                    En las sentencias de la Acción de Inconstitucionalidad 148/2017 y del Amparo en Revisión 267/2023, la Suprema Corte de Justicia de la Nación (SCJN, 2021, 2023) declaró inconstitucional la criminalización absoluta del aborto y determinó que las instituciones federales de salud deben brindar el servicio sin discriminación.
                   </p>
                 </article>
               </div>
@@ -364,7 +478,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     Método 1: Régimen con medicamentos (Mifepristona + Misoprostol)
                   </h3>
                   <p className="info-util-box-text">
-                    Es el método no invasivo más frecuente durante las primeras 10 a 12 semanas y cuenta con una eficacia superior al 95%. La <strong>mifepristona</strong> bloquea la hormona progesterona deteniendo el desarrollo gestacional y, de 24 a 48 horas después, el <strong>misoprostol</strong> (vía sublingual, bucal o vaginal) produce contracciones uterinas para vaciar el útero de manera similar a una menstruación abundante. Cuando no se dispone de mifepristona, también se utiliza el esquema con misoprostol solo en dosis pautadas.
+                    Es el método no invasivo más frecuente durante las primeras 10 a 12 semanas y cuenta con una eficacia superior al 95%. La <strong>mifepristona</strong> bloquea la hormona progesterona deteniendo el desarrollo gestacional y, de 24 a 48 horas después, el <strong>misoprostol</strong> (vía sublingual, bucal o vaginal) produce contracciones uterinas para vaciar el útero de manera similar a una menstruación abundante. Cuando no se dispone de mifepristona, también se utiliza el esquema con misoprostol solo en dosis pautadas (OMS, 2022; CNEGSR, 2022).
                   </p>
                 </article>
 
@@ -373,7 +487,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     Método 2: Aspiración Manual Endouterina (AMEU)
                   </h3>
                   <p className="info-util-box-text">
-                    Es un procedimiento clínico ambulatorio, seguro y breve (toma entre 10 y 15 minutos) indicado en el primer trimestre. Se realiza con <strong>anestesia local</strong> en el cuello uterino (bloqueo paracervical) y analgésicos orales, utilizando una cánula delgada y flexible de plástico conectada a un aspirador manual de vacío. La recuperación dura alrededor de una hora y no requiere hospitalización.
+                    Es un procedimiento clínico ambulatorio, seguro y breve (toma entre 10 y 15 minutos) indicado en el primer trimestre. Se realiza con <strong>anestesia local</strong> en el cuello uterino (bloqueo paracervical) y analgésicos orales, utilizando una cánula delgada y flexible de plástico conectada a un aspirador manual de vacío. La recuperación dura alrededor de una hora y no requiere hospitalización (CNEGSR, 2022; OMS, 2022).
                   </p>
                 </article>
 
@@ -382,7 +496,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     Valoración médica previa y manejo del dolor
                   </h3>
                   <p className="info-util-box-text">
-                    Antes de iniciar cualquiera de los dos métodos, el personal médico realiza una historia clínica, confirma las semanas de gestación (mediante fecha de última menstruación o ultrasonido) y prescribe analgésicos antiinflamatorios (como ibuprofeno o ketorolaco) para mitigar los cólicos.
+                    Antes de iniciar cualquiera de los dos métodos, el personal médico realiza una historia clínica, confirma las semanas de gestación (mediante fecha de última menstruación o ultrasonido) y prescribe analgésicos antiinflamatorios no esteroideos (como ibuprofeno o ketorolaco) para el manejo del dolor (CNEGSR, 2022; OMS, 2022).
                   </p>
                 </article>
 
@@ -391,7 +505,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     ¿Por qué ya no se recomienda el Legrado Instrumental (LUI)?
                   </h3>
                   <p className="info-util-box-text">
-                    Tanto la OMS como la Secretaría de Salud desaconsejan el Legrado Uterino Instrumental (raspado con cureta metálica) como primera opción, debido a que el tratamiento con medicamentos y la AMEU son métodos modernos mucho más seguros y de menor riesgo.
+                    Tanto la OMS (2022) como el CNEGSR (2022) desaconsejan el Legrado Uterino Instrumental (raspado con cureta metálica) como primera opción, debido a que el tratamiento farmacológico y la AMEU son métodos modernos más seguros y de menor riesgo clínico.
                   </p>
                 </article>
               </div>
@@ -408,7 +522,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     ¿Cómo saber si una clínica o centro de salud es legal y seguro?
                   </h2>
                   <p className="info-util-justify">
-                    Antes de acudir a un establecimiento privado o asociación, verifica que cumpla con la regulación de la COFEPRIS, los Servicios de Salud de Oaxaca (SSO) y la Secretaría de Educación Pública (SEP).
+                    Antes de acudir a un establecimiento privado o asociación, es indispensable verificar que cumpla con la regulación de la Comisión Federal para la Protección contra Riesgos Sanitarios (COFEPRIS, 2024) y de la Secretaría de Educación Pública (SEP, 2024).
                   </p>
                 </div>
 
@@ -431,7 +545,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     <span>1. Licencia Sanitaria o Aviso de Funcionamiento (COFEPRIS / SSO)</span>
                   </h3>
                   <p className="info-util-box-text">
-                    Todo consultorio, clínica o laboratorio legal debe tener a la vista del público su <strong>Aviso de Funcionamiento</strong> y, si realiza procedimientos quirúrgicos o ambulatorios (como AMEU), su <strong>Licencia Sanitaria para Actos Quirúrgicos u Obstétricos</strong> expedida por la <strong>COFEPRIS</strong> o la Dirección de Regulación y Fomento Sanitario de los SSO.
+                    Todo consultorio, clínica o laboratorio legal debe tener a la vista del público su <strong>Aviso de Funcionamiento</strong> y, si realiza procedimientos quirúrgicos o ambulatorios (como AMEU), su <strong>Licencia Sanitaria para Actos Quirúrgicos u Obstétricos</strong> expedida por la autoridad sanitaria (COFEPRIS, 2024).
                   </p>
                 </article>
 
@@ -441,7 +555,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     <span>2. Cédula Profesional verificable en la SEP</span>
                   </h3>
                   <p className="info-util-box-text">
-                    El médico o personal de salud que te atienda debe proporcionar su nombre completo y número de <strong>Cédula Profesional</strong> en la receta o nota médica. Puedes comprobar su validez en segundos en el portal oficial del <strong>Registro Nacional de Profesionistas</strong> (<code>cedulaprofesional.sep.gob.mx</code>).
+                    El personal médico que brinde la atención debe proporcionar su nombre completo y número de <strong>Cédula Profesional</strong> en la receta o nota médica. Su validez puede comprobarse en el portal oficial del <strong>Registro Nacional de Profesionistas</strong> (<code>cedulaprofesional.sep.gob.mx</code>) (SEP, 2024).
                   </p>
                 </article>
 
@@ -451,7 +565,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     <span>3. Métodos clínicos avalados por la OMS y la Secretaría de Salud</span>
                   </h3>
                   <p className="info-util-box-text">
-                    Según el <strong>Lineamiento Técnico para la Atención del Aborto Seguro en México (CNEGSR)</strong> y las directrices de la <strong>OMS</strong>, únicamente dos procedimientos están recomendados en el primer trimestre:
+                    De acuerdo con el CNEGSR (2022) y la OMS (2022), únicamente dos procedimientos están recomendados durante el primer trimestre:
                   </p>
                   <ul className="info-util-list">
                     <li><strong>Aborto con medicamentos:</strong> esquema combinado de mifepristona y misoprostol (o misoprostol solo en dosis pautadas).</li>
@@ -465,9 +579,9 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     <span>4. Señales de alerta ante centros engañosos o irregulares</span>
                   </h3>
                   <ul className="info-util-list">
-                    <li>Lugares sin razón social médica ni aviso de COFEPRIS que se anuncian como «ayuda para el embarazo inesperado», pero buscan retrasar tu atención hasta que pasen las 12 semanas legales.</li>
-                    <li>Establecimientos que se niegan a entregarte nota médica, receta firmada con cédula profesional o hoja de signos de alarma post-procedimiento.</li>
-                    <li>Personas que ofrecen infusiones, inyecciones desconocidas o medicamentos sueltos fuera de su blíster original con registro sanitario de COFEPRIS.</li>
+                    <li>Lugares sin razón social médica ni aviso de COFEPRIS que se anuncian como «ayuda para el embarazo inesperado», pero buscan retrasar la atención hasta que pasen las 12 semanas legales.</li>
+                    <li>Establecimientos que se niegan a entregar nota médica, receta firmada con cédula profesional u hoja de signos de alarma post-procedimiento.</li>
+                    <li>Personas que ofrecen infusiones, inyecciones desconocidas o medicamentos sueltos fuera de su blíster original sin registro sanitario (COFEPRIS, 2024; CNEGSR, 2022).</li>
                   </ul>
                 </article>
               </div>
@@ -484,10 +598,10 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     Información importante sobre los centros de atención en Oaxaca (ITS y Salud Reproductiva)
                   </h2>
                   <p className="info-util-justify">
-                    Los centros verificados en el directorio de PuntOax comprenden unidades de los Servicios de Salud de Oaxaca (SSO), CAPASITS, IMSS-Bienestar y organizaciones acreditadas.
+                    Los centros verificados en el directorio de PuntOax comprenden unidades de los Servicios de Salud de Oaxaca (SSO), CAPASITS, IMSS-Bienestar y organizaciones acreditadas que operan conforme a las Normas Oficiales Mexicanas vigentes (Secretaría de Salud, 2014; Secretaría de Salud & Centro Nacional para la Prevención y el Control del VIH y el Sida [CENSIDA], 2018).
                   </p>
                   <p className="info-util-justify">
-                    Para las pruebas rápidas únicamente se toma una gota de sangre del dedo (punción capilar), no se requiere ayuno y el resultado se entrega en 15 a 30 minutos con consejería confidencial.
+                    Para las pruebas rápidas únicamente se toma una gota de sangre del dedo (punción capilar), no se requiere ayuno y el resultado se entrega en 15 a 30 minutos acompañado de consejería confidencial (Secretaría de Salud & CENSIDA, 2018).
                   </p>
                 </div>
 
@@ -510,7 +624,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     CAPASITS y Centros de Salud (SSO)
                   </h3>
                   <p className="info-util-box-text">
-                    El <strong>CAPASITS</strong> (San Bartolo Coyotepec y Salina Cruz) y los Centros de Salud Urbanos de Oaxaca realizan <strong>pruebas rápidas gratuitas de VIH, sífilis y hepatitis C</strong> en 15 a 30 minutos, además de consejería, entrega de condones y vinculación a tratamiento antirretroviral gratuito.
+                    Los <strong>CAPASITS</strong> (San Bartolo Coyotepec y Salina Cruz) y los Centros de Salud Urbanos de Oaxaca realizan <strong>pruebas rápidas gratuitas de VIH, sífilis y hepatitis C</strong> en 15 a 30 minutos, además de consejería, entrega de condones y vinculación a tratamiento antirretroviral gratuito (Secretaría de Salud & CENSIDA, 2018).
                   </p>
                 </article>
 
@@ -519,7 +633,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     Confidencialidad protegida (NOM-010-SSA2-2018)
                   </h3>
                   <p className="info-util-box-text">
-                    Bajo la <strong>NOM-010-SSA2-2018</strong> de CENSIDA, ninguna prueba de VIH o ITS puede aplicarse de manera obligatoria. Tus resultados son estrictamente confidenciales y forman parte del expediente clínico protegido por la ley; no pueden entregarse a terceros sin tu autorización.
+                    De acuerdo con la <strong>NOM-010-SSA2-2018</strong>, ninguna prueba de detección de VIH o ITS puede aplicarse de manera obligatoria. Los resultados son estrictamente confidenciales, forman parte del expediente clínico protegido por la ley y no pueden entregarse a terceros sin autorización de la persona usuaria (Secretaría de Salud & CENSIDA, 2018, numeral 6.3).
                   </p>
                 </article>
 
@@ -528,8 +642,8 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     ¿Qué llevar antes de tu visita?
                   </h3>
                   <ul className="info-util-list">
-                    <li><strong>Para pruebas rápidas de ITS/VIH:</strong> presentar CURP; no se requiere ayuno ni cita previa dentro del horario matutino de toma de muestras.</li>
-                    <li><strong>Para orientación o servicio de ILE:</strong> identificación oficial, CURP y, si cuentas con él, ultrasonido o prueba de embarazo (si no lo tienes, el centro público realiza la valoración clínica).</li>
+                    <li><strong>Para pruebas rápidas de ITS/VIH:</strong> presentar CURP; no se requiere ayuno ni cita previa dentro del horario matutino de toma de muestras (Secretaría de Salud & CENSIDA, 2018).</li>
+                    <li><strong>Para orientación o servicio de ILE:</strong> identificación oficial, CURP y, si se cuenta con él, ultrasonido o prueba de embarazo; de no contar con él, el centro público realiza la valoración clínica (CNEGSR, 2022).</li>
                   </ul>
                 </article>
               </div>
@@ -548,7 +662,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     1. VIH (Pruebas rápidas de 3.ª y 4.ª generación, CD4 y Carga Viral)
                   </h3>
                   <p className="info-util-box-text">
-                    Se aplican pruebas rápidas por punción capilar que detectan anticuerpos contra el VIH-1/2 y el <strong>antígeno p24</strong> (4.ª generación), permitiendo identificar la infección de forma más temprana. Si el resultado es reactivo, el centro realiza sin costo la prueba confirmatoria de laboratorio, conteo de linfocitos <strong>CD4</strong>, estudio de <strong>carga viral</strong> y entrega de tratamiento antirretroviral (TAR).
+                    Se aplican pruebas rápidas por punción capilar que detectan anticuerpos contra el VIH-1/2 y el <strong>antígeno p24</strong> (4.ª generación), permitiendo identificar la infección de forma más temprana. Si el resultado es reactivo, el centro realiza sin costo la prueba confirmatoria de laboratorio, conteo de linfocitos <strong>CD4</strong>, estudio de <strong>carga viral</strong> y entrega de tratamiento antirretroviral (TAR) (Secretaría de Salud & CENSIDA, 2018).
                   </p>
                 </article>
 
@@ -557,7 +671,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     2. Sífilis (Prueba rápida treponémica y estudio VDRL / RPR)
                   </h3>
                   <p className="info-util-box-text">
-                    Detecta la bacteria <em>Treponema pallidum</em> mediante pruebas rápidas individuales o duales (VIH/Sífilis) en 15 minutos, complementadas con estudios serológicos cuantitativos de laboratorio (<strong>VDRL</strong> o <strong>RPR</strong>) para confirmar la etapa de la infección y brindar tratamiento curativo inmediato con penicilina.
+                    Detecta la bacteria <em>Treponema pallidum</em> mediante pruebas rápidas individuales o duales (VIH/Sífilis) en 15 minutos, complementadas con estudios serológicos cuantitativos de laboratorio (<strong>VDRL</strong> o <strong>RPR</strong>) para confirmar la etapa de la infección y brindar tratamiento curativo con penicilina (Secretaría de Salud, 2014).
                   </p>
                 </article>
 
@@ -566,7 +680,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     3. Hepatitis B y Hepatitis C (Tamizaje HBsAg y Anti-VHC)
                   </h3>
                   <p className="info-util-box-text">
-                    Los centros realizan pruebas rápidas en sangre para detectar el antígeno de superficie del virus de la <strong>Hepatitis B (HBsAg)</strong> y anticuerpos contra el virus de la <strong>Hepatitis C (Anti-VHC)</strong>. Si el tamizaje resulta reactivo, se confirma mediante prueba molecular (PCR de carga viral) y se vincula al programa nacional de curación de Hepatitis C.
+                    Los centros realizan pruebas rápidas en sangre para detectar el antígeno de superficie del virus de la <strong>Hepatitis B (HBsAg)</strong> y anticuerpos contra el virus de la <strong>Hepatitis C (Anti-VHC)</strong>. Si el tamizaje resulta reactivo, se confirma mediante prueba molecular (PCR de carga viral) y se vincula a tratamiento antiviral gratuito (Secretaría de Salud, 2014; Secretaría de Salud & CENSIDA, 2018).
                   </p>
                 </article>
 
@@ -575,7 +689,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
                     4. VPH, Clamidia, Gonorrea y otros estudios ginecológicos
                   </h3>
                   <p className="info-util-box-text">
-                    En los Centros de Salud y clínicas especializadas también se realiza citología cervical (<strong>Papanicolaou</strong>), prueba de detección del <strong>Virus del Papiloma Humano (VPH)</strong>, exploración clínica y toma de exudado cervicovaginal o uretral para diagnosticar y tratar <strong>clamidia, gonorrea, tricomoniasis y herpes genital</strong>, además de protocolo de profilaxis <strong>PrEP y PEP</strong>.
+                    En los Centros de Salud y clínicas especializadas también se realiza citología cervical (<strong>Papanicolaou</strong>), prueba de detección del <strong>Virus del Papiloma Humano (VPH)</strong>, exploración clínica y toma de exudado cervicovaginal o uretral para diagnosticar y tratar <strong>clamidia, gonorrea, tricomoniasis y herpes genital</strong>, además del protocolo de profilaxis <strong>PrEP y PEP</strong> (Secretaría de Salud, 2014; Secretaría de Salud & CENSIDA, 2018).
                   </p>
                 </article>
               </div>
@@ -608,6 +722,30 @@ export default function InformacionUtil({ sesion, onSalir }) {
                 <p className="info-util-section-lead">
                   Toda la información de esta guía proviene de leyes estatales vigentes, Normas Oficiales Mexicanas (NOM) y organismos públicos de salud nacionales e internacionales:
                 </p>
+              </div>
+
+              {/* Lista formal de Referencias APA 7 con sangría francesa */}
+              <div className="info-util-apa-list-card" aria-label="Lista de referencias">
+                <h3 className="info-util-apa-list-heading">Referencias</h3>
+                <div className="info-util-apa-entries">
+                  {FUENTES_OFICIALES.map((fuente) => (
+                    <p key={`ref-${fuente.id}`} className="info-util-apa-hanging">
+                      {fuente.referenciaApa.autor} {fuente.referenciaApa.anio}{' '}
+                      <em>{fuente.referenciaApa.tituloCursiva}</em>{' '}
+                      {fuente.referenciaApa.edicionFuente
+                        ? `${fuente.referenciaApa.edicionFuente} `
+                        : ''}
+                      <a
+                        href={fuente.referenciaApa.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="info-util-apa-url"
+                      >
+                        {fuente.referenciaApa.url}
+                      </a>
+                    </p>
+                  ))}
+                </div>
               </div>
 
               <div className="info-util-sources-grid">

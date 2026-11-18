@@ -46,7 +46,10 @@
 }
 
 .auth-brand-title {
-  font-family: var(--serif);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Liberation Serif', Georgia, serif;
   font-weight: 700;
   font-size: 20px;
   letter-spacing: -0.4px;
@@ -54,6 +57,15 @@
   background: none;
   border: none;
   padding: 0;
+}
+
+.auth-brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: block;
+  flex-shrink: 0;
+  box-shadow: 0px 2px 6px rgba(0, 29, 20, 0.14);
 }
 
 .auth-nav-link {
@@ -204,39 +216,57 @@
   color: #AACFBF;
 }
 
-/* Caja de previsualización del mapa */
+/* Caja de previsualización del mapa e ilustración de Oaxaca */
 .auth-map-preview-box {
-  margin: 24px 0;
+  margin: 22px 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
 }
 
 .auth-map-card-inner {
+  position: relative;
   width: 100%;
   max-width: 508px;
-  height: 192px;
-  background-color: rgba(16, 51, 40, 0.8);
-  border: 1px solid rgba(170, 207, 191, 0.1);
-  border-radius: 12px;
-  box-shadow: inset 0px 2px 4px 1px rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(4px);
+  height: 196px;
+  background-color: #E1F3EA;
+  border: 2px solid rgba(197, 235, 218, 0.55);
+  border-radius: 14px;
+  box-shadow: 0px 14px 28px rgba(0, 15, 10, 0.24);
+  overflow: hidden;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-end;
   align-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.auth-oaxaca-illustration {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .auth-map-tag {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  padding: 8px 16px;
+  padding: 8px 18px;
   gap: 8px;
   background-color: #F9F9F8;
   border-radius: 9999px;
-  box-shadow: 0px 10px 15px -3px rgba(0, 0, 0, 0.1), 0px 4px 6px -4px rgba(0, 0, 0, 0.1);
-  font-family: var(--sans);
-  font-size: 16px;
-  line-height: 24px;
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.22);
+  font-family: 'Liberation Serif', Georgia, serif;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 22px;
   color: #001D14;
 }
 
@@ -576,68 +606,6 @@
   padding: 0;
 }
 
-.auth-correo-fijo {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 16px;
-  border-radius: 10px;
-  background: #d6e6e0;
-  overflow-wrap: anywhere;
-}
-
-.auth-correo-fijo strong {
-  font-size: 18px;
-  color: #103328;
-}
-
-.auth-correo-fijo small,
-.auth-codigo-casillas + small {
-  color: #414845;
-  line-height: 1.5;
-}
-
-.auth-codigo-casillas {
-  display: flex;
-  justify-content: space-between;
-  gap: clamp(4px, 1.5vw, 12px);
-  max-width: 390px;
-  width: 100%;
-}
-
-.auth-codigo-casilla {
-  box-sizing: border-box;
-  min-width: 0;
-  width: 16%;
-  height: clamp(44px, 12vw, 56px);
-  border: 2px solid #9fbab0;
-  border-radius: 9px;
-  background: white;
-  color: #103328;
-  font: 700 clamp(20px, 6vw, 26px)/1 var(--sans);
-  text-align: center;
-  transition: border-color .15s, box-shadow .15s, background-color .15s;
-}
-
-.auth-codigo-casilla:focus-visible,
-.auth-codigo-casilla.enfocada {
-  outline: 2px solid #103328;
-  outline-offset: 2px;
-  border-color: #103328;
-  box-shadow: 0 0 0 3px #d6e6e0;
-}
-
-.auth-codigo-casillas.tiene-error .auth-codigo-casilla {
-  border-color: #b42318;
-  background: #fff6f5;
-}
-
-.auth-codigo-casillas.es-correcto .auth-codigo-casilla {
-  border-color: #237554;
-  background: #e5f5ed;
-}
-
 .auth-public-link {
   font-size: 13px;
   color: #414845;
@@ -704,3 +672,57 @@
   .auth-role-toggle .auth-toggle-btn { font-size: 11px; }
   .auth-role-toggle .auth-toggle-btn svg { display: none; }
 }
+
+/* Verificación de correo (flujo vigente en main; no estaba en la rama de diseño) */
+.auth-correo-fijo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 10px;
+  background: #d6e6e0;
+  overflow-wrap: anywhere;
+}
+
+.auth-correo-fijo strong {
+  font-size: 18px;
+  color: #103328;
+}
+
+.auth-correo-fijo small,
+.auth-codigo-casillas + small {
+  color: #414845;
+  line-height: 1.5;
+}
+
+.auth-codigo-casillas {
+  display: flex;
+  justify-content: space-between;
+  gap: clamp(4px, 1.5vw, 12px);
+  max-width: 390px;
+  width: 100%;
+}
+
+.auth-codigo-casilla {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 16%;
+  height: clamp(44px, 12vw, 56px);
+  border: 2px solid #9fbab0;
+  border-radius: 9px;
+  background: white;
+  color: #103328;
+  font: 700 clamp(20px, 6vw, 26px)/1 var(--sans);
+  text-align: center;
+  transition: border-color .15s, box-shadow .15s, background-color .15s;
+}
+
+.auth-codigo-casilla:focus-visible,
+.auth-codigo-casilla.enfocada {
+  outline: 2px solid #103328;
+  outline-offset: 2px;
+  border-color: #103328;
+  box-shadow: 0 0 0 3px #d6e6e0;
+}
+
