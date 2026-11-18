@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle,
   CheckCircle2,
@@ -11,6 +11,7 @@ import {
   MapPin,
   Phone,
   Save,
+  Trash2,
 } from 'lucide-react'
 import {
   consultarCitasClinica,
@@ -20,6 +21,7 @@ import {
 } from '../../api/auth'
 import EncabezadoClinica from './EncabezadoClinica.jsx'
 import MapaLeaflet from '../Inicio/MapaLeaflet.jsx'
+import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js'
 import { OAXACA, coordenadas } from '../../utils/centros.js'
 import { filtrarCitas } from '../../utils/citasClinica'
 import { validarEmail, validarTelefono } from '../../utils/validaciones'
@@ -180,6 +182,10 @@ export default function PanelClinica({ sesion, onSalir }) {
   const [mensaje, setMensaje] = useState('')
   const [guardando, setGuardando] = useState(false)
 
+  useEffect(() => {
+    sessionStorage.setItem('puntoax_panel_aprobado', '1')
+  }, [])
+
   function setVistaActiva(nuevaVista) {
     if (nuevaVista === 'editar') {
       setSearchParams({ vista: 'editar' }, { replace: true })
@@ -260,7 +266,10 @@ export default function PanelClinica({ sesion, onSalir }) {
   }, [form])
 
   const centrosParaMapa = useMemo(() => {
-    const base = catalogoClinicas
+    const base =
+      catalogoClinicas.length > 0
+        ? catalogoClinicas
+        : normalizarYUnificarClinicas(CLINICAS_DEMO)
 
     if (!ficha?.clinica || !form) return base
 
@@ -343,19 +352,6 @@ export default function PanelClinica({ sesion, onSalir }) {
     )
   }
 
-  if (ficha?.clinica?.estado_publicacion !== 'aprobada') {
-    return (
-      <div className="panel-clinica-page">
-        <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
-        <main className="ficha-state-card">
-          <h1>Panel disponible para clínicas publicadas</h1>
-          <p>Continúa el registro de tu clínica antes de administrar los datos publicados.</p>
-          <Link to="/mi-clinica">Ir a mi ficha</Link>
-        </main>
-      </div>
-    )
-  }
-
   if (!form) return null
 
   const actualizarCampo = (campo, valor) => {
@@ -371,6 +367,23 @@ export default function PanelClinica({ sesion, onSalir }) {
     setMensaje('Se restauraron los datos guardados originalmente.')
   }
 
+  const alternarServicio = (categoria) => {
+    setForm((actual) => ({
+      ...actual,
+      servicios: {
+        ...actual.servicios,
+        [categoria]: {
+          ...actual.servicios[categoria],
+          seleccionado: !actual.servicios[categoria].seleccionado,
+          detalle: actual.servicios[categoria].seleccionado
+            ? ''
+            : actual.servicios[categoria].detalle,
+        },
+      },
+    }))
+    setMensaje('')
+  }
+
   const actualizarDetalleServicio = (categoria, detalle) => {
     setForm((actual) => ({
       ...actual,
@@ -378,6 +391,48 @@ export default function PanelClinica({ sesion, onSalir }) {
         ...actual.servicios,
         [categoria]: { ...actual.servicios[categoria], detalle },
       },
+    }))
+    setMensaje('')
+  }
+
+  const franjasDelDia = (dia) =>
+    form.horarios
+      .map((horario, indice) => ({ ...horario, indice }))
+      .filter((horario) => horario.dia_semana === dia)
+
+  const alternarDia = (dia) => {
+    const franjas = franjasDelDia(dia)
+    setForm((actual) => ({
+      ...actual,
+      horarios: franjas.length
+        ? actual.horarios.filter((horario) => horario.dia_semana !== dia)
+        : [...actual.horarios, { dia_semana: dia, apertura: '09:00', cierre: '17:00' }],
+    }))
+    setMensaje('')
+  }
+
+  const agregarFranja = (dia) => {
+    setForm((actual) => ({
+      ...actual,
+      horarios: [...actual.horarios, { dia_semana: dia, apertura: '18:00', cierre: '20:00' }],
+    }))
+    setMensaje('')
+  }
+
+  const actualizarHorario = (indice, campo, valor) => {
+    setForm((actual) => ({
+      ...actual,
+      horarios: actual.horarios.map((horario, posicion) =>
+        posicion === indice ? { ...horario, [campo]: valor } : horario
+      ),
+    }))
+    setMensaje('')
+  }
+
+  const eliminarFranja = (indice) => {
+    setForm((actual) => ({
+      ...actual,
+      horarios: actual.horarios.filter((_, posicion) => posicion !== indice),
     }))
     setMensaje('')
   }
@@ -414,7 +469,6 @@ export default function PanelClinica({ sesion, onSalir }) {
       if (respuestaHttp.ok) {
         const actualizada = await consultarMiFicha()
         setFicha(actualizada)
-        setForm(estadoInicialDesdeFicha(actualizada))
         return actualizada
       }
       const errJson = await respuestaHttp.json().catch(() => null)
@@ -786,21 +840,57 @@ export default function PanelClinica({ sesion, onSalir }) {
                     </h3>
                   </div>
 
-                  <p
-                    style={{
-                      margin: '0 0 20px',
-                      color: '#596763',
-                      fontSize: '14px',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    Puedes actualizar tus datos de contacto, la descripción y el detalle de los
-                    servicios que ya ofrece tu centro. El nombre, la dirección, la ubicación, el
-                    tipo de institución, los horarios y la lista de servicios requieren revisión
-                    del administrador.
-                  </p>
+                  <div className="panel-clinica-fields-row">
+                    <div className="panel-clinica-field-col">
+                      <label htmlFor="panel-nombre" className="panel-clinica-label">
+                        Nombre de la clínica
+                      </label>
+                      <input
+                        id="panel-nombre"
+                        type="text"
+                        maxLength={255}
+                        className="panel-clinica-input"
+                        value={form.nombre}
+                        onChange={(e) => actualizarCampo('nombre', e.target.value)}
+                        placeholder="Centro de Atención PuntoOax"
+                      />
+                    </div>
+
+                    <div className="panel-clinica-field-col">
+                      <label htmlFor="panel-municipio" className="panel-clinica-label">
+                        Municipio
+                      </label>
+                      <input
+                        id="panel-municipio"
+                        type="text"
+                        maxLength={100}
+                        className="panel-clinica-input"
+                        value={form.municipio}
+                        onChange={(e) => actualizarCampo('municipio', e.target.value)}
+                        placeholder="Oaxaca de Juárez"
+                      />
+                    </div>
+                  </div>
 
                   <div className="panel-clinica-fields-row">
+                    <div className="panel-clinica-field-col">
+                      <label htmlFor="panel-tipo" className="panel-clinica-label">
+                        Tipo de institución
+                      </label>
+                      <select
+                        id="panel-tipo"
+                        className="panel-clinica-input"
+                        value={form.tipo_institucion}
+                        onChange={(e) => actualizarCampo('tipo_institucion', e.target.value)}
+                      >
+                        <option value="">Selecciona una opción</option>
+                        <option value="publica">Pública</option>
+                        <option value="privada">Privada</option>
+                        <option value="ong">Organización social (ONG)</option>
+                        <option value="otra">Otra</option>
+                      </select>
+                    </div>
+
                     <div className="panel-clinica-field-col">
                       <label htmlFor="panel-telefono" className="panel-clinica-label">
                         Teléfono de contacto
@@ -815,7 +905,9 @@ export default function PanelClinica({ sesion, onSalir }) {
                         placeholder="951 123 4567"
                       />
                     </div>
+                  </div>
 
+                  <div className="panel-clinica-fields-row">
                     <div className="panel-clinica-field-col">
                       <label htmlFor="panel-correo" className="panel-clinica-label">
                         Correo electrónico de contacto
@@ -830,21 +922,54 @@ export default function PanelClinica({ sesion, onSalir }) {
                         placeholder="contacto@clinica.ejemplo"
                       />
                     </div>
+
+                    <div className="panel-clinica-field-col">
+                      <label htmlFor="panel-sitio" className="panel-clinica-label">
+                        Sitio web (opcional)
+                      </label>
+                      <input
+                        id="panel-sitio"
+                        type="url"
+                        maxLength={1000}
+                        className="panel-clinica-input"
+                        value={form.sitio_web}
+                        onChange={(e) => actualizarCampo('sitio_web', e.target.value)}
+                        placeholder="https://clinica.ejemplo"
+                      />
+                    </div>
                   </div>
 
-                  <div className="panel-clinica-field-full">
-                    <label htmlFor="panel-sitio" className="panel-clinica-label">
-                      Sitio web (opcional)
-                    </label>
-                    <input
-                      id="panel-sitio"
-                      type="url"
-                      maxLength={1000}
-                      className="panel-clinica-input"
-                      value={form.sitio_web}
-                      onChange={(e) => actualizarCampo('sitio_web', e.target.value)}
-                      placeholder="https://clinica.ejemplo"
-                    />
+                  <div className="panel-clinica-fields-row">
+                    <div className="panel-clinica-field-col">
+                      <label htmlFor="panel-direccion" className="panel-clinica-label">
+                        Dirección
+                      </label>
+                      <input
+                        id="panel-direccion"
+                        type="text"
+                        maxLength={500}
+                        className="panel-clinica-input"
+                        value={form.direccion}
+                        onChange={(e) => actualizarCampo('direccion', e.target.value)}
+                        placeholder="Calle, número y colonia"
+                      />
+                    </div>
+
+                    <div className="panel-clinica-field-col">
+                      <label htmlFor="panel-cp" className="panel-clinica-label">
+                        Código postal
+                      </label>
+                      <input
+                        id="panel-cp"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={5}
+                        className="panel-clinica-input"
+                        value={form.codigo_postal}
+                        onChange={(e) => actualizarCampo('codigo_postal', e.target.value)}
+                        placeholder="68000"
+                      />
+                    </div>
                   </div>
 
                   <div className="panel-clinica-field-full">
@@ -864,31 +989,128 @@ export default function PanelClinica({ sesion, onSalir }) {
 
                   <div className="panel-clinica-section-title-wrap" style={{ paddingTop: '28px' }}>
                     <h3 className="panel-clinica-section-title">
-                      Detalle de tus servicios publicados
+                      Servicios específicos del centro
                     </h3>
                   </div>
 
                   <div className="ficha-area-list" style={{ width: '100%' }}>
-                    {areasSeleccionadas.map((area) => (
-                      <div className="ficha-area-card is-selected" key={area.categoria}>
-                        <div className="ficha-field">
-                          <label htmlFor={`ficha-detalle-${area.categoria}`}>
-                            {area.nombre}
+                    {AREAS.map((area) => {
+                      const valor = form.servicios[area.categoria]
+                      return (
+                        <div
+                          className={`ficha-area-card ${valor.seleccionado ? 'is-selected' : ''}`}
+                          key={area.categoria}
+                        >
+                          <label className="ficha-check-row">
+                            <input
+                              type="checkbox"
+                              checked={valor.seleccionado}
+                              onChange={() => alternarServicio(area.categoria)}
+                            />
+                            <span>
+                              <strong>{area.nombre}</strong>
+                              <small>{area.ayuda}</small>
+                            </span>
                           </label>
-                          <textarea
-                            id={`ficha-detalle-${area.categoria}`}
-                            className="ficha-input ficha-textarea"
-                            maxLength={2000}
-                            rows={3}
-                            value={area.detalle}
-                            onChange={(evento) =>
-                              actualizarDetalleServicio(area.categoria, evento.target.value)
-                            }
-                            placeholder={area.ayuda}
-                          />
+                          {valor.seleccionado && (
+                            <div className="ficha-field">
+                              <label htmlFor={`ficha-detalle-${area.categoria}`}>
+                                Detalle de los servicios que brinda tu clínica
+                              </label>
+                              <textarea
+                                id={`ficha-detalle-${area.categoria}`}
+                                className="ficha-input ficha-textarea"
+                                maxLength={2000}
+                                rows={3}
+                                value={valor.detalle}
+                                onChange={(evento) =>
+                                  actualizarDetalleServicio(area.categoria, evento.target.value)
+                                }
+                                placeholder={area.ayuda}
+                              />
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
+                  </div>
+
+                  <div className="panel-clinica-section-title-wrap" style={{ paddingTop: '28px' }}>
+                    <h3 className="panel-clinica-section-title">
+                      Horarios de atención
+                    </h3>
+                  </div>
+
+                  <div className="ficha-days" style={{ width: '100%' }}>
+                    {DIAS.map((dia) => {
+                      const franjas = franjasDelDia(dia.numero)
+                      return (
+                        <div
+                          className={`ficha-day-card ${franjas.length ? 'is-selected' : ''}`}
+                          key={dia.numero}
+                        >
+                          <div className="ficha-day-header">
+                            <label className="ficha-check-row">
+                              <input
+                                type="checkbox"
+                                checked={franjas.length > 0}
+                                onChange={() => alternarDia(dia.numero)}
+                              />
+                              <span>
+                                <strong>{dia.nombre}</strong>
+                              </span>
+                            </label>
+                            {franjas.length > 0 && (
+                              <button
+                                type="button"
+                                className="ficha-link-button"
+                                onClick={() => agregarFranja(dia.numero)}
+                              >
+                                + Agregar franja
+                              </button>
+                            )}
+                          </div>
+                          {franjas.map((franja) => (
+                            <div className="ficha-time-row" key={franja.indice}>
+                              <div className="ficha-field">
+                                <label htmlFor={`ficha-apertura-${franja.indice}`}>Apertura</label>
+                                <input
+                                  id={`ficha-apertura-${franja.indice}`}
+                                  className="ficha-input"
+                                  type="time"
+                                  value={franja.apertura}
+                                  onChange={(evento) =>
+                                    actualizarHorario(franja.indice, 'apertura', evento.target.value)
+                                  }
+                                />
+                              </div>
+                              <div className="ficha-field">
+                                <label htmlFor={`ficha-cierre-${franja.indice}`}>Cierre</label>
+                                <input
+                                  id={`ficha-cierre-${franja.indice}`}
+                                  className="ficha-input"
+                                  type="time"
+                                  value={franja.cierre}
+                                  onChange={(evento) =>
+                                    actualizarHorario(franja.indice, 'cierre', evento.target.value)
+                                  }
+                                />
+                              </div>
+                              {franjas.length > 1 && (
+                                <button
+                                  type="button"
+                                  className="ficha-icon-button"
+                                  onClick={() => eliminarFranja(franja.indice)}
+                                  aria-label={`Eliminar franja del ${dia.nombre}`}
+                                >
+                                  <Trash2 size={16} aria-hidden="true" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
                   </div>
 
                   <div className="panel-clinica-actions-row">

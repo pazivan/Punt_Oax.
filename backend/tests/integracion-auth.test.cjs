@@ -100,6 +100,43 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     assert.equal((await llamar('/api/auth/perfil', { token: tokenAnterior })).status, 200,
       'los JWT emitidos antes de agregar version_sesion siguen siendo válidos hasta el logout');
 
+    // Cambio de contraseña desde Mi perfil: exige sesión y verifica la actual.
+    const nuevaPassword = `Nueva-${randomUUID()}`;
+    assert.equal((await llamar('/api/auth/cambiar-password', {
+      metodo: 'PATCH', datos: { passwordActual: password, passwordNueva: nuevaPassword },
+    })).status, 401, 'sin sesión no se puede cambiar la contraseña');
+    assert.equal((await llamar('/api/auth/cambiar-password', {
+      metodo: 'PATCH', token: usuario.cuerpo.token,
+      datos: { passwordActual: 'incorrecta', passwordNueva: nuevaPassword },
+    })).status, 401, 'una contraseña actual incorrecta se rechaza');
+    assert.equal((await llamar('/api/auth/cambiar-password', {
+      metodo: 'PATCH', token: usuario.cuerpo.token,
+      datos: { passwordActual: password, passwordNueva: '12345678' },
+    })).status, 400, 'la nueva contraseña debe cumplir la política');
+    assert.equal((await llamar('/api/auth/cambiar-password', {
+      metodo: 'PATCH', token: usuario.cuerpo.token,
+      datos: { passwordActual: password, passwordNueva: password },
+    })).status, 400, 'la nueva contraseña debe ser distinta de la actual');
+    assert.equal((await llamar('/api/auth/cambiar-password', {
+      metodo: 'PATCH', token: usuario.cuerpo.token,
+      datos: { passwordActual: password },
+    })).status, 400, 'faltan campos obligatorios');
+    assert.equal((await llamar('/api/auth/cambiar-password', {
+      metodo: 'PATCH', token: usuario.cuerpo.token,
+      datos: { passwordActual: password, passwordNueva: nuevaPassword },
+    })).status, 200, 'la contraseña se actualiza con los datos correctos');
+    assert.equal((await llamar('/api/auth/login-usuario', { datos: { correo, password } })).status, 401,
+      'la contraseña anterior deja de funcionar');
+    assert.equal((await llamar('/api/auth/login-usuario', { datos: { correo, password: nuevaPassword } })).status, 200,
+      'la contraseña nueva permite iniciar sesión');
+    assert.equal((await llamar('/api/auth/perfil', { token: usuario.cuerpo.token })).status, 200,
+      'la sesión abierta sigue válida después de cambiar la contraseña');
+    // Se restaura la contraseña original para el resto de la suite.
+    assert.equal((await llamar('/api/auth/cambiar-password', {
+      metodo: 'PATCH', token: usuario.cuerpo.token,
+      datos: { passwordActual: nuevaPassword, passwordNueva: password },
+    })).status, 200);
+
     // El registro vigente crea únicamente la cuenta; la ficha se completa después.
     const baseClinica = { nombre: 'Clínica Comunitaria San Jacinto', correo: correoClinica, password };
     for (const datos of [

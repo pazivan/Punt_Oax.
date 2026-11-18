@@ -24,6 +24,7 @@ import {
 import { validarEmail, validarTelefono } from '../../utils/validaciones'
 import './FichaClinica.css'
 import EncabezadoClinica from './EncabezadoClinica.jsx'
+import PanelClinica from './PanelClinica.jsx'
 
 const DIAS = [
   { numero: 0, nombre: 'Domingo' },
@@ -177,6 +178,7 @@ function CabeceraClinica({ sesion, onSalir }) {
     <EncabezadoClinica
       sesion={sesion}
       onSalir={onSalir}
+      modoPostulacion
     />
   )
 }
@@ -201,6 +203,9 @@ export default function FichaClinica({ sesion, onSalir }) {
     setFicha(datos)
     setForm(estadoInicialDesdeFicha(datos))
     setFaltantes(Array.isArray(datos.faltantes) ? datos.faltantes : [])
+    if (datos?.clinica?.estado_publicacion !== 'aprobada') {
+      sessionStorage.removeItem('puntoax_panel_aprobado')
+    }
   }
 
   async function cargarFicha() {
@@ -267,46 +272,9 @@ export default function FichaClinica({ sesion, onSalir }) {
     )
   }
 
-  // Las sedes aprobadas ya tienen ficha publicada. El editor de postulaciones
-  // se bloquea por diseño; desde aquí se consultan sus datos y se gestiona la agenda.
+  // Las sedes aprobadas ya tienen ficha publicada: abren el nuevo PanelClinica (Sprint 7).
   if (ficha?.clinica?.estado_publicacion === 'aprobada') {
-    const clinica = ficha.clinica
-    return (
-      <div className="ficha-page">
-        <CabeceraClinica sesion={sesion} onSalir={onSalir} />
-        <main className="ficha-main ficha-publicada">
-          <span className="ficha-eyebrow">CLÍNICA PUBLICADA</span>
-          <h1>{clinica.nombre}</h1>
-          <p>Tu sede ya está dada de alta y aparece en el directorio. Puedes consultar sus datos y gestionar los turnos de atención.</p>
-          <div className="ficha-publicada-acciones">
-            <Link to="/panel-clinica" className="ficha-btn-primary">Abrir panel de clínica</Link>
-            <Link to="/mi-clinica/citas" className="ficha-btn-primary">Ver mis citas</Link>
-            <Link to="/mi-clinica/agenda" className="ficha-btn-secondary">Gestionar agenda</Link>
-            <Link to="/mapa" className="ficha-btn-secondary">Ver en el mapa</Link>
-          </div>
-          <section className="ficha-publicada-datos" aria-label="Datos de la sede">
-            <h2>Datos de la sede</h2>
-            <dl>
-              <div><dt>Municipio</dt><dd>{clinica.municipio || 'No especificado'}</dd></div>
-              <div><dt>Dirección</dt><dd>{clinica.direccion || 'No especificada'}</dd></div>
-              <div><dt>Teléfono</dt><dd>{clinica.telefono || 'No especificado'}</dd></div>
-              <div><dt>Correo de contacto</dt><dd>{clinica.correo_contacto || 'No especificado'}</dd></div>
-            </dl>
-          </section>
-          <section className="ficha-publicada-datos" aria-label="Servicios de la sede">
-            <h2>Servicios</h2>
-            {ficha.servicios?.length
-              ? <ul>{ficha.servicios.map((servicio) => (
-                  <li key={servicio.id_servicio}>
-                    <strong>{servicio.nombre}</strong>
-                    {servicio.detalle_servicio && <p>{servicio.detalle_servicio}</p>}
-                  </li>
-                ))}</ul>
-              : <p>No hay servicios activos registrados.</p>}
-          </section>
-        </main>
-      </div>
-    )
+    return <PanelClinica sesion={sesion} onSalir={onSalir} />
   }
 
   const pendiente = ficha?.postulacion?.estado === 'pendiente' || ficha?.clinica?.estado_ficha === 'pendiente_revision'
@@ -1021,6 +989,11 @@ export default function FichaClinica({ sesion, onSalir }) {
                 <li>Envía la postulación para revisión.</li>
               </ol>
               <p>La publicación solo ocurre después de una aprobación administrativa.</p>
+              <div style={{ marginTop: '14px' }}>
+                <Link to="/panel-clinica" className="ficha-btn-secondary" style={{ width: '100%' }}>
+                  Ver Panel de clínica aprobada
+                </Link>
+              </div>
             </div>
           </aside>
         </div>

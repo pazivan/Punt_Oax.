@@ -1355,6 +1355,54 @@ app.post("/api/auth/login-admin", async (req, res) => {
   }
 });
 
+// Cambio de contraseña para la cuenta autenticada. Verifica la contraseña
+// actual antes de reemplazarla; no invalida la sesión en curso.
+app.patch("/api/auth/cambiar-password", autenticarToken, async (req, res) => {
+  const { passwordActual, passwordNueva } = req.body || {};
+
+  if (typeof passwordActual !== "string" || !passwordActual ||
+      typeof passwordNueva !== "string" || !passwordNueva) {
+    return res.status(400).json({ error: "Ingresa tu contraseña actual y la nueva." });
+  }
+
+  const mensajePolitica = validarPassword(passwordNueva);
+  if (mensajePolitica) return res.status(400).json({ error: mensajePolitica });
+
+  if (passwordActual === passwordNueva) {
+    return res.status(400).json({ error: "La nueva contraseña debe ser diferente a la actual." });
+  }
+
+  const cuentas = {
+    usuario: ['usuarios', 'id_usuario'],
+    clinica: ['clinicas', 'id_clinica'],
+    administrador: ['administradores', 'id_administrador'],
+  };
+  const cuenta = cuentas[req.usuario.rol];
+  if (!cuenta) return res.status(403).json({ error: "Sesión inválida." });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT password_hash FROM ${cuenta[0]} WHERE ${cuenta[1]}=$1`,
+      [req.usuario.id]
+    );
+    if (!rows[0]) return res.status(403).json({ error: "Sesión inválida." });
+
+    if (!await verificarPassword(passwordActual, rows[0].password_hash)) {
+      return res.status(401).json({ error: "La contraseña actual no es correcta." });
+    }
+
+    const hash = await hashearPassword(passwordNueva);
+    await pool.query(
+      `UPDATE ${cuenta[0]} SET password_hash=$1 WHERE ${cuenta[1]}=$2`,
+      [hash, req.usuario.id]
+    );
+    res.json({ mensaje: "Contraseña actualizada correctamente." });
+  } catch (error) {
+    console.error("Error en cambiar-password:", error.message);
+    res.status(500).json({ error: "Error interno del servidor." });
+  }
+});
+
 // Cerrar sesión invalida todos los JWT previos de esta cuenta (también los
 // abiertos en otras ventanas o dispositivos). No modifica su rol ni contraseña.
 app.post("/api/auth/cerrar-sesion", autenticarToken, async (req, res) => {

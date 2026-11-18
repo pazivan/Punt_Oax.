@@ -316,7 +316,7 @@ function App() {
     return (
       <>
         <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
-          error={errorPerfil} rolesPermitidos={['usuario']}>
+          error={errorPerfil} rolesPermitidos={['usuario', 'clinica']}>
           <MiPerfil sesion={sesion} perfil={perfil} onSalir={salir} />
         </RutaPrivada>
         {modalConfirmacionSalir}
@@ -355,7 +355,7 @@ function App() {
 
   if (pathname === '/mi-clinica/agenda') {
     return <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
-      error={errorPerfil} rolesPermitidos={['clinica']}><AgendaClinica /></RutaPrivada>
+      error={errorPerfil} rolesPermitidos={['clinica']}><AgendaClinica sesion={sesion} onSalir={salir} /></RutaPrivada>
   }
 
   if (pathname === '/mi-clinica') {

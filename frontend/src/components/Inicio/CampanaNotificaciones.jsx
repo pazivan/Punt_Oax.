@@ -14,7 +14,6 @@ import {
   filtrarCitas,
   formatearFechaCita,
 } from '../../utils/citasClinica.js';
-import './CampanaNotificaciones.css';
 
 /**
  * CampanaNotificaciones - Módulo de notificaciones y recordatorios de citas próximas
@@ -22,20 +21,21 @@ import './CampanaNotificaciones.css';
  * Calcula en el frontend cuánto tiempo falta para cada cita confirmada a partir
  * de los datos devueltos por GET /api/citas (consultarCitasUsuario).
  */
-export default function CampanaNotificaciones({ sesion }) {
+export default function CampanaNotificaciones({ sesion, citasPreCargadas = null }) {
   const esUsuarioNormal = !sesion?.tipo || sesion?.tipo === 'usuario';
   const [abierto, setAbierto] = useState(false);
   const [citasInternas, setCitasInternas] = useState([]);
   const [errorCitas, setErrorCitas] = useState(false);
-  const [cargando, setCargando] = useState(() => Boolean(esUsuarioNormal));
+  const [cargando, setCargando] = useState(
+    () => Boolean(esUsuarioNormal && !Array.isArray(citasPreCargadas))
+  );
   const [ahora, setAhora] = useState(() => Date.now());
   const contenedorRef = useRef(null);
 
   useEffect(() => {
-    if (!esUsuarioNormal) return undefined;
+    if (!esUsuarioNormal || Array.isArray(citasPreCargadas)) return undefined;
 
     let activo = true;
-    // Actualizar al abrir: una reserva o cancelación pudo ocurrir en otra vista.
     consultarCitasUsuario()
       .then((res) => {
         if (!activo) return;
@@ -53,7 +53,9 @@ export default function CampanaNotificaciones({ sesion }) {
     return () => {
       activo = false;
     };
-  }, [esUsuarioNormal, abierto]);
+    // Al abrir se vuelve a consultar: una reserva o cancelación pudo ocurrir
+    // en otra vista. Si la vista ya entregó las citas, no se repite la llamada.
+  }, [esUsuarioNormal, citasPreCargadas, abierto]);
 
   // Actualiza el reloj cada minuto para mantener al día el cálculo de "cuánto falta"
   useEffect(() => {
@@ -81,9 +83,10 @@ export default function CampanaNotificaciones({ sesion }) {
     };
   }, [abierto]);
 
+  const fuenteCitas = Array.isArray(citasPreCargadas) ? citasPreCargadas : citasInternas;
   const citasProximas = useMemo(
-    () => filtrarCitas(citasInternas, 'proximas', ahora),
-    [citasInternas, ahora]
+    () => filtrarCitas(fuenteCitas, 'proximas', ahora),
+    [fuenteCitas, ahora]
   );
 
   if (!esUsuarioNormal) return null;

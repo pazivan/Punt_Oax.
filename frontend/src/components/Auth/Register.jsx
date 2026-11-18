@@ -173,7 +173,8 @@ export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar,
               onClick={onBackToPublic}
               disabled={loading}
             >
-              PuntOax
+              <img src="/logo-puntoax.svg" alt="" className="auth-brand-logo" aria-hidden="true" />
+              <span>PuntOax</span>
             </button>
             <button
               type="button"
@@ -228,6 +229,12 @@ export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar,
               {/* Previsualización de mapa con badge PuntOax · Oaxaca */}
               <div className="auth-map-preview-box">
                 <div className="auth-map-card-inner">
+                  <img
+                    src="/img/oaxaca-panel-ilustracion.svg"
+                    alt=""
+                    className="auth-oaxaca-illustration"
+                    aria-hidden="true"
+                  />
                   <div className="auth-map-tag">
                     <span className="auth-map-dot" aria-hidden="true"></span>
                     <span>PuntOax · Oaxaca</span>

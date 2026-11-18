@@ -54,12 +54,68 @@ export function filtrarCitas(citas, filtro, ahora = Date.now()) {
 
 export function calcularTiempoRestanteCita(fechaHoraInicio, ahora = Date.now()) {
   const destino = new Date(fechaHoraInicio).getTime()
-  if (!Number.isFinite(destino)) return { esUrgente: false, etiqueta: 'Horario por confirmar' }
-  const minutos = Math.ceil((destino - ahora) / 60000)
-  if (minutos <= 0) return { esUrgente: false, etiqueta: 'En curso o finalizada' }
-  if (minutos < 60) return { esUrgente: true, etiqueta: `Faltan ${minutos} min` }
-  const horas = Math.floor(minutos / 60)
-  if (horas < 24) return { esUrgente: true, etiqueta: `Faltan ${horas} h` }
-  const dias = Math.floor(horas / 24)
-  return { esUrgente: dias <= 2, etiqueta: `Faltan ${dias} días` }
+  if (!Number.isFinite(destino)) {
+    return {
+      esFutura: false,
+      esUrgente: false,
+      etiqueta: 'Horario por confirmar',
+      detalle: 'Consulta los detalles de tu cita.',
+    }
+  }
+
+  const diffMs = destino - ahora
+  if (diffMs <= 0) {
+    return {
+      esFutura: false,
+      esUrgente: false,
+      etiqueta: 'En curso o finalizada',
+      detalle: 'Esta cita ya alcanzó su hora programada.',
+    }
+  }
+
+  const totalMinutos = Math.max(1, Math.ceil(diffMs / 60000))
+  const totalHoras = Math.floor(totalMinutos / 60)
+  const minutosRestantes = totalMinutos % 60
+  const diasCompletos = Math.floor(totalHoras / 24)
+  const horasRestantesDia = totalHoras % 24
+
+  if (totalMinutos < 60) {
+    return {
+      esFutura: true,
+      esUrgente: true,
+      etiqueta: `Faltan ${totalMinutos} min`,
+      detalle: `Tu cita comienza en ${totalMinutos} minuto${totalMinutos === 1 ? '' : 's'}.`,
+    }
+  }
+
+  if (totalHoras < 24) {
+    const sufijoMin = minutosRestantes > 0 ? ` ${minutosRestantes} min` : ''
+    return {
+      esFutura: true,
+      esUrgente: true,
+      etiqueta: `Faltan ${totalHoras} h${sufijoMin}`,
+      detalle: `Faltan ${totalHoras} hora${totalHoras === 1 ? '' : 's'}${minutosRestantes > 0 ? ` y ${minutosRestantes} min` : ''} para tu cita.`,
+    }
+  }
+
+  if (diasCompletos === 1) {
+    return {
+      esFutura: true,
+      esUrgente: true,
+      etiqueta: horasRestantesDia > 0 ? `Falta 1 día y ${horasRestantesDia} h` : 'Falta 1 día',
+      detalle: horasRestantesDia > 0
+        ? `Falta 1 día y ${horasRestantesDia} hora${horasRestantesDia === 1 ? '' : 's'} para tu cita.`
+        : 'Falta 1 día para acudir a tu cita.',
+    }
+  }
+
+  return {
+    esFutura: true,
+    esUrgente: diasCompletos <= 2,
+    etiqueta: `Faltan ${diasCompletos} días`,
+    detalle: horasRestantesDia > 0
+      ? `Faltan ${diasCompletos} días y ${horasRestantesDia} h para tu cita.`
+      : `Faltan ${diasCompletos} días para acudir a tu cita.`,
+  }
 }
+

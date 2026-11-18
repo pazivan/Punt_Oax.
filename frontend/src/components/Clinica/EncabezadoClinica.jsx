@@ -1,37 +1,190 @@
-
 import { Link, useLocation } from 'react-router-dom'
 import { User } from 'lucide-react'
 import '../../styles/Inicio.css'
 
-export default function EncabezadoClinica({ sesion, onSalir }) {
-  const { pathname } = useLocation()
+export default function EncabezadoClinica({
+  sesion,
+  onSalir,
+  modoPostulacion = false,
+  vistaPanel = null,
+  onSeleccionarVistaPanel = null,
+  vistaCitas = null,
+  onSeleccionarVistaCitas = null,
+}) {
+  const { pathname, search } = useLocation()
+  const params = new URLSearchParams(search)
+  const vistaQuery = params.get('vista')
 
-  const enlaces = [
-    { ruta: '/mi-clinica', texto: 'Inicio' },
-    { ruta: '/mapa', texto: 'Mapa de centros' },
-    { ruta: '/mi-clinica/citas', texto: 'Mis citas' },
-    { ruta: '/mi-clinica/agenda', texto: 'Agenda' },
-    { ruta: '/panel-clinica', texto: 'Panel' },
-    { ruta: '/informacion-util', texto: 'Información útil' },
+  const enPostulacion =
+    modoPostulacion === true ||
+    (modoPostulacion !== false &&
+      sesion?.cuenta?.estado_publicacion !== 'aprobada' &&
+      sessionStorage.getItem('puntoax_panel_aprobado') !== '1')
+
+  if (enPostulacion) {
+    const enlacesPostulacion = [
+      { ruta: '/mi-clinica', texto: 'Inicio' },
+      { ruta: '/mapa', texto: 'Mapa de centros' },
+    ]
+
+    return (
+      <header className="inicio-header">
+        <div className="inicio-header-container">
+          <div className="inicio-header-left">
+            <div className="inicio-brand-wrap">
+              <Link
+                to="/mi-clinica"
+                className="inicio-brand"
+                style={{ textDecoration: 'none' }}
+              >
+                <img
+                  src="/logo-puntoax.svg"
+                  alt=""
+                  className="inicio-brand-logo"
+                  aria-hidden="true"
+                />
+                <span>PuntOax</span>
+              </Link>
+            </div>
+
+            <nav
+              className="inicio-nav agendar-header-nav"
+              aria-label="Navegación principal"
+            >
+              {enlacesPostulacion.map(({ ruta, texto }) => {
+                const activo = pathname === ruta
+                return (
+                  <Link
+                    key={ruta}
+                    to={ruta}
+                    className={`inicio-nav-link ${activo ? 'active' : ''}`}
+                    aria-current={activo ? 'page' : undefined}
+                  >
+                    {activo ? (
+                      <span className="inicio-nav-link-active-text">
+                        {texto}
+                      </span>
+                    ) : (
+                      texto
+                    )}
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
+
+          <div className="inicio-header-right">
+            <Link
+              to="/mi-perfil"
+              className={`inicio-header-profile-link ${pathname === '/mi-perfil' ? 'is-active' : ''}`}
+              title={sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi perfil'}
+              aria-current={pathname === '/mi-perfil' ? 'page' : undefined}
+            >
+              <span className="inicio-avatar-circle" aria-hidden="true">
+                <User size={14} color="#FFFFFF" />
+              </span>
+              <span>Mi perfil</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={onSalir}
+              className="inicio-header-logout-btn"
+            >
+              Salir
+            </button>
+          </div>
+        </div>
+      </header>
+    )
+  }
+
+  // Encabezado unificado para todas las pestañas de la clínica aprobada
+  const vistaPanelEfectiva =
+    vistaPanel || (vistaQuery === 'editar' ? 'editar' : 'inicio')
+  const vistaCitasEfectiva =
+    vistaCitas || (vistaQuery === 'calendario' ? 'calendario' : 'listado')
+
+  const enPanel = pathname === '/panel-clinica' || pathname === '/mi-clinica'
+  const enCitas = pathname === '/mi-clinica/citas'
+
+  const elementosAprobada = [
+    {
+      id: 'inicio',
+      texto: 'Inicio',
+      ruta: '/panel-clinica',
+      activo: enPanel && vistaPanelEfectiva === 'inicio',
+      onClickLocal:
+        enPanel && typeof onSeleccionarVistaPanel === 'function'
+          ? () => onSeleccionarVistaPanel('inicio')
+          : null,
+    },
+    {
+      id: 'mapa',
+      texto: 'Ver mapa',
+      ruta: '/mapa',
+      activo: pathname === '/mapa',
+      onClickLocal: null,
+    },
+    {
+      id: 'editar',
+      texto: 'Editar información',
+      ruta: '/panel-clinica?vista=editar',
+      activo: enPanel && vistaPanelEfectiva === 'editar',
+      onClickLocal:
+        enPanel && typeof onSeleccionarVistaPanel === 'function'
+          ? () => onSeleccionarVistaPanel('editar')
+          : null,
+    },
+    {
+      id: 'citas',
+      texto: 'Mis citas',
+      ruta: '/mi-clinica/citas',
+      activo: enCitas && vistaCitasEfectiva === 'listado',
+      onClickLocal:
+        enCitas && typeof onSeleccionarVistaCitas === 'function'
+          ? () => onSeleccionarVistaCitas('listado')
+          : null,
+    },
+    {
+      id: 'calendario',
+      texto: 'Ver calendario',
+      ruta: '/mi-clinica/citas?vista=calendario',
+      activo: enCitas && vistaCitasEfectiva === 'calendario',
+      onClickLocal:
+        enCitas && typeof onSeleccionarVistaCitas === 'function'
+          ? () => onSeleccionarVistaCitas('calendario')
+          : null,
+    },
   ]
 
   const nombreOCorreo =
     sesion?.cuenta?.nombre ||
     sesion?.cuenta?.correo ||
-    'Mi cuenta'
+    'Mi clínica'
 
   return (
     <header className="inicio-header">
       <div className="inicio-header-container">
         <div className="inicio-header-left">
-
           <div className="inicio-brand-wrap">
             <Link
-              to="/mi-clinica"
+              to="/panel-clinica"
               className="inicio-brand"
               style={{ textDecoration: 'none' }}
+              onClick={() => {
+                if (enPanel && typeof onSeleccionarVistaPanel === 'function') {
+                  onSeleccionarVistaPanel('inicio')
+                }
+              }}
             >
-              PuntOax
+              <img
+                src="/logo-puntoax.svg"
+                alt=""
+                className="inicio-brand-logo"
+                aria-hidden="true"
+              />
+              <span>PuntOax</span>
             </Link>
           </div>
 
@@ -39,12 +192,26 @@ export default function EncabezadoClinica({ sesion, onSalir }) {
             className="inicio-nav agendar-header-nav"
             aria-label="Navegación principal"
           >
-            {enlaces.map(({ ruta, texto }) => {
-              const activo = pathname === ruta
-
-              return (
+            {elementosAprobada.map(({ id, texto, ruta, activo, onClickLocal }) =>
+              onClickLocal ? (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={onClickLocal}
+                  className={`inicio-nav-link ${activo ? 'active' : ''}`}
+                  aria-current={activo ? 'page' : undefined}
+                >
+                  {activo ? (
+                    <span className="inicio-nav-link-active-text">
+                      {texto}
+                    </span>
+                  ) : (
+                    texto
+                  )}
+                </button>
+              ) : (
                 <Link
-                  key={ruta}
+                  key={id}
                   to={ruta}
                   className={`inicio-nav-link ${activo ? 'active' : ''}`}
                   aria-current={activo ? 'page' : undefined}
@@ -58,17 +225,21 @@ export default function EncabezadoClinica({ sesion, onSalir }) {
                   )}
                 </Link>
               )
-            })}
+            )}
           </nav>
         </div>
 
         <div className="inicio-header-right">
           <Link
-            to="/mi-clinica"
-            className="inicio-header-account-link"
+            to="/mi-perfil"
+            className={`inicio-header-profile-link ${pathname === '/mi-perfil' ? 'is-active' : ''}`}
             title={nombreOCorreo}
+            aria-current={pathname === '/mi-perfil' ? 'page' : undefined}
           >
-            Mi cuenta
+            <span className="inicio-avatar-circle" aria-hidden="true">
+              <User size={14} color="#FFFFFF" />
+            </span>
+            <span>Mi perfil</span>
           </Link>
 
           <button
@@ -78,12 +249,6 @@ export default function EncabezadoClinica({ sesion, onSalir }) {
           >
             Salir
           </button>
-
-          <div className="inicio-avatar-margin">
-            <div className="inicio-avatar-circle" aria-hidden="true">
-              <User size={14} color="#FFFFFF" />
-            </div>
-          </div>
         </div>
       </div>
     </header>
