@@ -2672,6 +2672,19 @@
   white-space: nowrap;
 }
 
+.detalle-fuentes-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.detalle-fuente-boton {
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 960px) {
   .info-util-intro-layout,
   .info-util-grid-2,
