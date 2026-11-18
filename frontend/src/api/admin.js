@@ -9,6 +9,11 @@ export function consultarSolicitudAdmin(idSolicitud) {
   return enviarConSesion(`/api/admin/solicitudes/${encodeURIComponent(idSolicitud)}`)
 }
 
+// Listado de solo lectura de las cuentas de usuario registradas.
+export function consultarUsuariosAdmin() {
+  return enviarConSesion('/api/admin/usuarios')
+}
+
 export function resolverSolicitudAdmin(idSolicitud, decision, observaciones = '') {
   return enviarConSesion(`/api/admin/solicitudes/${encodeURIComponent(idSolicitud)}`, {
     method: 'PATCH',

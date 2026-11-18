@@ -375,13 +375,14 @@ function App() {
     )
   }
 
-  if (pathname === '/admin' || /^\/admin\/solicitudes\/[^/]+$/.test(pathname)) {
+  if (pathname === '/admin' || pathname === '/admin/usuarios' || /^\/admin\/solicitudes\/[^/]+$/.test(pathname)) {
     return (
       <>
         <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
           error={errorPerfil} rolesPermitidos={['administrador']}>
           <Administracion sesion={sesion} onSalir={salir}
-            idSolicitud={pathname === '/admin' ? null : pathname.split('/')[3]} />
+            listaUsuarios={pathname === '/admin/usuarios'}
+            idSolicitud={pathname === '/admin' || pathname === '/admin/usuarios' ? null : pathname.split('/')[3]} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>

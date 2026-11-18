@@ -11,6 +11,7 @@ import {
   User,
 } from 'lucide-react';
 import CampanaNotificaciones from './CampanaNotificaciones.jsx';
+import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
 import '../../styles/Inicio.css';
 import { normalizarUrlExterna } from '../../utils/enlaces.js';
 
@@ -49,7 +50,10 @@ export default function DetalleCentro({
   if (!clinica) return null;
 
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
-  const rutaInicio = sesion ? '/cuenta' : '/';
+  const esAdmin = sesion?.tipo === 'administrador';
+  const esUsuario = !sesion || sesion.tipo === 'usuario';
+  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/cuenta') : '/';
+  const rutaPerfil = esAdmin ? '/admin' : '/mi-perfil';
   const servicios = Array.isArray(clinica.servicios) ? clinica.servicios : [];
   const linksRelacionados = Array.isArray(clinica.links_relacionados)
     ? clinica.links_relacionados.filter(Boolean)
@@ -64,6 +68,9 @@ export default function DetalleCentro({
   return (
     <div className="detalle-page">
       {/* Header (80px) */}
+      {sesion?.tipo === 'clinica' ? (
+        <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
+      ) : (
       <header className="inicio-header">
         <div className="inicio-header-container">
           <div className="inicio-header-left">
@@ -94,6 +101,10 @@ export default function DetalleCentro({
               <Link to="/mi-clinica/citas" className="inicio-nav-link">
                   Mis citas
                 </Link>
+              ) : esAdmin ? (
+                <Link to="/admin" className="inicio-nav-link">
+                  Administración
+                </Link>
               ) : (
                 <>
                   <Link to="/agendar-cita" className="inicio-nav-link">
@@ -118,14 +129,14 @@ export default function DetalleCentro({
                 <CampanaNotificaciones sesion={sesion} />
 
                 <Link
-                  to="/mi-perfil"
+                  to={rutaPerfil}
                   className="inicio-header-profile-link"
                   title={nombreOCorreo}
                 >
                   <span className="inicio-avatar-circle" aria-hidden="true">
                     <User size={14} color="#FFFFFF" />
                   </span>
-                  <span>Mi perfil</span>
+                  <span>{esAdmin ? 'Administración' : 'Mi perfil'}</span>
                 </Link>
 
                 <button
@@ -145,6 +156,7 @@ export default function DetalleCentro({
           </div>
         </div>
       </header>
+      )}
 
       {/* Main (padding-top: 80px) */}
       <main className="detalle-main">
@@ -392,38 +404,41 @@ export default function DetalleCentro({
                 )
               )}
 
-              {/* Visit Organization */}
-              <div className="detalle-visit-org">
-                <h3 className="detalle-before-visit-title">Organiza tu visita</h3>
-                <p className="detalle-ubicacion-address">
-                  Elige la fecha y el horario que mejor se adapten a ti.
-                </p>
-              </div>
+              {/* Solo pacientes pueden agendar; administración y clínicas no. */}
+              {esUsuario && <>
+                {/* Visit Organization */}
+                <div className="detalle-visit-org">
+                  <h3 className="detalle-before-visit-title">Organiza tu visita</h3>
+                  <p className="detalle-ubicacion-address">
+                    Elige la fecha y el horario que mejor se adapten a ti.
+                  </p>
+                </div>
 
-              {/* Action Button -> Button (height: 52px) */}
-              {typeof onAgendarCita === 'function' ? (
-                <button
-                  type="button"
-                  onClick={() => onAgendarCita(clinica)}
-                  className="detalle-schedule-btn"
-                >
-                  <span className="detalle-schedule-btn-text">Agendar cita</span>
-                  <span className="detalle-schedule-btn-icon" aria-hidden="true">
-                    <ArrowRight size={14} color="#FFFFFF" />
-                  </span>
-                </button>
-              ) : (
-                <Link
-                  to="/agendar-cita"
-                  className="detalle-schedule-btn"
-                  style={{ textDecoration: 'none' }}
-                >
-                  <span className="detalle-schedule-btn-text">Agendar cita</span>
-                  <span className="detalle-schedule-btn-icon" aria-hidden="true">
-                    <ArrowRight size={14} color="#FFFFFF" />
-                  </span>
-                </Link>
-              )}
+                {/* Action Button -> Button (height: 52px) */}
+                {typeof onAgendarCita === 'function' ? (
+                  <button
+                    type="button"
+                    onClick={() => onAgendarCita(clinica)}
+                    className="detalle-schedule-btn"
+                  >
+                    <span className="detalle-schedule-btn-text">Agendar cita</span>
+                    <span className="detalle-schedule-btn-icon" aria-hidden="true">
+                      <ArrowRight size={14} color="#FFFFFF" />
+                    </span>
+                  </button>
+                ) : (
+                  <Link
+                    to="/agendar-cita"
+                    className="detalle-schedule-btn"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <span className="detalle-schedule-btn-text">Agendar cita</span>
+                    <span className="detalle-schedule-btn-icon" aria-hidden="true">
+                      <ArrowRight size={14} color="#FFFFFF" />
+                    </span>
+                  </Link>
+                )}
+              </>}
             </aside>
           </div>
         </div>

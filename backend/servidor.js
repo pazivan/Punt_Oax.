@@ -10,6 +10,7 @@ const { fichaPublica } = require("./catalogoPublico");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
 const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
+const { registrarRutasAdminUsuarios } = require("./adminUsuarios");
 const { registrarRutasAgendaClinica } = require("./agendaClinica");
 const { registrarRutasDatosClinica } = require("./datosClinica");
 const { registrarRutasCorreo, permitido } = require("./correo");
@@ -1452,6 +1453,9 @@ app.get(
    
    // Revisión de clínicas por el administrador (Sprint 7 · issue #66). Ver backend/adminClinicas.js
 registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, prepararCarpetaDocumentos });
+
+// Listado de usuarios registrados para el administrador (solo lectura).
+registrarRutasAdminUsuarios(app, { pool, autenticarToken, requerirRol });
 
 // Datos de la clínica publicada desde su panel (Sprint 7 · issue #65). Ver backend/datosClinica.js
 registrarRutasDatosClinica(app, { pool, autenticarToken, requerirRol });

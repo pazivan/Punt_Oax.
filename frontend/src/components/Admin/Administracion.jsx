@@ -5,11 +5,11 @@ import {
   CheckCircle2, ChevronRight, CircleHelp, ClipboardList, Clock3,
   Download, Eye, EyeOff, FileText, LayoutDashboard, LoaderCircle,
   LogOut, Mail, MapPin, Phone, RefreshCw, Search, ShieldCheck,
-  SlidersHorizontal, X, XCircle,
+  SlidersHorizontal, User, Users, X, XCircle,
 } from 'lucide-react'
 import {
   cambiarVisibilidadAdmin, consultarSolicitudAdmin, consultarSolicitudesAdmin,
-  descargarDocumentoAdmin, resolverSolicitudAdmin,
+  consultarUsuariosAdmin, descargarDocumentoAdmin, resolverSolicitudAdmin,
 } from '../../api/admin.js'
 import './Administracion.css'
 
@@ -55,6 +55,14 @@ function Estado({ estado }) {
     <span aria-hidden="true" className="admin-estado-punto" />{etiquetaEstado(estado)}
   </span>
 }
+function EstadoVerificacion({ verificado }) {
+  return <span className={`admin-estado admin-estado--${verificado ? 'aprobada' : 'pendiente'}`}>
+    <span aria-hidden="true" className="admin-estado-punto" />{verificado ? 'Verificado' : 'Sin verificar'}
+  </span>
+}
+function nombreCompleto(usuario) {
+  return [usuario.nombre, usuario.apellidos].filter((v) => typeof v === 'string' && v.trim()).join(' ').trim()
+}
 function estadoEfectivo(solicitud) {
   return solicitud.estado === 'aprobada' && solicitud.estado_publicacion === 'suspendida'
     ? 'suspendida' : solicitud.estado
@@ -74,12 +82,14 @@ function Lateral({ perfil, onSalir, detalle }) {
   const nombre = perfil?.cuenta?.nombre || perfil?.cuenta?.correo || 'Administrador'
   const location = useLocation()
   const estado = new URLSearchParams(location.search).get('estado')
-  const seccionActiva = detalle ? '' : (estado || 'resumen')
+  const enUsuarios = location.pathname === '/admin/usuarios'
+  const seccionActiva = detalle ? '' : enUsuarios ? 'usuarios' : (estado || 'resumen')
   const opciones = [
     { valor: 'resumen', destino: '/admin', titulo: 'Resumen y solicitudes', Icono: LayoutDashboard },
     { valor: 'pendiente', destino: '/admin?estado=pendiente', titulo: 'Pendientes de revisión', Icono: Clock3 },
     { valor: 'aprobada', destino: '/admin?estado=aprobada', titulo: 'Clínicas aprobadas', Icono: Building2 },
     { valor: 'suspendida', destino: '/admin?estado=suspendida', titulo: 'Clínicas ocultas', Icono: EyeOff },
+    { valor: 'usuarios', destino: '/admin/usuarios', titulo: 'Usuarios registrados', Icono: Users },
   ]
   return <aside className="admin-aside">
     <Link to="/admin" className="admin-logo"><span className="admin-logo-icon"><ShieldCheck size={22} /></span><span>PuntOax<small>PANEL DE ADMINISTRACIÓN</small></span></Link>
@@ -195,6 +205,82 @@ function ListaSolicitudes({ onSalir }) {
         </section>
       </>}
       <p className="admin-nota"><CircleHelp size={16} />Los registros provienen del API de administración. Solo las clínicas aprobadas y visibles aparecen en el catálogo público.</p>
+    </div>
+  </>
+}
+
+function ListaUsuarios({ onSalir }) {
+  const [usuarios, setUsuarios] = useState([])
+  const [total, setTotal] = useState(0)
+  const [busqueda, setBusqueda] = useState('')
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+  const [recarga, setRecarga] = useState(0)
+
+  useEffect(() => {
+    let activo = true
+    consultarUsuariosAdmin()
+      .then((datos) => {
+        if (activo) {
+          if (!Array.isArray(datos.usuarios)) throw new Error('La lista recibida no tiene el formato esperado.')
+          setUsuarios(datos.usuarios)
+          setTotal(Number.isInteger(datos.total) ? datos.total : datos.usuarios.length)
+          setError('')
+        }
+      })
+      .catch((err) => { if (activo) setError(err.message) })
+      .finally(() => { if (activo) setCargando(false) })
+    return () => { activo = false }
+  }, [recarga])
+
+  const visibles = useMemo(() => {
+    const consulta = busqueda.trim().toLocaleLowerCase('es-MX')
+    if (!consulta) return usuarios
+    return usuarios.filter((u) => [u.correo, u.nombre, u.apellidos, u.telefono]
+      .some((v) => String(v || '').toLocaleLowerCase('es-MX').includes(consulta)))
+  }, [usuarios, busqueda])
+
+  const verificados = usuarios.filter((u) => u.correo_verificado).length
+  const estadisticas = [
+    { titulo: 'Cuentas registradas', valor: total, icono: Users, estilo: 'neutro' },
+    { titulo: 'En este listado', valor: usuarios.length, icono: ClipboardList, estilo: 'ambar' },
+    { titulo: 'Correos verificados', valor: verificados, icono: CheckCircle2, estilo: 'verde' },
+  ]
+
+  function recargar() { setCargando(true); setRecarga((v) => v + 1) }
+
+  return <>
+    <Encabezado titulo="Usuarios registrados" descripcion="Consulta las cuentas de paciente creadas en PuntOax." onSalir={onSalir}
+      acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>} />
+    <div className="admin-cuerpo">
+      <div className="admin-bienvenida">
+        <div><span className="admin-eyebrow">GESTIÓN DE CUENTAS</span><h2>Cuentas de usuario</h2><p>Listado de solo lectura: no muestra contraseñas ni permite modificar cuentas.</p></div>
+        <span className="admin-bienvenida-icon"><Users size={38} /></span>
+      </div>
+      {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
+      {cargando ? <Cargando mensaje="Consultando usuarios…" /> : !error && <>
+        <section className="admin-resumen" aria-label="Resumen de usuarios">
+          {estadisticas.map(({ titulo, valor, icono: Icono, estilo }) => <article className="admin-metrica" key={titulo}>
+            <div className={`admin-metrica-icon admin-metrica-icon--${estilo}`}><Icono size={20} /></div>
+            <span>{titulo}</span><strong>{valor}</strong>
+          </article>)}
+        </section>
+        <section className="admin-panel" aria-labelledby="admin-usuarios-titulo">
+          <div className="admin-panel-header"><div><span className="admin-eyebrow">CUENTAS DE PACIENTE</span><h2 id="admin-usuarios-titulo">Usuarios <span className="admin-contador">{visibles.length}</span></h2><p>{total > usuarios.length ? `Se muestran las ${usuarios.length} cuentas más recientes de ${total}.` : 'Todas las cuentas registradas en la plataforma.'}</p></div></div>
+          <div className="admin-herramientas">
+            <label className="admin-buscador"><Search size={17} aria-hidden="true" /><span className="admin-solo-lectores">Buscar por correo, nombre o teléfono</span><input type="search" value={busqueda} placeholder="Buscar correo, nombre o teléfono" onChange={(e) => setBusqueda(e.target.value)} /></label>
+          </div>
+          {visibles.length ? <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Usuario</th><th>Teléfono</th><th>Registro</th><th>Correo</th><th>Acceso</th></tr></thead><tbody>
+            {visibles.map((u) => <tr key={u.id_usuario}>
+              <td><div className="admin-fila-clinica"><span className="admin-fila-icon"><User size={19} /></span><div><strong>{nombreCompleto(u) || 'Sin nombre registrado'}</strong><small>{texto(u.correo)}</small></div></div></td>
+              <td><span className="admin-celda-icon"><Phone size={15} />{texto(u.telefono)}</span></td>
+              <td><span className="admin-celda-icon"><CalendarDays size={15} />{fecha(u.fecha_registro)}</span></td>
+              <td><EstadoVerificacion verificado={Boolean(u.correo_verificado)} /></td>
+              <td>{[u.acceso_password ? 'Contraseña' : null, u.acceso_google ? 'Google' : null].filter(Boolean).join(' · ') || 'No especificado'}</td>
+            </tr>)}</tbody></table></div> : <div className="admin-sin-datos"><Users size={30} /><strong>No hay usuarios con esta búsqueda</strong><p>{busqueda ? 'Prueba con otro correo, nombre o teléfono.' : 'Todavía no se ha registrado ninguna cuenta de usuario.'}</p></div>}
+        </section>
+      </>}
+      <p className="admin-nota"><CircleHelp size={16} />El listado es de solo lectura y muestra hasta 200 cuentas, de la más reciente a la más antigua. Las contraseñas nunca se envían al navegador.</p>
     </div>
   </>
 }
@@ -371,10 +457,10 @@ function DetalleSolicitud({ idSolicitud, onSalir }) {
   </>
 }
 
-export default function Administracion({ sesion, onSalir, idSolicitud = null }) {
+export default function Administracion({ sesion, onSalir, idSolicitud = null, listaUsuarios = false }) {
   return <div className="admin-app"><Lateral perfil={sesion} onSalir={onSalir} detalle={Boolean(idSolicitud)} />
     <div className="admin-contenedor"><main className="admin-main">
-      {idSolicitud ? <DetalleSolicitud key={idSolicitud} idSolicitud={idSolicitud} onSalir={onSalir} /> : <ListaSolicitudes onSalir={onSalir} />}
+      {listaUsuarios ? <ListaUsuarios onSalir={onSalir} /> : idSolicitud ? <DetalleSolicitud key={idSolicitud} idSolicitud={idSolicitud} onSalir={onSalir} /> : <ListaSolicitudes onSalir={onSalir} />}
     </main><footer className="admin-footer">© 2026 PuntOax · Panel de administración · Oaxaca</footer></div>
   </div>
 }
