@@ -75,7 +75,11 @@ export default function CorreoCuenta({ modo, onVerificada, onCambiarCorreo }) {
     return <Navigate to="/login" state={{ aviso: 'Escribe tu correo en el acceso para continuar la verificación.' }} replace />
   }
 
-  return <main className="auth-page-wrapper"><div className="auth-main"><section className="auth-right-panel">
+  return <main className="auth-page-wrapper auth-simple-page"><div className="auth-main"><section className="auth-right-panel">
+    <Link to="/" className="auth-simple-brand">
+      <img src="/logo-puntoax.svg" alt="" className="auth-brand-logo" aria-hidden="true" />
+      <span>PuntOax</span>
+    </Link>
     <div className="auth-form-inner">
       <h1 className="auth-form-title">{titulo}</h1>
       {modo === 'verificar' && <p>Introduce el código de seis dígitos enviado a tu correo. Vence en 10 minutos.</p>}

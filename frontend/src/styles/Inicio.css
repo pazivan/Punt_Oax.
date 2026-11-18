@@ -4555,3 +4555,170 @@
   font-size: 13px;
   line-height: 1.5;
 }
+
+/* ==========================================================================
+   Header compartido responsive (Inicio, mapa, detalle, info, agenda, perfil)
+   ========================================================================== */
+@media (max-width: 900px) {
+  .inicio-header {
+    position: sticky;
+    top: 0;
+    height: auto;
+    min-height: 0;
+  }
+
+  .inicio-header-container {
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 0;
+    height: auto;
+    padding: 6px 20px 0;
+  }
+
+  .inicio-header-left {
+    display: contents;
+  }
+
+  .inicio-brand-wrap {
+    order: 1;
+    display: flex;
+    align-items: center;
+    height: 50px;
+  }
+
+  .inicio-header-right {
+    order: 2;
+    margin-left: auto;
+    height: 50px;
+    gap: 8px;
+  }
+
+  .inicio-nav,
+  .agendar-header-nav {
+    order: 3;
+    flex: 1 0 100%;
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    justify-content: flex-start;
+    gap: 22px;
+    padding: 0 0 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    box-sizing: border-box;
+  }
+
+  .inicio-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .inicio-nav-link {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 14px;
+  }
+
+  .inicio-nav-link.active {
+    height: 34px;
+    padding: 5px 12px;
+  }
+
+  .inicio-nav-link-active-text {
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  /* El header fluye dentro del documento en móvil: sin hueco superior. */
+  .inicio-main,
+  .mapa-main,
+  .info-util-main,
+  .agendar-main,
+  .detalle-main,
+  .perfil-main {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .inicio-header-container {
+    padding: 4px 14px 0;
+  }
+
+  .inicio-brand {
+    font-size: 16px;
+  }
+
+  .inicio-brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .inicio-header-right {
+    gap: 4px;
+  }
+
+  .inicio-header-profile-link {
+    padding: 4px;
+    gap: 0;
+  }
+
+  .inicio-header-profile-link > span:not(.inicio-avatar-circle) {
+    display: none;
+  }
+
+  .inicio-header-logout-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .inicio-header-account-link {
+    padding: 8px 8px;
+    font-size: 13px;
+  }
+
+  .inicio-nav {
+    gap: 18px;
+  }
+}
+
+/* La grilla de filtros del mapa no debe crecer por el contenido de los select. */
+@media (max-width: 680px) {
+  .mapa-search-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mapa-search-input-container,
+  .mapa-select-wrap,
+  .mapa-select-control,
+  .mapa-filter-right-group {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .mapa-filter-right-group {
+    height: auto;
+    flex-wrap: wrap;
+  }
+
+  .mapa-select-cost {
+    flex: 1 1 150px;
+    width: auto;
+  }
+}
+
+/* La navegación de la clínica tiene menos elementos: en móvil se muestra completa. */
+@media (max-width: 560px) {
+  .inicio-header.clinica-header .inicio-nav {
+    flex-wrap: wrap;
+    height: auto;
+    overflow: visible;
+    white-space: normal;
+    row-gap: 8px;
+    column-gap: 18px;
+    padding-bottom: 12px;
+  }
+}

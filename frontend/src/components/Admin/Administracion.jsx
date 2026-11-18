@@ -196,10 +196,10 @@ function ListaSolicitudes({ onSalir }) {
           </div>
           {visibles.length ? <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Clínica</th><th>Municipio</th><th>Solicitud</th><th>Estado</th><th className="admin-tabla-accion">Acción</th></tr></thead><tbody>
             {visibles.map((s) => <tr key={s.id_solicitud}>
-              <td><div className="admin-fila-clinica"><span className="admin-fila-icon"><Building2 size={19} /></span><div><strong>{texto(s.nombre_clinica)}</strong><small>{TIPO[s.tipo_institucion] || texto(s.tipo_institucion)}</small></div></div></td>
-              <td><span className="admin-celda-icon"><MapPin size={15} />{texto(s.municipio)}</span></td>
-              <td><span className="admin-celda-icon"><CalendarDays size={15} />{fecha(s.fecha_solicitud)}</span></td>
-              <td><Estado estado={estadoEfectivo(s)} /></td>
+              <td data-label="Clínica"><div className="admin-fila-clinica"><span className="admin-fila-icon"><Building2 size={19} /></span><div><strong>{texto(s.nombre_clinica)}</strong><small>{TIPO[s.tipo_institucion] || texto(s.tipo_institucion)}</small></div></div></td>
+              <td data-label="Municipio"><span className="admin-celda-icon"><MapPin size={15} />{texto(s.municipio)}</span></td>
+              <td data-label="Solicitud"><span className="admin-celda-icon"><CalendarDays size={15} />{fecha(s.fecha_solicitud)}</span></td>
+              <td data-label="Estado"><Estado estado={estadoEfectivo(s)} /></td>
               <td className="admin-tabla-accion"><Link to={`/admin/solicitudes/${s.id_solicitud}`} className="admin-revisar">{s.estado === 'pendiente' ? 'Revisar' : 'Ver detalle'}<ChevronRight size={17} /></Link></td>
             </tr>)}</tbody></table></div> : <div className="admin-sin-datos"><SlidersHorizontal size={30} /><strong>No hay solicitudes con estos filtros</strong><p>{busqueda ? 'Prueba con otro nombre o elimina el texto de búsqueda.' : 'Selecciona otro estado para consultar solicitudes existentes.'}</p></div>}
         </section>
@@ -272,11 +272,11 @@ function ListaUsuarios({ onSalir }) {
           </div>
           {visibles.length ? <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Usuario</th><th>Teléfono</th><th>Registro</th><th>Correo</th><th>Acceso</th></tr></thead><tbody>
             {visibles.map((u) => <tr key={u.id_usuario}>
-              <td><div className="admin-fila-clinica"><span className="admin-fila-icon"><User size={19} /></span><div><strong>{nombreCompleto(u) || 'Sin nombre registrado'}</strong><small>{texto(u.correo)}</small></div></div></td>
-              <td><span className="admin-celda-icon"><Phone size={15} />{texto(u.telefono)}</span></td>
-              <td><span className="admin-celda-icon"><CalendarDays size={15} />{fecha(u.fecha_registro)}</span></td>
-              <td><EstadoVerificacion verificado={Boolean(u.correo_verificado)} /></td>
-              <td>{[u.acceso_password ? 'Contraseña' : null, u.acceso_google ? 'Google' : null].filter(Boolean).join(' · ') || 'No especificado'}</td>
+              <td data-label="Usuario"><div className="admin-fila-clinica"><span className="admin-fila-icon"><User size={19} /></span><div><strong>{nombreCompleto(u) || 'Sin nombre registrado'}</strong><small>{texto(u.correo)}</small></div></div></td>
+              <td data-label="Teléfono"><span className="admin-celda-icon"><Phone size={15} />{texto(u.telefono)}</span></td>
+              <td data-label="Registro"><span className="admin-celda-icon"><CalendarDays size={15} />{fecha(u.fecha_registro)}</span></td>
+              <td data-label="Correo"><EstadoVerificacion verificado={Boolean(u.correo_verificado)} /></td>
+              <td data-label="Acceso">{[u.acceso_password ? 'Contraseña' : null, u.acceso_google ? 'Google' : null].filter(Boolean).join(' · ') || 'No especificado'}</td>
             </tr>)}</tbody></table></div> : <div className="admin-sin-datos"><Users size={30} /><strong>No hay usuarios con esta búsqueda</strong><p>{busqueda ? 'Prueba con otro correo, nombre o teléfono.' : 'Todavía no se ha registrado ninguna cuenta de usuario.'}</p></div>}
         </section>
       </>}

@@ -24,7 +24,7 @@ import './App.css'
 
 function App() {
   const navigate = useNavigate()
-  const { pathname, state: estadoRuta } = useLocation()
+  const { pathname, state: estadoRuta, key: rutaKey } = useLocation()
   const [sesion, setSesion] = useState(leerSesion)
   const [verificacionPendiente, setVerificacionPendiente] = useState(leerVerificacionPendiente)
   const [mensajeAuth, setMensajeAuth] = useState('')
@@ -72,6 +72,20 @@ function App() {
     cargarClinicas()
     return () => controlador.abort()
   }, [pathname, sesion, reintentoCatalogo])
+
+  useEffect(() => {
+    // Cada navegación comienza desde el inicio del documento.
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [rutaKey])
+
+  useEffect(() => {
+    // En móvil la navegación superior es desplazable: mantén visible la pestaña activa.
+    const nav = document.querySelector('.inicio-nav')
+    const activo = nav?.querySelector('.inicio-nav-link.active')
+    if (!nav || !activo || nav.scrollWidth <= nav.clientWidth + 4) return
+    const izquierda = activo.offsetLeft - (nav.clientWidth - activo.offsetWidth) / 2
+    nav.scrollTo({ left: Math.max(0, izquierda), behavior: 'auto' })
+  }, [pathname])
 
   useEffect(() => {
     if (!sesion) return
