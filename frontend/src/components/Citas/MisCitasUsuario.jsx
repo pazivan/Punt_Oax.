@@ -193,7 +193,7 @@ export default function MisCitasUsuario({ onSalir }) {
           </nav>
           <div className="citas-nav-derecha">
             <CampanaNotificaciones citasPreCargadas={citas} />
-            <Link to="/mi-perfil" className="inicio-header-profile-link">
+            <Link to="/mi-perfil" className="inicio-header-profile-link" aria-label="Mi perfil">
               <span className="inicio-avatar-circle" aria-hidden="true">
                 <User size={14} color="#FFFFFF" />
               </span>

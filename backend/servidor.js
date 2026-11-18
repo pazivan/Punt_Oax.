@@ -7,7 +7,7 @@ const { randomUUID, createHash } = require("node:crypto");
 const pool = require("./db");
 const { listarCitasClinica } = require("./citasClinica");
 const { fichaPublica } = require("./catalogoPublico");
-const { validarEnlacesInformacion } = require("./enlacesInformacion");
+const { actualizarEnlacesInformacion } = require("./enlacesInformacion");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
 const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
@@ -473,16 +473,11 @@ app.put(
   autenticarToken,
   requerirRol(["clinica"]),
   async (req, res) => {
-    const { error, enlaces } = validarEnlacesInformacion(req.body);
-    if (error) return res.status(400).json({ error });
     try {
-      const { rows } = await pool.query(
-        `UPDATE clinicas SET enlaces_informacion = $1::jsonb
-         WHERE id_clinica = $2 RETURNING enlaces_informacion`,
-        [JSON.stringify(enlaces), req.usuario.id]
+      const { status, body } = await actualizarEnlacesInformacion(
+        pool, req.usuario.id, req.body
       );
-      if (!rows.length) return res.status(404).json({ error: "No se encontró tu clínica." });
-      return res.json({ enlaces: rows[0].enlaces_informacion });
+      return res.status(status).json(body);
     } catch (err) {
       console.error("Error al guardar fuentes de información:", err.message);
       if (responderErrorEsquema(res, err)) return;

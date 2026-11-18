@@ -71,6 +71,7 @@ export default function Inicio({ sesion, onSalir }) {
               to="/mi-perfil"
               className="inicio-header-profile-link"
               title={nombreOCorreo}
+              aria-label="Mi perfil"
             >
               <span className="inicio-avatar-circle" aria-hidden="true">
                 <User size={14} color="#FFFFFF" />

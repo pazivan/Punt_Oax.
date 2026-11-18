@@ -8,6 +8,7 @@
   background: #fff;
 }
 .fuentes-clinica h3 { margin: 0 0 8px; color: #001d14; font-size: 18px; }
+.fuentes-clinica-lista { min-width: 0; margin: 0; padding: 0; border: 0; }
 .fuentes-clinica p { color: #414845; line-height: 1.5; }
 .fuentes-clinica-item {
   display: grid;

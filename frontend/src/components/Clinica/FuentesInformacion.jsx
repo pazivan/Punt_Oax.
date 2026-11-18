@@ -45,6 +45,7 @@ export default function FuentesInformacion({ iniciales = [] }) {
     <section className="fuentes-clinica" aria-labelledby="fuentes-clinica-titulo">
       <h3 id="fuentes-clinica-titulo">Fuentes de información</h3>
       <p>Agrega el título y la dirección de cada fuente. Se mostrarán como botones en la ficha pública de tu clínica.</p>
+      <fieldset className="fuentes-clinica-lista" disabled={guardando}>
       {enlaces.map((enlace, indice) => (
         <div className="fuentes-clinica-item" key={indice}>
           <div className="fuentes-clinica-campos">
@@ -61,12 +62,12 @@ export default function FuentesInformacion({ iniciales = [] }) {
               value={enlace.url}
               onChange={(e) => cambiar(enlaces.map((item, i) => i === indice ? { ...item, url: e.target.value } : item))} />
           </div>
-          <button type="button" className="fuentes-clinica-quitar" disabled={guardando}
+          <button type="button" className="fuentes-clinica-quitar"
             onClick={() => cambiar(enlaces.filter((_, i) => i !== indice))}
             aria-label={`Quitar fuente ${indice + 1}`}>
             <Trash2 size={16} aria-hidden="true" /> Quitar
           </button>
-          {/^https?:\/\//i.test(enlace.url) && normalizarUrlExterna(enlace.url) && (
+          {!guardando && /^https?:\/\//i.test(enlace.url) && normalizarUrlExterna(enlace.url) && (
             <a className="fuentes-clinica-vista" href={normalizarUrlExterna(enlace.url)}
               target="_blank" rel="noopener noreferrer">
               Probar enlace <ExternalLink size={14} aria-hidden="true" />
@@ -74,6 +75,7 @@ export default function FuentesInformacion({ iniciales = [] }) {
           )}
         </div>
       ))}
+      </fieldset>
       <div className="fuentes-clinica-acciones">
         <button type="button" disabled={guardando || enlaces.length >= 20}
           onClick={() => cambiar([...enlaces, { titulo: '', url: '' }])}>

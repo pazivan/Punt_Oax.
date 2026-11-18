@@ -78,6 +78,7 @@ export default function EncabezadoClinica({
               to="/mi-perfil"
               className={`inicio-header-profile-link ${pathname === '/mi-perfil' ? 'is-active' : ''}`}
               title={sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi perfil'}
+              aria-label="Mi perfil"
               aria-current={pathname === '/mi-perfil' ? 'page' : undefined}
             >
               <span className="inicio-avatar-circle" aria-hidden="true">
@@ -234,6 +235,7 @@ export default function EncabezadoClinica({
             to="/mi-perfil"
             className={`inicio-header-profile-link ${pathname === '/mi-perfil' ? 'is-active' : ''}`}
             title={nombreOCorreo}
+            aria-label="Mi perfil"
             aria-current={pathname === '/mi-perfil' ? 'page' : undefined}
           >
             <span className="inicio-avatar-circle" aria-hidden="true">

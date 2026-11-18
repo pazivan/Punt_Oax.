@@ -68,7 +68,6 @@ export default function DetalleCentro({
     })),
     ...enlacesGestionados,
   ].filter(({ url }) => normalizarUrlExterna(url));
-  const linksSinUrl = linksRelacionados.filter((texto) => !urlEnTexto(texto));
   const mapaUrl = normalizarUrlExterna(clinica.ubicacion_maps);
   const correoContacto = typeof clinica.correo_contacto === 'string'
     ? clinica.correo_contacto.trim()
@@ -142,6 +141,7 @@ export default function DetalleCentro({
                   to={rutaPerfil}
                   className="inicio-header-profile-link"
                   title={nombreOCorreo}
+                  aria-label={esAdmin ? 'Administración' : 'Mi perfil'}
                 >
                   <span className="inicio-avatar-circle" aria-hidden="true">
                     <User size={14} color="#FFFFFF" />
@@ -348,9 +348,6 @@ export default function DetalleCentro({
                   ) : !clinica.fuente && (
                     <p className="detalle-data-value">No especificadas</p>
                   )}
-                  {linksSinUrl.map((texto, indice) => (
-                    <p key={`${indice}-${texto}`} className="detalle-data-value">{texto}</p>
-                  ))}
                 </div>
               </div>
 

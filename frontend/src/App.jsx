@@ -79,13 +79,33 @@ function App() {
   }, [rutaKey])
 
   useEffect(() => {
-    // En móvil la navegación superior es desplazable: mantén visible la pestaña activa.
-    const nav = document.querySelector('.inicio-nav')
-    const activo = nav?.querySelector('.inicio-nav-link.active')
-    if (!nav || !activo || nav.scrollWidth <= nav.clientWidth + 4) return
-    const izquierda = activo.offsetLeft - (nav.clientWidth - activo.offsetWidth) / 2
-    nav.scrollTo({ left: Math.max(0, izquierda), behavior: 'auto' })
-  }, [pathname])
+    // En móvil la navegación superior es desplazable: mantén visible la pestaña activa
+    // al montarse la cabecera (por ejemplo, después de verificar la sesión) y al navegar.
+    let cuadro = 0
+    const centrar = () => {
+      cancelAnimationFrame(cuadro)
+      cuadro = requestAnimationFrame(() => {
+        for (const nav of document.querySelectorAll('.inicio-nav')) {
+          const activo = nav.querySelector('.inicio-nav-link.active')
+          if (!activo || nav.scrollWidth <= nav.clientWidth + 4) continue
+          const izquierda = activo.offsetLeft - (nav.clientWidth - activo.offsetWidth) / 2
+          nav.scrollTo({ left: Math.max(0, izquierda), behavior: 'auto' })
+        }
+      })
+    }
+    centrar()
+    const observador = new MutationObserver((mutaciones) => {
+      const aparecioNav = mutaciones.some((mutacion) =>
+        [...mutacion.addedNodes].some((nodo) => nodo.nodeType === 1 &&
+          (nodo.matches?.('.inicio-nav') || nodo.querySelector?.('.inicio-nav'))))
+      if (aparecioNav) centrar()
+    })
+    observador.observe(document.body, { childList: true, subtree: true })
+    return () => {
+      cancelAnimationFrame(cuadro)
+      observador.disconnect()
+    }
+  }, [rutaKey])
 
   useEffect(() => {
     if (!sesion) return

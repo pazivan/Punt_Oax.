@@ -347,6 +347,7 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
                 to="/mi-perfil"
                 className="inicio-header-profile-link is-active"
                 title={correoCuenta || 'Mi perfil'}
+                aria-label="Mi perfil"
                 aria-current="page"
               >
                 <span className="inicio-avatar-circle" aria-hidden="true">
