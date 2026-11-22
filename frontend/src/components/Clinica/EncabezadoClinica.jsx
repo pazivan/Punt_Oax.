@@ -14,7 +14,7 @@ export default function EncabezadoClinica({
   vistaCitas = null,
   onSeleccionarVistaCitas = null,
 }) {
-  const { pathname, search, hash } = useLocation()
+  const { pathname, search } = useLocation()
   const params = new URLSearchParams(search)
   const vistaQuery = params.get('vista')
 
@@ -44,8 +44,7 @@ export default function EncabezadoClinica({
 
   if (enPostulacion) {
     const enlacesPostulacion = [
-      { ruta: '/mi-clinica', texto: 'Inicio' },
-      { ruta: '/mi-clinica#postulacion', texto: 'Mi postulación' },
+      { ruta: '/mi-clinica', texto: 'Mi postulación' },
     ]
 
     return (
@@ -73,9 +72,7 @@ export default function EncabezadoClinica({
               aria-label="Navegación principal"
             >
               {enlacesPostulacion.map(({ ruta, texto }) => {
-                const activo = ruta.includes('#')
-                  ? pathname === '/mi-clinica' && hash === '#postulacion'
-                  : pathname === ruta && !hash
+                const activo = pathname === ruta
                 return (
                   <Link
                     key={ruta}
