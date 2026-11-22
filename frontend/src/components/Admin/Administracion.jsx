@@ -11,7 +11,25 @@ import {
   cambiarVisibilidadAdmin, consultarSolicitudAdmin, consultarSolicitudesAdmin,
   consultarUsuariosAdmin, descargarDocumentoAdmin, resolverSolicitudAdmin,
 } from '../../api/admin.js'
+import L from 'leaflet'
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
 import './Administracion.css'
+
+const ETIQUETAS_TIPO_SOLICITUD = {
+  postulacion: 'Postulación inicial',
+  actualizacion_informacion: 'Actualización de información',
+  actualizacion_ubicacion: 'Actualización de ubicación',
+}
+
+function crearPinAdmin(color) {
+  return L.divIcon({
+    className: 'mapa-custom-div-icon',
+    html: `<span style="display:inline-flex;width:24px;height:24px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);"></span>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  })
+}
 
 const FILTROS = [
   { valor: 'pendiente', nombre: 'Pendientes' },
@@ -196,7 +214,7 @@ function ListaSolicitudes({ onSalir }) {
           </div>
           {visibles.length ? <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Clínica</th><th>Municipio</th><th>Solicitud</th><th>Estado</th><th className="admin-tabla-accion">Acción</th></tr></thead><tbody>
             {visibles.map((s) => <tr key={s.id_solicitud}>
-              <td data-label="Clínica"><div className="admin-fila-clinica"><span className="admin-fila-icon"><Building2 size={19} /></span><div><strong>{texto(s.nombre_clinica)}</strong><small>{TIPO[s.tipo_institucion] || texto(s.tipo_institucion)}</small></div></div></td>
+              <td data-label="Clínica"><div className="admin-fila-clinica"><span className="admin-fila-icon"><Building2 size={19} /></span><div><strong>{texto(s.nombre_clinica)}</strong><small>{ETIQUETAS_TIPO_SOLICITUD[s.tipo_solicitud] || TIPO[s.tipo_institucion] || texto(s.tipo_institucion)}</small></div></div></td>
               <td data-label="Municipio"><span className="admin-celda-icon"><MapPin size={15} />{texto(s.municipio)}</span></td>
               <td data-label="Solicitud"><span className="admin-celda-icon"><CalendarDays size={15} />{fecha(s.fecha_solicitud)}</span></td>
               <td data-label="Estado"><Estado estado={estadoEfectivo(s)} /></td>
@@ -293,6 +311,22 @@ function PanelInformacion({ solicitud }) {
   const clinica = foto?.clinica || {}
   const servicios = Array.isArray(foto?.servicios) ? foto.servicios : []
   const horarios = Array.isArray(foto?.horarios) ? foto.horarios : []
+  const camposModificados = Array.isArray(solicitud.campos_modificados) && solicitud.campos_modificados.length > 0
+    ? solicitud.campos_modificados
+    : Array.isArray(foto?.campos_modificados) ? foto.campos_modificados : []
+  const motivo = solicitud.motivo || foto?.motivo || ''
+  const tipoSolicitud = solicitud.tipo_solicitud || foto?.tipo_solicitud || 'postulacion'
+  const ubicacionAnterior = foto?.datos_anteriores?.ubicacion || (
+    clinica.latitud != null && clinica.longitud != null
+      ? { latitud: Number(clinica.latitud), longitud: Number(clinica.longitud) }
+      : null
+  )
+  const ubicacionNueva = foto?.ubicacion_solicitada || foto?.datos_nuevos?.ubicacion || null
+  const hayComparacionUbicacion = Boolean(
+    ubicacionNueva &&
+    Number.isFinite(Number(ubicacionNueva.latitud)) &&
+    Number.isFinite(Number(ubicacionNueva.longitud))
+  )
   const maps = urlSegura(clinica.ubicacion_maps_url)
   const sitio = urlSegura(clinica.sitio_web)
   const lat = Number(clinica.latitud)
@@ -303,6 +337,76 @@ function PanelInformacion({ solicitud }) {
     ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`
     : null
   return <div className="admin-detalle-contenido">
+    {(camposModificados.length > 0 || motivo) && (
+      <section className="admin-panel admin-detalle-bloque" aria-label="Resumen de solicitud de actualización">
+        <div className="admin-seccion-titulo"><ClipboardList size={19} /><h2>Detalle de la actualización solicitada</h2></div>
+        <dl className="admin-campos">
+          <Campo etiqueta="Tipo de solicitud" valor={ETIQUETAS_TIPO_SOLICITUD[tipoSolicitud] || tipoSolicitud} />
+          <Campo etiqueta="Fecha de envío" valor={fecha(solicitud.fecha_solicitud)} />
+          {solicitud.fecha_resolucion && <Campo etiqueta="Fecha de resolución" valor={fecha(solicitud.fecha_resolucion)} />}
+        </dl>
+        {motivo && (
+          <div className="admin-descripcion" style={{ marginTop: '10px' }}>
+            <strong>Motivo proporcionado por la clínica</strong>
+            <p>{motivo}</p>
+          </div>
+        )}
+        {camposModificados.length > 0 && (
+          <div style={{ marginTop: '14px' }}>
+            <strong style={{ display: 'block', marginBottom: '8px', fontSize: '13.5px' }}>
+              Campos modificados ({camposModificados.length})
+            </strong>
+            <div className="admin-items">
+              {camposModificados.map((c, idx) => (
+                <div className="admin-item" key={`${c.campo || idx}`}>
+                  <strong>{texto(c.etiqueta || c.campo)}</strong>
+                  <p style={{ margin: '4px 0 2px', color: '#7A3232' }}>
+                    <strong>Anterior:</strong> {texto(c.valor_anterior)}
+                  </p>
+                  <p style={{ margin: 0, color: '#103328' }}>
+                    <strong>Nuevo:</strong> {texto(c.valor_nuevo)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {hayComparacionUbicacion && (
+          <div style={{ marginTop: '14px' }}>
+            <strong style={{ display: 'block', marginBottom: '8px', fontSize: '13.5px' }}>
+              Comparación de ubicación en mapa (Anterior vs Nueva solicitada)
+            </strong>
+            <div style={{ height: '240px', borderRadius: '10px', overflow: 'hidden', border: '1px solid #D6E6E0' }}>
+              <MapContainer
+                center={[Number(ubicacionNueva.latitud), Number(ubicacionNueva.longitud)]}
+                zoom={15}
+                style={{ width: '100%', height: '100%' }}
+                scrollWheelZoom={false}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {ubicacionAnterior && Number.isFinite(Number(ubicacionAnterior.latitud)) && (
+                  <Marker
+                    position={[Number(ubicacionAnterior.latitud), Number(ubicacionAnterior.longitud)]}
+                    icon={crearPinAdmin('#6B7280')}
+                  >
+                    <Popup>Ubicación anterior ({Number(ubicacionAnterior.latitud).toFixed(6)}, {Number(ubicacionAnterior.longitud).toFixed(6)})</Popup>
+                  </Marker>
+                )}
+                <Marker
+                  position={[Number(ubicacionNueva.latitud), Number(ubicacionNueva.longitud)]}
+                  icon={crearPinAdmin('#B42318')}
+                >
+                  <Popup>Nueva ubicación solicitada ({Number(ubicacionNueva.latitud).toFixed(6)}, {Number(ubicacionNueva.longitud).toFixed(6)})</Popup>
+                </Marker>
+              </MapContainer>
+            </div>
+          </div>
+        )}
+      </section>
+    )}
     <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><Building2 size={19} /><h2>Información institucional</h2></div>
       {!foto && <div className="admin-aviso admin-aviso--info"><AlertCircle size={18} /><p>El API no devolvió la ficha guardada al postular. Solo pueden consultarse los datos resumidos.</p></div>}
       <dl className="admin-campos"><Campo etiqueta="Nombre de la clínica" valor={clinica.nombre || solicitud.nombre_clinica} /><Campo etiqueta="Tipo de institución" valor={TIPO[clinica.tipo_institucion || solicitud.tipo_institucion] || clinica.tipo_institucion || solicitud.tipo_institucion} /><Campo etiqueta="Municipio" valor={clinica.municipio || solicitud.municipio} /><Campo etiqueta="Localidad" valor={clinica.localidad} /><Campo etiqueta="Dirección" valor={clinica.direccion} /><Campo etiqueta="Código postal" valor={clinica.codigo_postal} /><Campo etiqueta="Ubicación confirmada" valor={tieneCoordenadas ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : 'Sin confirmar en el mapa'} /></dl>
@@ -318,7 +422,7 @@ function PanelInformacion({ solicitud }) {
       {servicios.length ? <div className="admin-items">{servicios.map((s, i) => <div className="admin-item" key={s.id_servicio || i}><strong>{texto(s.nombre || s.categoria)}</strong><p>{texto(s.detalle_servicio || s.detalle)}</p></div>)}</div> : <p className="admin-vacio-pequeno">Sin servicios en la ficha recibida.</p>}
     </section>
     <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><Clock3 size={19} /><h2>Horarios de atención</h2></div>
-      {horarios.length ? <div className="admin-horarios">{horarios.map((h, i) => <div className="admin-horario" key={i}><span>{DIAS[Number(h.dia_semana)] || 'Día no especificado'}</span><strong>{texto(h.apertura)} – {texto(h.cierre)}</strong></div>)}</div> : <p className="admin-vacio-pequeno">Sin horarios en la ficha recibida.</p>}
+      {horarios.length ? <div className="admin-horarios">{horarios.map((h, i) => <div className="admin-horario" key={i}><span>{DIAS[Number(h.dia_semana)] || 'Día no especificado'}</span><strong>{h.es_24_horas ? '24 horas' : `${texto(h.apertura)} – ${texto(h.cierre)}${h.cruza_medianoche ? ' (nocturno)' : ''}`}</strong></div>)}</div> : <p className="admin-vacio-pequeno">Sin horarios en la ficha recibida.</p>}
     </section>
   </div>
 }

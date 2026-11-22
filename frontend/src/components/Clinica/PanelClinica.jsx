@@ -7,11 +7,13 @@ import {
   Clock3,
   Edit3,
   ExternalLink,
+  FileText,
   Globe,
   Mail,
   MapPin,
   Phone,
   Save,
+  Send,
 } from 'lucide-react'
 import {
   consultarCitasClinica,
@@ -19,15 +21,18 @@ import {
   guardarBorradorClinica,
   guardarHorariosAgenda,
   leerSesion,
-  solicitarCambioUbicacionClinica,
+  solicitarActualizacionClinica,
 } from '../../api/auth'
 import EncabezadoClinica from './EncabezadoClinica.jsx'
 import FuentesInformacion from './FuentesInformacion.jsx'
 import EditorHorarios from './EditorHorarios.jsx'
 import SelectorUbicacionMapa from './SelectorUbicacionMapa.jsx'
+import ModalSolicitudActualizacion from './ModalSolicitudActualizacion.jsx'
+import HistorialSolicitudesClinica from './HistorialSolicitudesClinica.jsx'
 import MapaLeaflet from '../Inicio/MapaLeaflet.jsx'
 import { DIAS, coordenadas } from '../../utils/centros.js'
 import { ZONA_HORARIA, filtrarCitas } from '../../utils/citasClinica'
+import { compararFichaConFormulario } from '../../utils/comparacionFicha'
 import { validarCoordenadas, validarHorarios } from '../../utils/validacionFicha'
 import { validarEmail, validarTelefono } from '../../utils/validaciones'
 import '../../styles/Inicio.css'
@@ -192,18 +197,21 @@ export default function PanelClinica({ sesion, onSalir }) {
   const [form, setForm] = useState(null)
   const [citasClinica, setCitasClinica] = useState([])
   const [estadoCitas, setEstadoCitas] = useState('cargando')
-  const [catalogoClinicas, setCatalogoClinicas] = useState([])
-  const [clinicaMapaSeleccionada, setClinicaMapaSeleccionada] = useState(null)
-  const vistaActiva = searchParams.get('vista') === 'editar' ? 'editar' : 'inicio'
+  const [centrarMapaTrigger, setCentrarMapaTrigger] = useState(0)
+  const vistaQuery = searchParams.get('vista')
+  const vistaActiva =
+    vistaQuery === 'editar' ? 'editar' : vistaQuery === 'solicitudes' ? 'solicitudes' : 'inicio'
+  const solicitudQueryId = searchParams.get('solicitud')
   const [cargando, setCargando] = useState(true)
   const [errorCarga, setErrorCarga] = useState('')
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [guardando, setGuardando] = useState(false)
-  const [ubicacionModificada, setUbicacionModificada] = useState(false)
-  const [enviandoUbicacion, setEnviandoUbicacion] = useState(false)
-  const [mensajeUbicacion, setMensajeUbicacion] = useState('')
+  const [modalSolicitudAbierto, setModalSolicitudAbierto] = useState(false)
+  const [enviandoSolicitud, setEnviandoSolicitud] = useState(false)
+  const [errorSolicitud, setErrorSolicitud] = useState('')
   const [errorUbicacion, setErrorUbicacion] = useState('')
+  const [recargaSolicitudes, setRecargaSolicitudes] = useState(0)
 
   useEffect(() => {
     sessionStorage.setItem('puntoax_panel_aprobado', '1')
@@ -212,6 +220,8 @@ export default function PanelClinica({ sesion, onSalir }) {
   function setVistaActiva(nuevaVista) {
     if (nuevaVista === 'editar') {
       setSearchParams({ vista: 'editar' }, { replace: true })
+    } else if (nuevaVista === 'solicitudes') {
+      setSearchParams({ vista: 'solicitudes' }, { replace: true })
     } else {
       setSearchParams({}, { replace: true })
     }
@@ -261,16 +271,6 @@ export default function PanelClinica({ sesion, onSalir }) {
         setEstadoCitas('error')
       })
 
-    fetch('/api/clinicas')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((lista) => {
-        if (!activo) return
-        setCatalogoClinicas(Array.isArray(lista) ? lista : [])
-      })
-      .catch(() => {
-        if (activo) setCatalogoClinicas([])
-      })
-
     return () => {
       activo = false
     }
@@ -304,49 +304,31 @@ export default function PanelClinica({ sesion, onSalir }) {
     )
   }, [form])
 
-  const centrosParaMapa = useMemo(() => {
-    const base = Array.isArray(catalogoClinicas) ? catalogoClinicas : []
+  const miCentroEnMapa = useMemo(() => {
+    if (!ficha?.clinica) return null
+    const coordsExistentes = coordenadas(ficha.clinica)
+    if (!coordsExistentes) return null
+    return {
+      ...ficha.clinica,
+      id_clinica: ficha.clinica.id_clinica,
+      nombre: ficha.clinica.nombre || 'Mi clínica',
+      municipio: ficha.clinica.municipio || 'Oaxaca',
+      direccion: ficha.clinica.direccion || 'Dirección registrada',
+      telefono: ficha.clinica.telefono || '',
+      servicios: (ficha.servicios || []).map((s) => s.nombre || s.categoria),
+      horarios: ficha.horarios || [],
+      latitud: coordsExistentes[0],
+      longitud: coordsExistentes[1],
+      ubicacion_confirmada: true,
+      esMiCentro: true,
+    }
+  }, [ficha])
 
-    if (!ficha?.clinica || !form) return base
-
-    const idPropio = ficha.clinica.id_clinica
-    const existente = base.find(
-      (c) =>
-        c.id_clinica === idPropio ||
-        (c.nombre &&
-          form.nombre &&
-          c.nombre.trim().toLowerCase() === form.nombre.trim().toLowerCase())
-    )
-
-    const coordsExistentes = coordenadas(existente || ficha.clinica)
-    const miCentroEnMapa = coordsExistentes
-      ? {
-          ...(existente || {}),
-          id_clinica: idPropio || 'mi-clinica-actual',
-          nombre: form.nombre.trim() || ficha.clinica.nombre || 'Mi clínica',
-          municipio: form.municipio.trim() || ficha.clinica.municipio || 'Oaxaca',
-          direccion: form.direccion.trim() || ficha.clinica.direccion || 'Dirección registrada',
-          telefono: form.telefono.trim() || ficha.clinica.telefono || '',
-          servicios: areasSeleccionadas.map((a) => a.nombre),
-          horarios: form.horarios,
-          latitud: coordsExistentes[0],
-          longitud: coordsExistentes[1],
-          ubicacion_confirmada: true,
-          esMiCentro: true,
-        }
-      : null
-
-    const resto = base.filter(
-      (c) =>
-        c.id_clinica !== idPropio &&
-        (!existente || c.id_clinica !== existente.id_clinica)
-    )
-
-    return miCentroEnMapa ? [miCentroEnMapa, ...resto] : resto
-  }, [catalogoClinicas, ficha, form, areasSeleccionadas])
-
-  const centroActivoEnMapa =
-    clinicaMapaSeleccionada || centrosParaMapa[0] || null
+  const comparacionCambios = useMemo(
+    () => compararFichaConFormulario(ficha, form),
+    [ficha, form]
+  )
+  const haySolicitudPendiente = ficha?.postulacion?.estado === 'pendiente'
 
   if (cargando) {
     return (
@@ -445,9 +427,8 @@ export default function PanelClinica({ sesion, onSalir }) {
         confirmada: true,
       },
     }))
-    setUbicacionModificada(true)
     setErrorUbicacion('')
-    setMensajeUbicacion('')
+    setMensaje('')
   }
 
   const corregirUbicacion = () => {
@@ -459,35 +440,69 @@ export default function PanelClinica({ sesion, onSalir }) {
       },
     }))
     setErrorUbicacion('')
-    setMensajeUbicacion('')
+    setMensaje('')
   }
 
-  const enviarCambioUbicacion = async () => {
-    if (enviandoUbicacion || !form.ubicacion?.confirmada) return
-    const coords = validarCoordenadas(form.ubicacion.latitud, form.ubicacion.longitud)
-    if (coords.error) {
-      setErrorUbicacion(coords.error)
+  const abrirModalSolicitud = () => {
+    if (haySolicitudPendiente || !comparacionCambios.hayCambiosRevision) return
+    setError('')
+    setMensaje('')
+    setErrorSolicitud('')
+    if (!form.nombre.trim()) {
+      setError('El nombre institucional es obligatorio.')
       return
     }
-    setEnviandoUbicacion(true)
-    setErrorUbicacion('')
-    setMensajeUbicacion('')
+    if (form.codigo_postal.trim() && !/^\d{5}$/.test(form.codigo_postal.trim())) {
+      setError('El código postal debe tener 5 dígitos.')
+      return
+    }
+    const areasSeleccionadasIds = Object.entries(form.servicios)
+      .filter(([, valor]) => valor.seleccionado)
+      .map(([categoria]) => categoria)
+    if (areasSeleccionadasIds.length === 0) {
+      setError('Selecciona al menos un área de atención (ITS o ILE).')
+      return
+    }
+    setModalSolicitudAbierto(true)
+  }
+
+  const confirmarEnvioSolicitud = async (motivo) => {
+    if (enviandoSolicitud || haySolicitudPendiente) return
+    setEnviandoSolicitud(true)
+    setErrorSolicitud('')
     try {
-      const resp = await solicitarCambioUbicacionClinica({
-        latitud: coords.latitud,
-        longitud: coords.longitud,
-      })
+      const payload = {
+        motivo,
+        nombre: form.nombre.trim(),
+        tipo_institucion: form.tipo_institucion || null,
+        municipio: form.municipio.trim() || null,
+        codigo_postal: form.codigo_postal.trim() || null,
+        direccion: form.direccion.trim() || null,
+        areas_servicio: Object.entries(form.servicios)
+          .filter(([, valor]) => valor.seleccionado)
+          .map(([categoria]) => categoria),
+      }
+      if (form.ubicacion?.confirmada) {
+        const coords = validarCoordenadas(form.ubicacion.latitud, form.ubicacion.longitud)
+        if (!coords.error) {
+          payload.latitud = coords.latitud
+          payload.longitud = coords.longitud
+        }
+      }
+      const resp = await solicitarActualizacionClinica(payload)
       const actualizada = await consultarMiFicha()
       setFicha(actualizada)
-      setUbicacionModificada(false)
-      setMensajeUbicacion(
+      setForm(estadoInicialDesdeFicha(actualizada))
+      setModalSolicitudAbierto(false)
+      setRecargaSolicitudes((v) => v + 1)
+      setMensaje(
         resp.mensaje ||
-          'Solicitud de cambio de ubicación enviada para revisión. Tu ubicación pública actual se mantiene visible hasta su aprobación.'
+          'Solicitud de actualización enviada para revisión administrativa. Tus datos publicados se mantienen visibles hasta su aprobación.'
       )
     } catch (err) {
-      setErrorUbicacion(err.message || 'No se pudo enviar la solicitud de cambio de ubicación.')
+      setErrorSolicitud(err.message || 'No se pudo enviar la solicitud de actualización.')
     } finally {
-      setEnviandoUbicacion(false)
+      setEnviandoSolicitud(false)
     }
   }
 
@@ -640,6 +655,14 @@ export default function PanelClinica({ sesion, onSalir }) {
                           <Clock3 size={14} aria-hidden="true" />
                           <span>Gestionar agenda</span>
                         </Link>
+                        <button
+                          type="button"
+                          className="panel-clinica-back-shortcut"
+                          onClick={() => setVistaActiva('solicitudes')}
+                        >
+                          <FileText size={14} aria-hidden="true" />
+                          <span>Mis solicitudes</span>
+                        </button>
                         <Link to="/mapa" className="panel-clinica-back-shortcut" style={{ textDecoration: 'none' }}>
                           <MapPin size={14} aria-hidden="true" />
                           <span>Ver mapa</span>
@@ -886,7 +909,7 @@ export default function PanelClinica({ sesion, onSalir }) {
                     </div>
                   </section>
 
-                  {/* Columna derecha: Mapa integrado al lado de los datos */}
+                  {/* Columna derecha: Mapa exclusivo de la clínica autenticada */}
                   <section
                     className="panel-clinica-summary-block"
                     aria-labelledby="resumen-mapa-clinica"
@@ -894,54 +917,48 @@ export default function PanelClinica({ sesion, onSalir }) {
                     <div className="panel-clinica-summary-header">
                       <div>
                         <h3 id="resumen-mapa-clinica" className="panel-clinica-section-title">
-                          Mapa de tu centro y red de clínicas
+                          Ubicación de mi clínica
                         </h3>
                       </div>
 
-                      <button
-                        type="button"
-                        className="panel-clinica-focus-btn"
-                        onClick={() => setClinicaMapaSeleccionada(centrosParaMapa[0] || null)}
-                      >
-                        <MapPin size={13} color="#FFFFFF" aria-hidden="true" />
-                        <span>Mi centro</span>
-                      </button>
+                      {miCentroEnMapa && (
+                        <button
+                          type="button"
+                          className="panel-clinica-focus-btn"
+                          onClick={() => setCentrarMapaTrigger((v) => v + 1)}
+                        >
+                          <MapPin size={13} color="#FFFFFF" aria-hidden="true" />
+                          <span>Mi centro</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="panel-clinica-map-vertical">
                       <div className="panel-clinica-map-canvas">
-                        <MapaLeaflet
-                          clinicas={centrosParaMapa}
-                          clinicaSeleccionada={centroActivoEnMapa}
-                          onSeleccionarClinica={(c) => setClinicaMapaSeleccionada(c)}
-                          onVerDetallesClinica={(c) => setClinicaMapaSeleccionada(c)}
-                        />
-                      </div>
-
-                      <div className="panel-clinica-map-chips" aria-label="Centros en el mapa">
-                        {centrosParaMapa.slice(0, 4).map((centro) => {
-                          const activo =
-                            centroActivoEnMapa?.id_clinica === centro.id_clinica
-                          return (
-                            <button
-                              key={centro.id_clinica}
-                              type="button"
-                              className={`panel-clinica-map-item ${activo ? 'is-selected' : ''
-                                }`}
-                              onClick={() => setClinicaMapaSeleccionada(centro)}
-                            >
-                              <span
-                                className={`panel-clinica-map-badge ${centro.esMiCentro ? 'is-own' : ''
-                                  }`}
+                        {miCentroEnMapa ? (
+                          <MapaLeaflet
+                            clinicas={[miCentroEnMapa]}
+                            clinicaSeleccionada={miCentroEnMapa}
+                            clinicaAutenticadaId={ficha?.clinica?.id_clinica}
+                            mostrarLeyenda={false}
+                            zoomInicial={15}
+                            centrarTrigger={centrarMapaTrigger}
+                          />
+                        ) : (
+                          <div className="ficha-doc-note" role="status" style={{ margin: '16px' }}>
+                            <MapPin size={18} aria-hidden="true" />
+                            <p>
+                              <strong>Sin coordenadas publicadas.</strong> Puedes proponer la ubicación de tu clínica desde{' '}
+                              <button
+                                type="button"
+                                className="ficha-link-button"
+                                onClick={() => setVistaActiva('editar')}
                               >
-                                {centro.esMiCentro ? 'TU CENTRO' : centro.municipio || 'Oaxaca'}
-                              </span>
-                              <strong className="panel-clinica-map-item-name">
-                                {centro.nombre}
-                              </strong>
-                            </button>
-                          )
-                        })}
+                                Actualizar información
+                              </button>.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </section>
@@ -965,6 +982,36 @@ export default function PanelClinica({ sesion, onSalir }) {
                       Actualizar información del centro
                     </h3>
                   </div>
+
+                  <div className="ficha-doc-note" style={{ width: '100%', boxSizing: 'border-box', marginBottom: '12px' }}>
+                    <AlertTriangle size={18} aria-hidden="true" />
+                    <p>
+                      <strong>¿Cómo se actualizan tus datos?</strong>{' '}
+                      Los datos de contacto, descripción, detalle de servicios y horarios se publican de inmediato con{' '}
+                      <strong>Guardar cambios directos</strong>.{' '}
+                      En cambio, el nombre institucional, tipo de institución, domicilio, áreas de servicio y ubicación geográfica requieren revisión administrativa mediante{' '}
+                      <strong>Solicitar actualización</strong> (sin afectar tus datos publicados mientras se revisan).
+                    </p>
+                  </div>
+
+                  {haySolicitudPendiente && (
+                    <div className="ficha-ubicacion-pendiente-banner" role="status" style={{ width: '100%', boxSizing: 'border-box' }}>
+                      <Clock3 size={18} aria-hidden="true" />
+                      <div>
+                        <strong>Tienes una solicitud pendiente de revisión administrativa</strong>
+                        <p style={{ margin: '4px 0 0' }}>
+                          No puedes enviar otra solicitud de actualización hasta que el administrador resuelva la actual.{' '}
+                          <button
+                            type="button"
+                            className="ficha-link-button"
+                            onClick={() => setVistaActiva('solicitudes')}
+                          >
+                            Ver en Mis solicitudes
+                          </button>
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="panel-clinica-fields-row">
                     <div className="panel-clinica-field-col">
@@ -1198,47 +1245,43 @@ export default function PanelClinica({ sesion, onSalir }) {
                       </div>
                     )}
 
-                    {mensajeUbicacion && (
-                      <div className="ficha-alert ficha-alert-success" role="status" style={{ marginBottom: '12px' }}>
-                        <CheckCircle2 size={18} aria-hidden="true" />
-                        <p>{mensajeUbicacion}</p>
-                      </div>
-                    )}
-
                     <SelectorUbicacionMapa
                       latitud={form.ubicacion?.latitud}
                       longitud={form.ubicacion?.longitud}
                       confirmada={form.ubicacion?.confirmada === true}
                       error={errorUbicacion}
-                      deshabilitado={guardando || enviandoUbicacion || Boolean(ficha?.ubicacion_pendiente)}
+                      deshabilitado={guardando || enviandoSolicitud || haySolicitudPendiente}
                       onConfirmar={confirmarUbicacion}
                       onCorregir={corregirUbicacion}
                     />
-
-                    {ubicacionModificada && form.ubicacion?.confirmada && !ficha?.ubicacion_pendiente && (
-                      <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          className="panel-clinica-btn-primary"
-                          onClick={enviarCambioUbicacion}
-                          disabled={enviandoUbicacion}
-                        >
-                          <MapPin size={15} color="#FFFFFF" aria-hidden="true" />
-                          <span>{enviandoUbicacion ? 'Enviando solicitud…' : 'Enviar nueva ubicación a revisión'}</span>
-                        </button>
-                        <small style={{ color: '#414845' }}>
-                          El cambio de ubicación requiere revisión administrativa; la ubicación actual seguirá publicada hasta su aprobación.
-                        </small>
-                      </div>
-                    )}
                   </div>
+
+                  {(comparacionCambios.hayCambiosDirectos || comparacionCambios.hayCambiosRevision) && (
+                    <div className="ficha-doc-note" role="status" style={{ width: '100%', boxSizing: 'border-box', marginTop: '14px' }}>
+                      <CheckCircle2 size={18} aria-hidden="true" />
+                      <p>
+                        {comparacionCambios.hayCambiosDirectos && (
+                          <span>
+                            <strong>Cambios directos detectados ({comparacionCambios.cambiosDirectos.length}):</strong>{' '}
+                            {comparacionCambios.cambiosDirectos.map((c) => c.etiqueta).join(', ')}.{' '}
+                          </span>
+                        )}
+                        {comparacionCambios.hayCambiosRevision && (
+                          <span>
+                            <strong>Cambios que requieren revisión ({comparacionCambios.cambiosRevision.length}):</strong>{' '}
+                            {comparacionCambios.cambiosRevision.map((c) => c.etiqueta).join(', ')}.
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="panel-clinica-actions-row">
                     <button
                       type="button"
                       className="panel-clinica-btn-secondary"
                       onClick={restaurarDatos}
-                      disabled={guardando}
+                      disabled={guardando || enviandoSolicitud}
                     >
                       Restaurar
                     </button>
@@ -1247,20 +1290,64 @@ export default function PanelClinica({ sesion, onSalir }) {
                       <button
                         type="submit"
                         className="panel-clinica-btn-primary"
-                        disabled={guardando}
+                        disabled={guardando || !comparacionCambios.hayCambiosDirectos}
+                        title={
+                          comparacionCambios.hayCambiosDirectos
+                            ? 'Publicar cambios de contacto, descripción, detalles o horarios'
+                            : 'No hay cambios directos pendientes por guardar'
+                        }
                       >
                         <Save size={15} color="#FFFFFF" aria-hidden="true" />
-                        <span>{guardando ? 'Guardando…' : 'Guardar cambios'}</span>
+                        <span>{guardando ? 'Guardando…' : 'Guardar cambios directos'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="panel-clinica-btn-primary"
+                        style={{ background: '#1F4E3D' }}
+                        disabled={
+                          guardando ||
+                          enviandoSolicitud ||
+                          haySolicitudPendiente ||
+                          !comparacionCambios.hayCambiosRevision
+                        }
+                        onClick={abrirModalSolicitud}
+                        title={
+                          haySolicitudPendiente
+                            ? 'Ya existe una solicitud pendiente de revisión'
+                            : comparacionCambios.hayCambiosRevision
+                              ? 'Enviar modificaciones institucionales o de ubicación a revisión administrativa'
+                              : 'No hay cambios que requieran revisión administrativa'
+                        }
+                      >
+                        <Send size={15} color="#FFFFFF" aria-hidden="true" />
+                        <span>Solicitar actualización</span>
                       </button>
                     </div>
                   </div>
                 </form>
+              )}
+
+              {vistaActiva === 'solicitudes' && (
+                <HistorialSolicitudesClinica
+                  solicitudSeleccionadaId={solicitudQueryId}
+                  recargaTrigger={recargaSolicitudes}
+                />
               )}
               <FuentesInformacion iniciales={ficha?.clinica?.enlaces_informacion} />
             </div>
           </div>
         </div>
       </main>
+
+      <ModalSolicitudActualizacion
+        abierto={modalSolicitudAbierto}
+        cambios={comparacionCambios.cambiosRevision}
+        enviando={enviandoSolicitud}
+        errorServidor={errorSolicitud}
+        onCancelar={() => setModalSolicitudAbierto(false)}
+        onConfirmar={confirmarEnvioSolicitud}
+      />
 
       <footer className="panel-clinica-footer">
         <div className="panel-clinica-footer-container">

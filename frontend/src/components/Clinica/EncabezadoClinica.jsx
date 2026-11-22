@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, User, X } from 'lucide-react'
 import { consultarMiFicha } from '../../api/auth'
+import CampanaNotificaciones from '../Inicio/CampanaNotificaciones.jsx'
 import '../../styles/Inicio.css'
 
 export default function EncabezadoClinica({
@@ -307,6 +308,8 @@ export default function EncabezadoClinica({
         </div>
 
         <div className="inicio-header-right">
+          <CampanaNotificaciones sesion={sesion} enPostulacion={false} />
+
           <Link
             to="/mi-perfil"
             className={`inicio-header-profile-link inicio-desktop-only-action ${pathname === '/mi-perfil' ? 'is-active' : ''}`}
