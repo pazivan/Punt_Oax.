@@ -1,9 +1,22 @@
 const { festivoNacional } = require("./agendaClinica");
 const { esUuid } = require("./validacionesCitas");
-const { responderErrorEsquema } = require("./erroresEsquema");
 
 const ESTADOS_CITA = ["confirmada", "completada", "cancelada", "no_asistio"];
+const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 const respuesta = (status, body) => ({ status, body });
+
+function fechaMexicoDesdeIso(valor) {
+  const d = new Date(valor);
+  if (Number.isNaN(d.getTime())) return "";
+  const partes = new Intl.DateTimeFormat("es-MX", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const obtener = (tipo) => partes.find((p) => p.type === tipo)?.value || "";
+  return `${obtener("year")}-${obtener("month")}-${obtener("day")}`;
+}
 
 async function obtenerResumenAdmin(db) {
   const [clinicasRes, usuariosRes, citasRes, solicitudesRes] = await Promise.all([
@@ -131,9 +144,12 @@ async function listarCitasAdmin(db, { estado, id_clinica, q, page, limit } = {})
   });
 }
 
-async function consultarCalendarioAdmin(db, { id_clinica } = {}) {
+async function consultarCalendarioAdmin(db, { id_clinica, fecha, page, limit } = {}) {
   if (id_clinica && !esUuid(id_clinica)) {
     return respuesta(400, { error: "Identificador de clínica no válido." });
+  }
+  if (fecha !== undefined && fecha !== "" && (typeof fecha !== "string" || !FECHA_RE.test(fecha) || Number.isNaN(Date.parse(fecha)))) {
+    return respuesta(400, { error: "El parámetro 'fecha' debe tener formato AAAA-MM-DD." });
   }
 
   const clinicasRes = await db.query(
@@ -152,7 +168,20 @@ async function consultarCalendarioAdmin(db, { id_clinica } = {}) {
     return respuesta(404, { error: "Clínica no encontrada." });
   }
   if (!seleccionada) {
-    return respuesta(200, { clinicas: [], clinica: null, horarios: [], espacios: [], bloqueados: [], festivos: [], hoy: null });
+    return respuesta(200, {
+      clinicas: [],
+      clinica: null,
+      horarios: [],
+      espacios: [],
+      bloqueados: [],
+      festivos: [],
+      dias: [],
+      hoy: null,
+      total: 0,
+      page: 1,
+      limit: 10,
+      total_paginas: 1,
+    });
   }
 
   const [horariosRes, espaciosRes, bloqueadosRes, hoyRes] = await Promise.all([
@@ -189,23 +218,74 @@ async function consultarCalendarioAdmin(db, { id_clinica } = {}) {
   ]);
 
   const hoy = hoyRes.rows[0]?.fecha || null;
+  const bloqueadosMap = new Map(bloqueadosRes.rows.map((b) => [b.fecha, b.motivo || null]));
   const festivos = hoy
     ? Array.from({ length: 15 }, (_, i) => {
         const d = new Date(`${hoy}T12:00:00Z`);
         d.setUTCDate(d.getUTCDate() + i);
-        const fecha = d.toISOString().slice(0, 10);
-        return { fecha, nombre: festivoNacional(fecha) };
+        const f = d.toISOString().slice(0, 10);
+        return { fecha: f, nombre: festivoNacional(f) };
       }).filter((d) => d.nombre)
     : [];
+  const festivosMap = new Map(festivos.map((f) => [f.fecha, f.nombre]));
+
+  const conteoPorDia = new Map();
+  for (const esp of espaciosRes.rows) {
+    const f = fechaMexicoDesdeIso(esp.fecha_hora_inicio);
+    if (!f) continue;
+    const actual = conteoPorDia.get(f) || { total: 0, disponibles: 0, reservados: 0, deshabilitados: 0 };
+    actual.total += 1;
+    if (esp.ocupado) actual.reservados += 1;
+    else if (esp.habilitado) actual.disponibles += 1;
+    else actual.deshabilitados += 1;
+    conteoPorDia.set(f, actual);
+  }
+
+  const dias = hoy
+    ? Array.from({ length: 15 }, (_, i) => {
+        const d = new Date(`${hoy}T12:00:00Z`);
+        d.setUTCDate(d.getUTCDate() + i);
+        const f = d.toISOString().slice(0, 10);
+        const conteo = conteoPorDia.get(f) || { total: 0, disponibles: 0, reservados: 0, deshabilitados: 0 };
+        return {
+          fecha: f,
+          ...conteo,
+          bloqueado: bloqueadosMap.has(f),
+          motivo_bloqueo: bloqueadosMap.get(f) || null,
+          festivo: festivosMap.get(f) || null,
+        };
+      })
+    : [];
+
+  const fechaSeleccionada = fecha || null;
+  const filtrados = fechaSeleccionada
+    ? espaciosRes.rows.filter((esp) => fechaMexicoDesdeIso(esp.fecha_hora_inicio) === fechaSeleccionada)
+    : espaciosRes.rows;
+
+  const paginado = page !== undefined || limit !== undefined;
+  const tope = [10, 20, 50].includes(Number(limit)) ? Number(limit) : 10;
+  const paginaActual = paginado && Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+  const total = filtrados.length;
+  const totalPaginas = Math.max(1, Math.ceil(total / tope));
+  const paginaSegura = Math.min(paginaActual, totalPaginas);
+  const espacios = paginado
+    ? filtrados.slice((paginaSegura - 1) * tope, paginaSegura * tope)
+    : filtrados;
 
   return respuesta(200, {
     clinicas,
     clinica: seleccionada,
     horarios: horariosRes.rows,
-    espacios: espaciosRes.rows,
+    espacios,
     bloqueados: bloqueadosRes.rows,
     festivos,
+    dias,
     hoy,
+    fecha_seleccionada: fechaSeleccionada,
+    total,
+    page: paginaSegura,
+    limit: tope,
+    total_paginas: totalPaginas,
   });
 }
 
@@ -217,7 +297,6 @@ function registrarRutasAdminSupervision(app, { pool, autenticarToken, requerirRo
       return res.status(resultado.status).json(resultado.body);
     } catch (error) {
       console.error(`Error al ${etiqueta}:`, error.message);
-      if (responderErrorEsquema(res, error)) return;
       return res.status(500).json({ error: `No se pudo ${etiqueta}.` });
     }
   };
@@ -237,6 +316,9 @@ function registrarRutasAdminSupervision(app, { pool, autenticarToken, requerirRo
   app.get("/api/admin/calendarios", ...soloAdmin,
     manejar("consultar los calendarios de clínicas", (req) => consultarCalendarioAdmin(pool, {
       id_clinica: req.query?.id_clinica,
+      fecha: req.query?.fecha,
+      page: req.query?.page,
+      limit: req.query?.limit,
     })));
 }
 

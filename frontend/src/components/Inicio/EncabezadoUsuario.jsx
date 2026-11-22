@@ -35,15 +35,14 @@ export default function EncabezadoUsuario({
             : pathname === '/informacion-util' ? 'informacion'
               : pathname === '/conocenos' ? 'conocenos'
                 : pathname === '/mi-perfil' ? 'perfil'
-                  : pathname === '/admin' || pathname.startsWith('/admin/') ? 'admin'
+                  : pathname === '/admin' || pathname.startsWith('/admin/') ? (pathname === '/admin/mapa' ? 'mapa' : 'admin')
                     : ''
   );
 
   const enlaces = esAdmin
     ? [
-        { id: 'inicio', ruta: rutaInicio, texto: 'Inicio' },
-        { id: 'mapa', ruta: '/mapa', texto: 'Mapa de centros' },
-        { id: 'admin', ruta: '/admin', texto: 'Administración' },
+        { id: 'admin', ruta: '/admin', texto: 'Panel administrativo' },
+        { id: 'mapa', ruta: '/admin/mapa', texto: 'Mapa de centros' },
         { id: 'informacion', ruta: '/informacion-util', texto: 'Información útil' },
         { id: 'conocenos', ruta: '/conocenos', texto: 'Conócenos' },
       ]
