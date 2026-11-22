@@ -69,7 +69,7 @@ export default function Login({
   };
 
   return (
-    <div className="auth-page-wrapper">
+    <div className="auth-page-wrapper auth-login-page">
       {/* Header oficial */}
       <header className="auth-header">
         <div className="auth-header-container">
@@ -100,9 +100,6 @@ export default function Login({
                 Registro de cuenta
               </button>
             )}
-            <div className="auth-avatar-circle" aria-hidden="true">
-              <User size={16} />
-            </div>
           </div>
         </div>
       </header>
@@ -112,7 +109,7 @@ export default function Login({
         <div className="auth-card-container">
           {/* Panel Izquierdo: Verde Institucional #103328 (Left Dark Green Card) */}
           <section className="auth-left-panel">
-            <div>
+            <div className="auth-login-hero-copy">
               <span className="auth-badge-top">
                 {accountType === 'clinica' ? 'ÁREA CLÍNICA' : accountType === 'administrador' ? 'ACCESO ADMINISTRATIVO' : 'ACCESO PUNTOAX'}
               </span>
@@ -291,28 +288,46 @@ export default function Login({
                   )}
                 </button>
               </form>
-              <p><Link to="/recuperar" state={{ rol: accountType, correo: email.trim() }}>¿Olvidaste tu contraseña?</Link></p>
-              {accountType !== 'administrador' && <p><button type="button" className="auth-inline-link" onClick={() => {
-                const correoLimpio = normalizarCorreo(email)
-                const pendiente = leerVerificacionPendiente()
-                if (!validarEmail(correoLimpio) && !pendiente) {
-                  setError('Escribe tu correo arriba para continuar con la verificación.')
-                  document.getElementById('login-email')?.focus()
-                  return
-                }
-                const destino = validarEmail(correoLimpio) ? { rol: accountType, correo: correoLimpio } : pendiente
-                navigate('/verificar-correo', { state: destino })
-              }}>¿Aún no verificas tu correo?</button></p>}
 
-              {/* Enlace inferior */}
-              {accountType !== 'administrador' && <div className="auth-bottom-links">
-                <p className="auth-switch-text">
-                  ¿Aún no registras tu cuenta?{' '}
-                  <button type="button" onClick={() => onSwitchToRegister(accountType)} disabled={loading} className="auth-inline-link">
-                    Crear cuenta
-                  </button>
-                </p>
-              </div>}
+              {/* Enlaces secundarios */}
+              <div className="auth-bottom-links auth-login-links">
+                <Link
+                  to="/recuperar"
+                  state={{ rol: accountType, correo: email.trim() }}
+                  className="auth-inline-link auth-secondary-link"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
+                <div className="auth-login-optional-links">
+                  {accountType !== 'administrador' && (
+                    <>
+                      <button
+                        type="button"
+                        className="auth-inline-link auth-secondary-link"
+                        onClick={() => {
+                          const correoLimpio = normalizarCorreo(email)
+                          const pendiente = leerVerificacionPendiente()
+                          if (!validarEmail(correoLimpio) && !pendiente) {
+                            setError('Escribe tu correo arriba para continuar con la verificación.')
+                            document.getElementById('login-email')?.focus()
+                            return
+                          }
+                          const destino = validarEmail(correoLimpio) ? { rol: accountType, correo: correoLimpio } : pendiente
+                          navigate('/verificar-correo', { state: destino })
+                        }}
+                      >
+                        ¿Aún no verificas tu correo?
+                      </button>
+                      <p className="auth-switch-text">
+                        ¿Aún no registras tu cuenta?{' '}
+                        <button type="button" onClick={() => onSwitchToRegister(accountType)} disabled={loading} className="auth-inline-link">
+                          Crear cuenta
+                        </button>
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </section>
         </div>

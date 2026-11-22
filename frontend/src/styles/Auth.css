@@ -869,3 +869,149 @@
     font-size: 18px;
   }
 }
+
+/* ==========================================================================
+   Encapsulación de /login: estabilidad entre roles y ajuste vertical en escritorio
+   ========================================================================== */
+.auth-login-page .auth-header {
+  height: 64px;
+}
+
+.auth-login-page .auth-header-actions {
+  min-height: 36px;
+}
+
+.auth-login-page .auth-main {
+  padding: 12px 24px;
+}
+
+.auth-login-page .auth-card-container {
+  min-height: 532px;
+}
+
+.auth-login-page .auth-left-panel {
+  padding: 28px 40px;
+  justify-content: flex-start;
+  gap: 16px;
+}
+
+.auth-login-page .auth-login-hero-copy {
+  min-height: 128px;
+}
+
+.auth-login-page .auth-heading-hero {
+  font-size: 32px;
+  line-height: 38px;
+}
+
+.auth-login-page .auth-map-preview-box {
+  margin: 4px 0;
+}
+
+.auth-login-page .auth-map-card-inner {
+  height: 176px;
+}
+
+.auth-login-page .auth-features-list {
+  margin-top: auto;
+  gap: 8px;
+}
+
+.auth-login-page .auth-right-panel {
+  padding: 28px 40px;
+  justify-content: flex-start;
+}
+
+.auth-login-page .auth-form-instruction {
+  min-height: 40px;
+  margin-bottom: 14px;
+}
+
+.auth-login-page .auth-role-toggle {
+  margin-bottom: 16px;
+}
+
+.auth-login-page .auth-form {
+  gap: 14px;
+}
+
+.auth-login-page .auth-submit-btn {
+  height: 48px;
+  margin-top: 4px;
+}
+
+.auth-login-page .auth-login-links {
+  margin-top: 16px;
+  gap: 8px;
+}
+
+.auth-login-page .auth-secondary-link {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.auth-login-page .auth-inline-link:focus-visible {
+  outline: 2px solid #103328;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.auth-login-page .auth-login-optional-links {
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-login-page .auth-footer {
+  height: 48px;
+}
+
+@media (max-width: 960px) {
+  .auth-login-page .auth-card-container {
+    min-height: auto;
+  }
+
+  .auth-login-page .auth-left-panel,
+  .auth-login-page .auth-right-panel {
+    padding: 28px 24px;
+  }
+
+  .auth-login-page .auth-login-hero-copy {
+    min-height: 116px;
+  }
+
+  .auth-login-page .auth-heading-hero {
+    font-size: 28px;
+    line-height: 34px;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-login-page .auth-header {
+    height: auto;
+    min-height: 60px;
+  }
+
+  .auth-login-page .auth-main {
+    padding: 20px 14px 28px;
+  }
+
+  .auth-login-page .auth-left-panel {
+    padding: 22px 18px;
+  }
+
+  .auth-login-page .auth-right-panel {
+    padding: 24px 18px;
+  }
+
+  .auth-login-page .auth-login-hero-copy {
+    min-height: 134px;
+  }
+
+  .auth-login-page .auth-heading-hero {
+    font-size: 25px;
+    line-height: 31px;
+  }
+}
