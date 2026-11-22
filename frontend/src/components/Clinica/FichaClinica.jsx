@@ -33,6 +33,7 @@ import EncabezadoClinica from './EncabezadoClinica.jsx'
 import PanelClinica from './PanelClinica.jsx'
 import SelectorUbicacionMapa from './SelectorUbicacionMapa.jsx'
 import EditorHorarios from './EditorHorarios.jsx'
+import HistorialSolicitudesClinica from './HistorialSolicitudesClinica.jsx'
 
 const AREAS = [
   {
@@ -269,6 +270,9 @@ export default function FichaClinica({ sesion, onSalir }) {
           <div className="ficha-pending-actions">
             <Link to="/mi-perfil" className="ficha-btn-secondary">Mi perfil</Link>
             <button type="button" className="ficha-btn-primary" onClick={onSalir}>Cerrar sesión</button>
+          </div>
+          <div style={{ marginTop: '24px', width: '100%', textAlign: 'left' }}>
+            <HistorialSolicitudesClinica />
           </div>
         </main>
       </div>

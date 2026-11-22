@@ -358,6 +358,7 @@ export default function MapaCentros({
                   filtroMunicipio={filtroMunicipio}
                   terminoBusqueda={terminoBusqueda}
                   modoVista={modoVista}
+                  clinicaAutenticadaId={sesion?.tipo === 'clinica' ? (sesion?.cuenta?.id_clinica || sesion?.cuenta?.id || null) : null}
                   ComponenteMapa={ComponenteMapa}
                 />
               )}

@@ -14,6 +14,7 @@ const { registrarRutasAdminClinicas } = require("./adminClinicas");
 const { registrarRutasAdminUsuarios } = require("./adminUsuarios");
 const { registrarRutasAgendaClinica } = require("./agendaClinica");
 const { registrarRutasDatosClinica } = require("./datosClinica");
+const { calcularCambiosRevisionServidor } = require("./comparacionFicha");
 const { validarCoordenadas } = require("./ubicacion");
 const {
   consultarEstadoClinica,
@@ -296,7 +297,8 @@ async function cargarFicha(idClinica, db = pool) {
 
   const [solicitudResultado, serviciosResultado, horariosResultado, documentosResultado] = await Promise.all([
     db.query(
-      `SELECT id_solicitud, estado, fecha_solicitud, observaciones,
+      `SELECT id_solicitud, estado, fecha_solicitud, fecha_resolucion, observaciones,
+              tipo_solicitud, motivo, campos_modificados,
               datos_ficha->'ubicacion_solicitada' AS ubicacion_solicitada
        FROM solicitudes_clinicas
        WHERE id_clinica = $1
@@ -858,6 +860,144 @@ app.post(
       }
       if (responderErrorEsquema(res, error)) return;
       return res.status(500).json({ error: "No se pudo enviar la postulación." });
+    } finally {
+      client?.release();
+    }
+  }
+);
+
+// Historial de solicitudes de la clínica autenticada (postulaciones y actualizaciones).
+app.get(
+  "/api/clinicas/mi-ficha/solicitudes",
+  autenticarToken,
+  requerirRol(["clinica"]),
+  async (req, res) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT id_solicitud, tipo_solicitud, estado, fecha_solicitud, fecha_resolucion,
+                motivo, observaciones, campos_modificados, datos_ficha
+         FROM solicitudes_clinicas
+         WHERE id_clinica = $1
+         ORDER BY fecha_solicitud DESC`,
+        [req.usuario.id]
+      );
+      const solicitudes = rows.map((row) => ({
+        id_solicitud: row.id_solicitud,
+        tipo_solicitud: row.tipo_solicitud || row.datos_ficha?.tipo_solicitud || "postulacion",
+        estado: row.estado,
+        fecha_solicitud: row.fecha_solicitud,
+        fecha_resolucion: row.fecha_resolucion || null,
+        motivo: row.motivo ?? row.datos_ficha?.motivo ?? null,
+        observaciones: row.observaciones || null,
+        campos_modificados: row.campos_modificados || row.datos_ficha?.campos_modificados || [],
+        datos_anteriores: row.datos_ficha?.datos_anteriores || null,
+        datos_nuevos: row.datos_ficha?.datos_nuevos || null,
+      }));
+      return res.json({ solicitudes });
+    } catch (error) {
+      console.error("Error al consultar historial de solicitudes:", error.message);
+      return res.status(500).json({ error: "No se pudo consultar el historial de solicitudes." });
+    }
+  }
+);
+
+// Solicitud de actualización de información para clínica ya aprobada: verifica cambios reales
+// contra la versión publicada, exige motivo y conserva los datos públicos hasta su aprobación.
+app.post(
+  "/api/clinicas/mi-ficha/solicitud-actualizacion",
+  autenticarToken,
+  requerirRol(["clinica"]),
+  async (req, res) => {
+    const motivoRaw = typeof req.body?.motivo === "string" ? req.body.motivo.trim() : "";
+    if (!motivoRaw) {
+      return res.status(400).json({ error: "El motivo de la solicitud es obligatorio." });
+    }
+    if (motivoRaw.length > 500) {
+      return res.status(400).json({ error: "El motivo no puede superar los 500 caracteres." });
+    }
+
+    let client;
+    try {
+      client = await pool.connect();
+      await client.query("BEGIN");
+      const { rows } = await client.query(
+        "SELECT id_clinica, estado_publicacion FROM clinicas WHERE id_clinica = $1 FOR UPDATE",
+        [req.usuario.id]
+      );
+      if (!rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ error: "No se encontró la ficha de tu clínica." });
+      }
+      if (rows[0].estado_publicacion !== "aprobada") {
+        await client.query("ROLLBACK");
+        return res.status(409).json({
+          error: "Solo las clínicas aprobadas pueden enviar solicitudes de actualización.",
+        });
+      }
+
+      const ficha = await cargarFicha(req.usuario.id, client);
+      if (ficha.postulacion?.estado === "pendiente") {
+        await client.query("ROLLBACK");
+        return res.status(409).json({
+          error: "Ya tienes una solicitud pendiente de revisión. Espera la respuesta del administrador.",
+        });
+      }
+
+      const { errores, cambios, datosAnteriores, datosNuevos, ubicacionSolicitada } =
+        calcularCambiosRevisionServidor(ficha, req.body);
+
+      if (Object.keys(errores).length > 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: "Revisa los datos enviados.", campos: errores });
+      }
+      if (cambios.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error: "No se detectaron modificaciones que requieran revisión administrativa.",
+        });
+      }
+
+      const tipoSolicitud =
+        cambios.length === 1 && cambios[0].campo === "ubicacion"
+          ? "actualizacion_ubicacion"
+          : "actualizacion_informacion";
+
+      const snapshot = {
+        clinica: ficha.clinica,
+        servicios: ficha.servicios,
+        horarios: ficha.horarios,
+        documentos: ficha.documentos,
+        tipo_solicitud: tipoSolicitud,
+        motivo: motivoRaw,
+        campos_modificados: cambios,
+        datos_anteriores: datosAnteriores,
+        datos_nuevos: datosNuevos,
+        ...(ubicacionSolicitada ? { ubicacion_solicitada: ubicacionSolicitada } : {}),
+      };
+
+      const { rows: solicitudes } = await client.query(
+        `INSERT INTO solicitudes_clinicas
+           (id_clinica, estado, tipo_solicitud, motivo, campos_modificados, datos_ficha)
+         VALUES ($1, 'pendiente', $2, $3, $4::jsonb, $5::jsonb)
+         RETURNING id_solicitud, tipo_solicitud, estado, fecha_solicitud, motivo, campos_modificados`,
+        [req.usuario.id, tipoSolicitud, motivoRaw, JSON.stringify(cambios), JSON.stringify(snapshot)]
+      );
+      await client.query("COMMIT");
+      return res.status(201).json({
+        mensaje: "Solicitud de actualización enviada para revisión administrativa. Tus datos publicados se mantienen visibles hasta su aprobación.",
+        solicitud: solicitudes[0],
+        ...(ubicacionSolicitada ? { ubicacion_pendiente: ubicacionSolicitada } : {}),
+      });
+    } catch (error) {
+      if (client) {
+        try { await client.query("ROLLBACK"); } catch { /* Conservar el error original. */ }
+      }
+      console.error("Error al enviar solicitud de actualización:", error.message);
+      if (error.code === "23505") {
+        return res.status(409).json({ error: "Ya tienes una solicitud pendiente de revisión." });
+      }
+      if (responderErrorEsquema(res, error)) return;
+      return res.status(500).json({ error: "No se pudo enviar la solicitud de actualización." });
     } finally {
       client?.release();
     }

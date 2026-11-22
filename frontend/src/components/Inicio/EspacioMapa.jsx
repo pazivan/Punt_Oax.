@@ -28,6 +28,7 @@ export default function EspacioMapa({
   filtroMunicipio = '',
   terminoBusqueda = '',
   modoVista = 'combinada',
+  clinicaAutenticadaId = null,
   ComponenteMapa = null,
   children,
 }) {
@@ -44,6 +45,7 @@ export default function EspacioMapa({
             filtroMunicipio={filtroMunicipio}
             terminoBusqueda={terminoBusqueda}
             modoVista={modoVista}
+            clinicaAutenticadaId={clinicaAutenticadaId}
           />
         </div>
       </div>

@@ -614,7 +614,7 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
                     )}
                   </div>
 
-                  <div className="perfil-form-actions">
+                  <div className="perfil-form-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                     <Link
                       to={enModoPanelAprobado ? '/panel-clinica?vista=editar' : '/mi-clinica'}
                       className="agendar-submit-btn"
@@ -627,6 +627,16 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
                       </span>
                       <ArrowRight size={15} color="#FFFFFF" aria-hidden="true" />
                     </Link>
+
+                    {enModoPanelAprobado && (
+                      <Link
+                        to="/panel-clinica?vista=solicitudes"
+                        className="panel-clinica-back-shortcut"
+                        style={{ textDecoration: 'none', padding: '12px 18px', borderRadius: '10px' }}
+                      >
+                        <span>Mis solicitudes</span>
+                      </Link>
+                    )}
                   </div>
                 </section>
               )}

@@ -30,6 +30,11 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
+const { ETIQUETAS_AREA } = require("./comparacionFicha");
+const NOMBRES_SERVICIOS = {
+  its: "Detección de ITS",
+  ile: "Interrupción Legal del Embarazo (ILE)",
+};
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ESTADOS_SOLICITUD = ["pendiente", "aprobada", "rechazada"];
 const MIN_OBSERVACIONES_RECHAZO = 10;
@@ -72,7 +77,8 @@ async function listarSolicitudes(db, { estado } = {}) {
     return respuesta(400, { error: `Estado no válido. Usa: ${[...ESTADOS_SOLICITUD, "todas"].join(", ")}.` });
   }
   const { rows } = await db.query(
-    `SELECT sc.id_solicitud, sc.estado, sc.fecha_solicitud, sc.observaciones,
+    `SELECT sc.id_solicitud, sc.estado, sc.fecha_solicitud, sc.fecha_resolucion, sc.observaciones,
+            sc.tipo_solicitud, sc.motivo, sc.campos_modificados,
             c.id_clinica, c.nombre AS nombre_clinica, c.municipio, c.tipo_institucion,
             c.estado_publicacion
      FROM solicitudes_clinicas sc
@@ -90,7 +96,8 @@ async function listarSolicitudes(db, { estado } = {}) {
 async function consultarSolicitud(db, idSolicitud) {
   if (!esUuid(idSolicitud)) return respuesta(400, { error: "Identificador de solicitud no válido." });
   const { rows } = await db.query(
-    `SELECT sc.id_solicitud, sc.estado, sc.fecha_solicitud, sc.observaciones, sc.datos_ficha,
+    `SELECT sc.id_solicitud, sc.estado, sc.fecha_solicitud, sc.fecha_resolucion, sc.observaciones,
+            sc.tipo_solicitud, sc.motivo, sc.campos_modificados, sc.datos_ficha,
             c.id_clinica, c.nombre AS nombre_clinica, c.municipio, c.tipo_institucion,
             c.estado_publicacion, c.correo_contacto, c.telefono
      FROM solicitudes_clinicas sc
@@ -131,7 +138,8 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
 
   return enTransaccion(pool, async (db) => {
     const { rows } = await db.query(
-      `SELECT sc.estado, sc.id_clinica, sc.datos_ficha, c.estado_publicacion AS estado_clinica
+      `SELECT sc.estado, sc.id_clinica, sc.datos_ficha, sc.tipo_solicitud,
+              c.estado_publicacion AS estado_clinica
        FROM solicitudes_clinicas sc
        INNER JOIN clinicas c ON c.id_clinica = sc.id_clinica
        WHERE sc.id_solicitud = $1
@@ -145,21 +153,82 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
     }
 
     const nuevoEstado = decision === "aprobar" ? "aprobada" : "rechazada";
-    const esCambioUbicacion =
-      actual.datos_ficha?.tipo_solicitud === "actualizacion_ubicacion" &&
-      actual.estado_clinica === "aprobada";
-    const ubicacionSolicitada = actual.datos_ficha?.ubicacion_solicitada;
+    const tipoSolicitud = actual.tipo_solicitud || actual.datos_ficha?.tipo_solicitud || "postulacion";
+    const esActualizacionAprobada =
+      actual.estado_clinica === "aprobada" &&
+      ["actualizacion_ubicacion", "actualizacion_informacion"].includes(tipoSolicitud);
+    const ubicacionSolicitada =
+      actual.datos_ficha?.ubicacion_solicitada || actual.datos_ficha?.datos_nuevos?.ubicacion;
+    const datosNuevos = actual.datos_ficha?.datos_nuevos || {};
 
     const solicitud = await db.query(
       `UPDATE solicitudes_clinicas
-       SET estado = $1, observaciones = COALESCE($2, observaciones)
+       SET estado = $1,
+           observaciones = COALESCE($2, observaciones),
+           fecha_resolucion = CURRENT_TIMESTAMP
        WHERE id_solicitud = $3
-       RETURNING id_solicitud, estado, fecha_solicitud, observaciones`,
+       RETURNING id_solicitud, estado, fecha_solicitud, fecha_resolucion, observaciones`,
       [nuevoEstado, obs.valor, idSolicitud]
     );
 
     let clinica;
-    if (
+    if (decision === "aprobar" && esActualizacionAprobada) {
+      const sets = ["estado_publicacion = 'aprobada'"];
+      const valores = [];
+      for (const campo of ["nombre", "tipo_institucion", "municipio", "codigo_postal", "direccion"]) {
+        if (Object.hasOwn(datosNuevos, campo)) {
+          valores.push(datosNuevos[campo]);
+          sets.push(`${campo} = $${valores.length}`);
+        }
+      }
+      if (
+        ubicacionSolicitada &&
+        Number.isFinite(Number(ubicacionSolicitada.latitud)) &&
+        Number.isFinite(Number(ubicacionSolicitada.longitud))
+      ) {
+        valores.push(Number(ubicacionSolicitada.longitud), Number(ubicacionSolicitada.latitud));
+        sets.push(
+          `ubicacion_geo = ST_SetSRID(ST_MakePoint($${valores.length - 1}, $${valores.length}), 4326)::geography`,
+          "situacion_ubicacion = 'fija'",
+          "verificacion_datos = 'verificado'"
+        );
+      }
+      valores.push(actual.id_clinica);
+      clinica = await db.query(
+        `UPDATE clinicas
+         SET ${sets.join(", ")}
+         WHERE id_clinica = $${valores.length}
+         RETURNING id_clinica, nombre, estado_publicacion`,
+        valores
+      );
+
+      if (Array.isArray(datosNuevos.areas_servicio)) {
+        const nombresActivos = datosNuevos.areas_servicio
+          .filter((c) => Object.hasOwn(ETIQUETAS_AREA, c))
+          .map((c) => NOMBRES_SERVICIOS[c]);
+        const srvRes = await db.query(
+          "SELECT id_servicio, nombre FROM servicios WHERE activo = TRUE AND nombre = ANY($1::text[])",
+          [nombresActivos]
+        );
+        const idsActivos = srvRes.rows.map((r) => r.id_servicio);
+        for (const idSrv of idsActivos) {
+          await db.query(
+            `INSERT INTO clinicas_servicios (id_clinica, id_servicio, activo)
+             VALUES ($1, $2, TRUE)
+             ON CONFLICT (id_clinica, id_servicio)
+             DO UPDATE SET activo = TRUE`,
+            [actual.id_clinica, idSrv]
+          );
+        }
+        if (idsActivos.length > 0) {
+          await db.query(
+            `UPDATE clinicas_servicios SET activo = FALSE
+             WHERE id_clinica = $1 AND NOT (id_servicio = ANY($2::uuid[]))`,
+            [actual.id_clinica, idsActivos]
+          );
+        }
+      }
+    } else if (
       decision === "aprobar" &&
       ubicacionSolicitada &&
       Number.isFinite(Number(ubicacionSolicitada.latitud)) &&
@@ -175,8 +244,8 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
          RETURNING id_clinica, nombre, estado_publicacion`,
         [Number(ubicacionSolicitada.longitud), Number(ubicacionSolicitada.latitud), actual.id_clinica]
       );
-    } else if (decision === "rechazar" && esCambioUbicacion) {
-      // Si se rechaza un cambio de ubicación de una clínica ya aprobada, conserva su publicación actual.
+    } else if (decision === "rechazar" && esActualizacionAprobada) {
+      // Si se rechaza una actualización de una clínica ya aprobada, conserva su publicación actual.
       clinica = await db.query(
         `SELECT id_clinica, nombre, estado_publicacion
          FROM clinicas
@@ -202,11 +271,11 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
     }
     return respuesta(200, {
       mensaje: decision === "aprobar"
-        ? (esCambioUbicacion
-          ? "Ubicación aprobada y actualizada en el directorio público."
+        ? (esActualizacionAprobada
+          ? "Actualización aprobada y publicada en el directorio."
           : "Solicitud aprobada. La clínica ya aparece en el directorio público.")
-        : (esCambioUbicacion
-          ? "Cambio de ubicación rechazado. La clínica conserva su ubicación aprobada anterior."
+        : (esActualizacionAprobada
+          ? "Solicitud rechazada. La clínica conserva su información publicada anterior."
           : "Solicitud rechazada. La clínica puede corregir su ficha y volver a postular."),
       solicitud: solicitud.rows[0],
       clinica: clinica.rows[0],
