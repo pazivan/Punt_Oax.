@@ -475,7 +475,28 @@ function App() {
     )
   }
 
-  if (pathname === '/admin' || pathname === '/admin/usuarios' || /^\/admin\/solicitudes\/[^/]+$/.test(pathname)) {
+  const esRutaAdmin =
+    pathname === '/admin' ||
+    pathname === '/admin/usuarios' ||
+    pathname === '/admin/clinicas' ||
+    pathname === '/admin/citas' ||
+    pathname === '/admin/calendarios' ||
+    pathname === '/admin/mapa' ||
+    /^\/admin\/solicitudes\/[^/]+$/.test(pathname) ||
+    /^\/admin\/clinicas\/[^/]+$/.test(pathname) ||
+    /^\/admin\/usuarios\/[^/]+$/.test(pathname)
+
+  if (esRutaAdmin) {
+    const idSolicitud = /^\/admin\/solicitudes\/[^/]+$/.test(pathname) ? pathname.split('/')[3] : null
+    const idClinica = /^\/admin\/clinicas\/[^/]+$/.test(pathname) ? pathname.split('/')[3] : null
+    const idUsuario = /^\/admin\/usuarios\/[^/]+$/.test(pathname) ? pathname.split('/')[3] : null
+    const vistaAdmin = pathname === '/admin/citas'
+      ? 'citas'
+      : pathname === '/admin/calendarios'
+        ? 'calendarios'
+        : pathname === '/admin/mapa'
+          ? 'mapa'
+          : null
     return (
       <>
         <RutaPrivada
@@ -486,9 +507,16 @@ function App() {
           onReintentar={reintentarVerificacionPerfil}
           rolesPermitidos={[ROLES.ADMINISTRADOR]}
         >
-          <Administracion sesion={sesion} onSalir={salir}
+          <Administracion
+            sesion={sesion}
+            onSalir={salir}
             listaUsuarios={pathname === '/admin/usuarios'}
-            idSolicitud={pathname === '/admin' || pathname === '/admin/usuarios' ? null : pathname.split('/')[3]} />
+            listaClinicas={pathname === '/admin/clinicas'}
+            vistaAdmin={vistaAdmin}
+            idSolicitud={idSolicitud}
+            idClinica={idClinica}
+            idUsuario={idUsuario}
+          />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
