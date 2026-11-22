@@ -14,6 +14,8 @@ import TarjetaClinica from './TarjetaClinica.jsx';
 export default function ListadoClinicas({
   clinicas = [],
   clinicaSeleccionadaId = null,
+  favoritosIds = [],
+  onAlternarFavorito,
   onSeleccionarClinica,
   onVerDetallesClinica,
   cargando = false,
@@ -36,6 +38,8 @@ export default function ListadoClinicas({
             <TarjetaClinica
               clinica={clinica}
               seleccionada={clinicaSeleccionadaId === clinica.id_clinica}
+              esFavorita={favoritosIds.includes(clinica.id_clinica)}
+              onAlternarFavorito={onAlternarFavorito}
               onSeleccionar={onSeleccionarClinica}
               onVerDetalles={onVerDetallesClinica}
             />
