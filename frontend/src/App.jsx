@@ -479,10 +479,12 @@ function App() {
     )
   }
 
+  const esNuevaClinica = pathname === '/admin/clinicas/nueva'
   const esRutaAdmin =
     pathname === '/admin' ||
     pathname === '/admin/usuarios' ||
     pathname === '/admin/clinicas' ||
+    esNuevaClinica ||
     pathname === '/admin/citas' ||
     pathname === '/admin/calendarios' ||
     pathname === '/admin/mapa' ||
@@ -492,15 +494,17 @@ function App() {
 
   if (esRutaAdmin) {
     const idSolicitud = /^\/admin\/solicitudes\/[^/]+$/.test(pathname) ? pathname.split('/')[3] : null
-    const idClinica = /^\/admin\/clinicas\/[^/]+$/.test(pathname) ? pathname.split('/')[3] : null
+    const idClinica = !esNuevaClinica && /^\/admin\/clinicas\/[^/]+$/.test(pathname) ? pathname.split('/')[3] : null
     const idUsuario = /^\/admin\/usuarios\/[^/]+$/.test(pathname) ? pathname.split('/')[3] : null
-    const vistaAdmin = pathname === '/admin/citas'
-      ? 'citas'
-      : pathname === '/admin/calendarios'
-        ? 'calendarios'
-        : pathname === '/admin/mapa'
-          ? 'mapa'
-          : null
+    const vistaAdmin = esNuevaClinica
+      ? 'nueva-clinica'
+      : pathname === '/admin/citas'
+        ? 'citas'
+        : pathname === '/admin/calendarios'
+          ? 'calendarios'
+          : pathname === '/admin/mapa'
+            ? 'mapa'
+            : null
     return (
       <>
         <RutaPrivada
