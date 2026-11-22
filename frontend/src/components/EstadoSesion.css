@@ -1,0 +1,133 @@
+.puntoax-sesion-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: linear-gradient(180deg, #f5faf7 0%, #edf4f0 100%);
+  color: #102a21;
+  box-sizing: border-box;
+}
+
+.puntoax-sesion-card {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border: 1px solid #d6e6df;
+  border-radius: 18px;
+  padding: 32px 28px;
+  box-shadow: 0 12px 32px rgba(16, 51, 40, 0.08);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.puntoax-sesion-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #103328;
+  margin-bottom: 4px;
+}
+
+.puntoax-sesion-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.puntoax-sesion-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid #d6e6df;
+  border-top-color: #103328;
+  border-radius: 50%;
+  animation: puntoax-spin 0.8s linear infinite;
+}
+
+@keyframes puntoax-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.puntoax-sesion-icon-error {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fef3f2;
+  color: #b42318;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.puntoax-sesion-titulo {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #103328;
+}
+
+.puntoax-sesion-texto {
+  margin: 0;
+  font-size: 0.96rem;
+  line-height: 1.5;
+  color: #425d53;
+}
+
+.puntoax-sesion-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.puntoax-sesion-btn-primario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 0;
+  background: #103328;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.94rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.puntoax-sesion-btn-primario:hover {
+  background: #184a3b;
+}
+
+.puntoax-sesion-btn-secundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid #c5dbd1;
+  background: #ffffff;
+  color: #103328;
+  font-weight: 600;
+  font-size: 0.94rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.puntoax-sesion-btn-secundario:hover {
+  background: #f2f7f4;
+  border-color: #9ec2b2;
+}

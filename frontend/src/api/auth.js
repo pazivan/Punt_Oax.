@@ -18,6 +18,8 @@ async function leerRespuesta(respuesta) {
     const error = new Error(typeof contenido?.error === 'string' && contenido.error.trim()
       ? contenido.error
       : mensajeError(respuesta.status))
+    error.status = respuesta.status
+    error.esTemporal = respuesta.status >= 500
     if (contenido && typeof contenido === 'object') {
       error.campos = contenido.campos
       error.codigo = contenido.codigo
@@ -42,7 +44,11 @@ async function enviarAuth(ruta, datos) {
       body: JSON.stringify(datos),
     })
   } catch {
-    throw new Error('No se pudo conectar con el servidor.')
+    const error = new Error('No se pudo conectar con el servidor.')
+    error.esRed = true
+    error.esTemporal = true
+    error.codigo = 'ERROR_CONEXION'
+    throw error
   }
 
   return leerRespuesta(respuesta)
@@ -177,7 +183,11 @@ export async function enviarConSesion(ruta, opciones = {}) {
       },
     })
   } catch {
-    throw new Error('No se pudo conectar con el servidor.')
+    const error = new Error('No se pudo conectar con el servidor.')
+    error.esRed = true
+    error.esTemporal = true
+    error.codigo = 'ERROR_CONEXION'
+    throw error
   }
 
   try {
