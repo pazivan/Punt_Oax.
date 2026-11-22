@@ -295,12 +295,20 @@ function PanelInformacion({ solicitud }) {
   const horarios = Array.isArray(foto?.horarios) ? foto.horarios : []
   const maps = urlSegura(clinica.ubicacion_maps_url)
   const sitio = urlSegura(clinica.sitio_web)
+  const lat = Number(clinica.latitud)
+  const lng = Number(clinica.longitud)
+  const tieneCoordenadas = clinica.latitud != null && clinica.longitud != null &&
+    Number.isFinite(lat) && Number.isFinite(lng)
+  const osm = tieneCoordenadas
+    ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`
+    : null
   return <div className="admin-detalle-contenido">
     <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><Building2 size={19} /><h2>Información institucional</h2></div>
       {!foto && <div className="admin-aviso admin-aviso--info"><AlertCircle size={18} /><p>El API no devolvió la ficha guardada al postular. Solo pueden consultarse los datos resumidos.</p></div>}
-      <dl className="admin-campos"><Campo etiqueta="Nombre de la clínica" valor={clinica.nombre || solicitud.nombre_clinica} /><Campo etiqueta="Tipo de institución" valor={TIPO[clinica.tipo_institucion || solicitud.tipo_institucion] || clinica.tipo_institucion || solicitud.tipo_institucion} /><Campo etiqueta="Municipio" valor={clinica.municipio || solicitud.municipio} /><Campo etiqueta="Localidad" valor={clinica.localidad} /><Campo etiqueta="Dirección" valor={clinica.direccion} /><Campo etiqueta="Código postal" valor={clinica.codigo_postal} /></dl>
+      <dl className="admin-campos"><Campo etiqueta="Nombre de la clínica" valor={clinica.nombre || solicitud.nombre_clinica} /><Campo etiqueta="Tipo de institución" valor={TIPO[clinica.tipo_institucion || solicitud.tipo_institucion] || clinica.tipo_institucion || solicitud.tipo_institucion} /><Campo etiqueta="Municipio" valor={clinica.municipio || solicitud.municipio} /><Campo etiqueta="Localidad" valor={clinica.localidad} /><Campo etiqueta="Dirección" valor={clinica.direccion} /><Campo etiqueta="Código postal" valor={clinica.codigo_postal} /><Campo etiqueta="Ubicación confirmada" valor={tieneCoordenadas ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : 'Sin confirmar en el mapa'} /></dl>
       {clinica.descripcion && <div className="admin-descripcion"><strong>Descripción de la institución</strong><p>{clinica.descripcion}</p></div>}
       {maps && <a className="admin-link" href={maps} target="_blank" rel="noopener noreferrer"><MapPin size={16} />Ver ubicación en Google Maps <ArrowRight size={15} /></a>}
+      {osm && <a className="admin-link" href={osm} target="_blank" rel="noopener noreferrer"><MapPin size={16} />Ver punto confirmado en OpenStreetMap <ArrowRight size={15} /></a>}
     </section>
     <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><Phone size={19} /><h2>Datos de contacto</h2></div>
       <dl className="admin-campos"><Campo etiqueta="Teléfono" valor={clinica.telefono || solicitud.telefono} /><Campo etiqueta="Correo de contacto" valor={clinica.correo_contacto || solicitud.correo_contacto} /></dl>

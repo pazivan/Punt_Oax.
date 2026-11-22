@@ -16,6 +16,7 @@ import FichaClinica from './components/Clinica/FichaClinica.jsx'
 import PanelClinica from './components/Clinica/PanelClinica.jsx'
 import MisCitasClinica from './components/Clinica/MisCitasClinica.jsx'
 import AgendaClinica from './components/Clinica/AgendaClinica.jsx'
+import RutaClinicaAprobada from './components/Clinica/RutaClinicaAprobada.jsx'
 import MisCitasUsuario from './components/Citas/MisCitasUsuario.jsx'
 import Administracion from './components/Admin/Administracion.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
@@ -25,7 +26,7 @@ import './App.css'
 
 function App() {
   const navigate = useNavigate()
-  const { pathname, state: estadoRuta, key: rutaKey } = useLocation()
+  const { pathname, hash, state: estadoRuta, key: rutaKey } = useLocation()
   const [sesion, setSesion] = useState(leerSesion)
   const [verificacionPendiente, setVerificacionPendiente] = useState(leerVerificacionPendiente)
   const [mensajeAuth, setMensajeAuth] = useState('')
@@ -75,9 +76,20 @@ function App() {
   }, [pathname, sesion, reintentoCatalogo])
 
   useEffect(() => {
-    // Cada navegación comienza desde el inicio del documento.
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-  }, [rutaKey])
+    // Cada navegación comienza arriba; los enlaces internos de la ficha
+    // conservan su destino aunque la vista se monte tras verificar la sesión.
+    if (!hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      return undefined
+    }
+    const id = requestAnimationFrame(() => {
+      document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+    return () => cancelAnimationFrame(id)
+  }, [rutaKey, hash])
 
   useEffect(() => {
     // En móvil la navegación superior es desplazable: mantén visible la pestaña activa
@@ -386,7 +398,9 @@ function App() {
       <>
         <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
           error={errorPerfil} rolesPermitidos={['clinica']}>
-          <PanelClinica sesion={sesion} onSalir={salir} />
+          <RutaClinicaAprobada>
+            <PanelClinica sesion={sesion} onSalir={salir} />
+          </RutaClinicaAprobada>
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -403,7 +417,9 @@ function App() {
           error={errorPerfil}
           rolesPermitidos={['clinica']}
         >
-        <MisCitasClinica sesion={sesion} onSalir={salir} />
+        <RutaClinicaAprobada>
+          <MisCitasClinica sesion={sesion} onSalir={salir} />
+        </RutaClinicaAprobada>
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -412,7 +428,11 @@ function App() {
 
   if (pathname === '/mi-clinica/agenda') {
     return <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
-      error={errorPerfil} rolesPermitidos={['clinica']}><AgendaClinica sesion={sesion} onSalir={salir} /></RutaPrivada>
+      error={errorPerfil} rolesPermitidos={['clinica']}>
+      <RutaClinicaAprobada>
+        <AgendaClinica sesion={sesion} onSalir={salir} />
+      </RutaClinicaAprobada>
+    </RutaPrivada>
   }
 
   if (pathname === '/mi-clinica') {

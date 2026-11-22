@@ -1,30 +1,51 @@
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { User } from 'lucide-react'
+import { consultarMiFicha } from '../../api/auth'
 import '../../styles/Inicio.css'
 
 export default function EncabezadoClinica({
   sesion,
   onSalir,
-  modoPostulacion = false,
+  modoPostulacion = null,
+  estadoPublicacion = null,
   vistaPanel = null,
   onSeleccionarVistaPanel = null,
   vistaCitas = null,
   onSeleccionarVistaCitas = null,
 }) {
-  const { pathname, search } = useLocation()
+  const { pathname, search, hash } = useLocation()
   const params = new URLSearchParams(search)
   const vistaQuery = params.get('vista')
 
+  // El estado real vive en el servidor. Se usa el valor recibido por props y,
+  // cuando la vista no lo conoce (mapa, conócenos, información útil), se
+  // consulta la ficha una vez, sin depender del almacenamiento de la sesión.
+  const [estadoDetectado, setEstadoDetectado] = useState(null)
+  const estadoEfectivo = estadoPublicacion || estadoDetectado
+
+  useEffect(() => {
+    if (modoPostulacion !== null || estadoEfectivo || sesion?.tipo !== 'clinica') return undefined
+    let activo = true
+    consultarMiFicha()
+      .then((datos) => {
+        if (activo) setEstadoDetectado(datos?.clinica?.estado_publicacion || 'borrador')
+      })
+      .catch(() => {
+        // Si falla la consulta, se mantiene la navegación restringida segura.
+        if (activo) setEstadoDetectado('borrador')
+      })
+    return () => { activo = false }
+  }, [modoPostulacion, estadoEfectivo, sesion?.tipo])
+
   const enPostulacion =
     modoPostulacion === true ||
-    (modoPostulacion !== false &&
-      sesion?.cuenta?.estado_publicacion !== 'aprobada' &&
-      sessionStorage.getItem('puntoax_panel_aprobado') !== '1')
+    (modoPostulacion !== false && estadoEfectivo !== 'aprobada')
 
   if (enPostulacion) {
     const enlacesPostulacion = [
       { ruta: '/mi-clinica', texto: 'Inicio' },
-      { ruta: '/mapa', texto: 'Mapa de centros' },
+      { ruta: '/mi-clinica#postulacion', texto: 'Mi postulación' },
     ]
 
     return (
@@ -52,7 +73,9 @@ export default function EncabezadoClinica({
               aria-label="Navegación principal"
             >
               {enlacesPostulacion.map(({ ruta, texto }) => {
-                const activo = pathname === ruta
+                const activo = ruta.includes('#')
+                  ? pathname === '/mi-clinica' && hash === '#postulacion'
+                  : pathname === ruta && !hash
                 return (
                   <Link
                     key={ruta}
