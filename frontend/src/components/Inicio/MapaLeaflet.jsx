@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import { Maximize2, Minimize2 } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 import {
@@ -32,12 +32,54 @@ function crearIconoMarcador(tipo, seleccionada, esPropia = false) {
   })
 }
 
-function EnfocarCentro({ clinica, centrarTrigger = 0, zoomMinimo = 14 }) {
+function crearIconoUsuario() {
+  return L.divIcon({
+    className: 'mapa-custom-div-icon',
+    html: '<span class="mapa-user-location-dot" aria-hidden="true"></span>',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -12],
+  })
+}
+
+function EnfocarCentro({
+  clinica,
+  centrarTrigger = 0,
+  zoomMinimo = 14,
+  ubicacionUsuario = null,
+  ubicacionVersion = 0,
+}) {
   const mapa = useMap()
+  const prevUbicacionVersionRef = useRef(0)
+  const prevCentrarTriggerRef = useRef(0)
+  const inicializadoRef = useRef(false)
+
   useEffect(() => {
-    if (!ubicacionConfirmada(clinica)) return
-    mapa.flyTo(coordenadas(clinica), Math.max(mapa.getZoom(), zoomMinimo), { duration: 0.5 })
-  }, [clinica, centrarTrigger, zoomMinimo, mapa])
+    if (
+      ubicacionUsuario &&
+      Number.isFinite(ubicacionUsuario.lat) &&
+      Number.isFinite(ubicacionUsuario.lng) &&
+      ubicacionVersion !== prevUbicacionVersionRef.current
+    ) {
+      prevUbicacionVersionRef.current = ubicacionVersion
+      mapa.flyTo([ubicacionUsuario.lat, ubicacionUsuario.lng], Math.max(mapa.getZoom(), 13), { duration: 0.5 })
+    }
+  }, [ubicacionUsuario, ubicacionVersion, mapa])
+
+  useEffect(() => {
+    if (centrarTrigger !== prevCentrarTriggerRef.current) {
+      prevCentrarTriggerRef.current = centrarTrigger
+      if (ubicacionConfirmada(clinica)) {
+        mapa.flyTo(coordenadas(clinica), Math.max(mapa.getZoom(), zoomMinimo), { duration: 0.5 })
+      }
+      return
+    }
+    if (!inicializadoRef.current && !ubicacionUsuario && ubicacionConfirmada(clinica)) {
+      inicializadoRef.current = true
+      mapa.flyTo(coordenadas(clinica), Math.max(mapa.getZoom(), zoomMinimo), { duration: 0.5 })
+    }
+  }, [clinica, centrarTrigger, zoomMinimo, ubicacionUsuario, mapa])
+
   return null
 }
 
@@ -73,6 +115,9 @@ export default function MapaLeaflet({
   mostrarLeyenda = true,
   zoomInicial = 11,
   centrarTrigger = 0,
+  ubicacionUsuario = null,
+  ubicacionVersion = 0,
+  radioKm = 10,
 }) {
   const ubicadas = useMemo(
     () => clinicas.filter((clinica) => ubicacionConfirmada(clinica)),
@@ -150,7 +195,41 @@ export default function MapaLeaflet({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <AjustarTamanoMapa modoVista={modoVista} pantallaCompleta={pantallaCompleta} />
-        <EnfocarCentro clinica={clinicaSeleccionada} centrarTrigger={centrarTrigger} zoomMinimo={zoomInicial >= 14 ? zoomInicial : 14} />
+        <EnfocarCentro
+          clinica={clinicaSeleccionada}
+          centrarTrigger={centrarTrigger}
+          zoomMinimo={zoomInicial >= 14 ? zoomInicial : 14}
+          ubicacionUsuario={ubicacionUsuario}
+          ubicacionVersion={ubicacionVersion}
+        />
+        {ubicacionUsuario && Number.isFinite(ubicacionUsuario.lat) && Number.isFinite(ubicacionUsuario.lng) && (
+          <>
+            <Circle
+              center={[ubicacionUsuario.lat, ubicacionUsuario.lng]}
+              radius={Math.max(0.5, Number(radioKm) || 10) * 1000}
+              pathOptions={{
+                color: '#103328',
+                fillColor: '#43A882',
+                fillOpacity: 0.1,
+                weight: 1.5,
+                dashArray: '5 5',
+              }}
+            />
+            <Marker
+              position={[ubicacionUsuario.lat, ubicacionUsuario.lng]}
+              icon={crearIconoUsuario()}
+              zIndexOffset={1500}
+            >
+              <Popup>
+                <strong>Tu ubicación actual</strong>
+                <br />
+                <span>
+                  {ubicacionUsuario.lat.toFixed(5)}, {ubicacionUsuario.lng.toFixed(5)}
+                </span>
+              </Popup>
+            </Marker>
+          </>
+        )}
         {ubicadas.map((clinica) => {
           const tipo = clasificarServicioCentro(clinica)
           const esPropia = Boolean(clinicaAutenticadaId && String(clinica.id_clinica) === String(clinicaAutenticadaId))
@@ -205,9 +284,13 @@ export default function MapaLeaflet({
         </div>
       )}
 
-      {ubicadas.length === 0 && (
+      {ubicadas.length === 0 ? (
         <p className="mapa-leaflet-vacio" role="status">No hay centros con coordenadas para los filtros seleccionados.</p>
-      )}
+      ) : clinicaSeleccionada && !ubicacionConfirmada(clinicaSeleccionada) ? (
+        <p className="mapa-leaflet-vacio" role="status">
+          <strong>{clinicaSeleccionada.nombre}</strong> no tiene ubicación confirmada en el mapa; consulta su dirección en «Ver detalles».
+        </p>
+      ) : null}
     </div>
   )
 }

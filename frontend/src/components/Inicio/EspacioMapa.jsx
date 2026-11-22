@@ -29,6 +29,10 @@ export default function EspacioMapa({
   terminoBusqueda = '',
   modoVista = 'combinada',
   clinicaAutenticadaId = null,
+  ubicacionUsuario = null,
+  ubicacionVersion = 0,
+  radioKm = 10,
+  centrarTrigger = 0,
   ComponenteMapa = null,
   children,
 }) {
@@ -46,6 +50,10 @@ export default function EspacioMapa({
             terminoBusqueda={terminoBusqueda}
             modoVista={modoVista}
             clinicaAutenticadaId={clinicaAutenticadaId}
+            ubicacionUsuario={ubicacionUsuario}
+            ubicacionVersion={ubicacionVersion}
+            radioKm={radioKm}
+            centrarTrigger={centrarTrigger}
           />
         </div>
       </div>

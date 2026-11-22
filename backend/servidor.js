@@ -13,6 +13,7 @@ const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
 const { registrarRutasAdminUsuarios } = require("./adminUsuarios");
 const { registrarRutasAgendaClinica } = require("./agendaClinica");
+const { registrarRutasCercania } = require("./cercania");
 const { registrarRutasDatosClinica } = require("./datosClinica");
 const { calcularCambiosRevisionServidor } = require("./comparacionFicha");
 const { validarCoordenadas } = require("./ubicacion");
@@ -37,6 +38,8 @@ app.use(express.json());
 const { enviarDesafio, proveedor: proveedorCorreo, limiteIp: limiteCorreo } = registrarRutasCorreo(app, { pool, hashearPassword, validarPassword });
 // Registrar las rutas estáticas de la agenda antes de /api/clinicas/:id.
 registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol });
+// Centros cercanos (Sprint 8 · #94 y #95). Debe ir antes de /api/clinicas/:id.
+registrarRutasCercania(app, { pool });
 
 const recibirDocumentos = multer({
   storage: multer.memoryStorage(),
