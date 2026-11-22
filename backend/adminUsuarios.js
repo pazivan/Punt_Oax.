@@ -10,6 +10,7 @@
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LIMITE_USUARIOS = 200;
+const { responderErrorEsquema } = require("./erroresEsquema");
 
 const COLUMNAS_PUBLICAS = `
   id_usuario,
@@ -143,6 +144,7 @@ function registrarRutasAdminUsuarios(app, { pool, autenticarToken, requerirRol }
       return res.status(resultado.status).json(resultado.body);
     } catch (error) {
       console.error("Error al consultar los usuarios:", error.message);
+      if (responderErrorEsquema(res, error)) return;
       return res.status(500).json({ error: "No se pudo obtener el listado de usuarios." });
     }
   });
@@ -153,6 +155,7 @@ function registrarRutasAdminUsuarios(app, { pool, autenticarToken, requerirRol }
       return res.status(resultado.status).json(resultado.body);
     } catch (error) {
       console.error("Error al consultar el usuario:", error.message);
+      if (responderErrorEsquema(res, error)) return;
       return res.status(500).json({ error: "No se pudo obtener el detalle del usuario." });
     }
   });
@@ -163,6 +166,7 @@ function registrarRutasAdminUsuarios(app, { pool, autenticarToken, requerirRol }
       return res.status(resultado.status).json(resultado.body);
     } catch (error) {
       console.error("Error al cambiar el estado del usuario:", error.message);
+      if (responderErrorEsquema(res, error)) return;
       return res.status(500).json({ error: "No se pudo actualizar el estado de la cuenta." });
     }
   });

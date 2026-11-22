@@ -35,6 +35,7 @@ import { ZONA_HORARIA, filtrarCitas } from '../../utils/citasClinica'
 import { compararFichaConFormulario } from '../../utils/comparacionFicha'
 import { validarCoordenadas, validarHorarios } from '../../utils/validacionFicha'
 import { validarEmail, validarTelefono } from '../../utils/validaciones'
+import { describirErrorConsulta } from '../../utils/erroresConsulta.js'
 import '../../styles/Inicio.css'
 import '../../css/PanelClinica.css'
 
@@ -203,7 +204,7 @@ export default function PanelClinica({ sesion, onSalir }) {
     vistaQuery === 'editar' ? 'editar' : vistaQuery === 'solicitudes' ? 'solicitudes' : 'inicio'
   const solicitudQueryId = searchParams.get('solicitud')
   const [cargando, setCargando] = useState(true)
-  const [errorCarga, setErrorCarga] = useState('')
+  const [errorCarga, setErrorCarga] = useState(null)
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -234,11 +235,11 @@ export default function PanelClinica({ sesion, onSalir }) {
 
   async function cargarFicha() {
     setCargando(true)
-    setErrorCarga('')
+    setErrorCarga(null)
     try {
       aplicarFicha(await consultarMiFicha())
     } catch (err) {
-      setErrorCarga(err.message)
+      setErrorCarga(err)
     } finally {
       setCargando(false)
     }
@@ -253,7 +254,7 @@ export default function PanelClinica({ sesion, onSalir }) {
         setForm(estadoInicialDesdeFicha(datos))
       })
       .catch((err) => {
-        if (activo) setErrorCarga(err.message)
+        if (activo) setErrorCarga(err)
       })
       .finally(() => {
         if (activo) setCargando(false)
@@ -349,6 +350,7 @@ export default function PanelClinica({ sesion, onSalir }) {
   }
 
   if (errorCarga) {
+    const aviso = describirErrorConsulta(errorCarga, 'los datos de tu clínica')
     return (
       <div className="panel-clinica-page">
         <EncabezadoClinica
@@ -360,11 +362,11 @@ export default function PanelClinica({ sesion, onSalir }) {
         />
         <main className="ficha-state-card" role="alert">
           <AlertTriangle size={30} aria-hidden="true" />
-          <h1>No pudimos cargar los datos de tu clínica</h1>
-          <p>{errorCarga}</p>
-          <button type="button" className="ficha-btn-primary" onClick={cargarFicha}>
+          <h1>{aviso.titulo}</h1>
+          <p>{aviso.mensaje}</p>
+          {aviso.reintentar && <button type="button" className="ficha-btn-primary" onClick={cargarFicha}>
             Reintentar
-          </button>
+          </button>}
         </main>
       </div>
     )

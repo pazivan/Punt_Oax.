@@ -94,14 +94,19 @@ export async function descargarDocumentoAdmin(idDocumento) {
       headers: { Authorization: `Bearer ${token}` },
     })
   } catch {
-    throw new Error('No se pudo conectar con el servidor de documentos.')
+    const error = new Error('No se pudo conectar con el servidor de documentos.')
+    error.codigo = 'ERROR_CONEXION'
+    throw error
   }
   if (!respuesta.ok) {
-    if ((respuesta.status === 401 || respuesta.status === 403) && leerSesion()?.token === token) {
-      cerrarSesion()
-    }
     const datos = await respuesta.json().catch(() => null)
-    throw new Error(datos?.error || `No se pudo descargar el documento (${respuesta.status}).`)
+    if ((respuesta.status === 401 || (respuesta.status === 403 &&
+        ['TOKEN_EXPIRADO', 'TOKEN_INVALIDO', 'SESION_INVALIDA'].includes(datos?.codigo))) &&
+        leerSesion()?.token === token) cerrarSesion()
+    const error = new Error(datos?.error || `No se pudo descargar el documento (${respuesta.status}).`)
+    error.status = respuesta.status
+    error.codigo = datos?.codigo
+    throw error
   }
   return respuesta.blob()
 }

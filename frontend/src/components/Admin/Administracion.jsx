@@ -15,6 +15,7 @@ import {
   resolverSolicitudAdmin,
 } from '../../api/admin.js'
 import Paginacion from './Paginacion.jsx'
+import { describirErrorConsulta } from '../../utils/erroresConsulta.js'
 import L from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -94,11 +95,12 @@ function estadoEfectivo(solicitud) {
   return solicitud.estado === 'aprobada' && solicitud.estado_publicacion === 'suspendida'
     ? 'suspendida' : solicitud.estado
 }
-function ErrorCarga({ mensaje, reintentar }) {
+function ErrorCarga({ error, reintentar, recurso }) {
+  const aviso = describirErrorConsulta(error, recurso)
   return <div className="admin-aviso admin-aviso--error" role="alert">
     <AlertCircle size={19} aria-hidden="true" />
-    <div><strong>No se pudo completar la consulta</strong><p>{mensaje}</p></div>
-    {reintentar && <button className="admin-btn admin-btn--outline" onClick={reintentar} type="button">Reintentar</button>}
+    <div><strong>{aviso.titulo}</strong><p>{aviso.mensaje}</p></div>
+    {aviso.reintentar && reintentar && <button className="admin-btn admin-btn--outline" onClick={reintentar} type="button">Reintentar</button>}
   </div>
 }
 function Cargando({ mensaje = 'Consultando solicitudes…' }) {
@@ -213,6 +215,7 @@ function ListaSolicitudes({ onSalir }) {
   const [totalPaginas, setTotalPaginas] = useState(1)
   const [resumen, setResumen] = useState({ total: 0, pendientes: 0, aprobadas: 0, rechazadas: 0 })
   const [resumenGeneral, setResumenGeneral] = useState(null)
+  const [errorResumen, setErrorResumen] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [recarga, setRecarga] = useState(0)
@@ -223,8 +226,8 @@ function ListaSolicitudes({ onSalir }) {
     if (!esResumen) return undefined
     let activo = true
     consultarResumenAdmin()
-      .then((datos) => { if (activo) setResumenGeneral(datos) })
-      .catch(() => { /* si falla, se conservan los conteos disponibles de solicitudes */ })
+      .then((datos) => { if (activo) { setResumenGeneral(datos); setErrorResumen(null) } })
+      .catch((err) => { if (activo) { setResumenGeneral(null); setErrorResumen(err) } })
     return () => { activo = false }
   }, [esResumen, recarga])
 
@@ -253,7 +256,7 @@ function ListaSolicitudes({ onSalir }) {
           setError('')
         }
       })
-      .catch((err) => { if (activo) setError(err.message) })
+      .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
   }, [filtro, pagina, limite, busquedaAplicada, recarga])
@@ -292,8 +295,9 @@ function ListaSolicitudes({ onSalir }) {
       acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>} />
     <div className="admin-cuerpo">
       {esResumen && <div className="admin-bienvenida"><div><span className="admin-eyebrow">GESTIÓN DE CLÍNICAS</span><h2>Solicitudes de incorporación</h2><p>{seccion.introduccion}</p></div><span className="admin-bienvenida-icon"><Building2 size={38} /></span></div>}
-      {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
-      {esResumen && !error && <Resumen resumenGeneral={resumenGeneral} resumenSolicitudes={resumen} />}
+      {error && <ErrorCarga error={error} reintentar={recargar} recurso="las solicitudes" />}
+      {esResumen && !error && errorResumen && <ErrorCarga error={errorResumen} reintentar={recargar} recurso="el resumen administrativo" />}
+      {esResumen && !error && !errorResumen && resumenGeneral && <Resumen resumenGeneral={resumenGeneral} resumenSolicitudes={resumen} />}
       {!error && (
         <section className="admin-panel" aria-labelledby="admin-tabla-titulo">
           <div className="admin-panel-header"><div><span className="admin-eyebrow">BANDEJA DE REVISIÓN</span><h2 id="admin-tabla-titulo">{esResumen ? 'Clínicas y solicitudes' : seccion.titulo} <span className="admin-contador">{total}</span></h2><p>{esResumen ? (pendientes ? `${pendientes} solicitud${pendientes === 1 ? '' : 'es'} pendiente${pendientes === 1 ? '' : 's'} de respuesta.` : 'No hay solicitudes pendientes de revisión.') : seccion.introduccion}</p></div></div>
@@ -368,7 +372,7 @@ function ListaUsuarios({ onSalir }) {
           setError('')
         }
       })
-      .catch((err) => { if (activo) setError(err.message) })
+      .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
   }, [pagina, limite, busquedaAplicada, recarga])
@@ -398,7 +402,7 @@ function ListaUsuarios({ onSalir }) {
         <div><span className="admin-eyebrow">GESTIÓN DE CUENTAS</span><h2>Cuentas de usuario</h2><p>Listado de solo lectura: no muestra contraseñas ni permite modificar cuentas.</p></div>
         <span className="admin-bienvenida-icon"><Users size={38} /></span>
       </div>
-      {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
+      {error && <ErrorCarga error={error} reintentar={recargar} recurso="los usuarios registrados" />}
       {!error && <>
         <section className="admin-resumen" aria-label="Resumen de usuarios">
           {estadisticas.map(({ titulo, valor, icono: Icono, estilo }) => <article className="admin-metrica" key={titulo}>
@@ -583,12 +587,12 @@ function Documentos({ documentos }) {
       enlace.remove()
       // Esperar a que el navegador inicie la descarga antes de liberar el blob.
       setTimeout(() => URL.revokeObjectURL(url), 1000)
-    } catch (err) { setErrorDocumento(err.message) }
+    } catch (err) { setErrorDocumento(err) }
     finally { tarea.current = false; setDescargando(null) }
   }
   return <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><FileText size={19} /><h2>Documentos de respaldo</h2></div>
     <p className="admin-seccion-ayuda">Archivos privados actuales de la clínica. Solo el administrador puede descargarlos.</p>
-    {errorDocumento && <ErrorCarga mensaje={errorDocumento} />}
+    {errorDocumento && <ErrorCarga error={errorDocumento} recurso="el documento" />}
     {documentos.length ? <div className="admin-documentos">{documentos.map((d) => <div className="admin-documento" key={d.id_documento}><span className="admin-documento-icon"><FileText size={19} /></span><div className="admin-documento-texto"><strong>{d.nombre_original || 'Documento de respaldo'}</strong><small>{typeof d.tamano_bytes === 'number' ? `${Math.ceil(d.tamano_bytes / 1024)} KB · ` : ''}{fecha(d.fecha_carga)}</small></div><button type="button" className="admin-btn admin-btn--outline" disabled={descargando !== null} onClick={() => descargar(d)}><Download size={16} />{descargando === d.id_documento ? 'Descargando…' : 'Descargar'}</button></div>)}</div> : <p className="admin-vacio-pequeno">No hay documentos disponibles para descargar.</p>}
   </section>
 }
@@ -631,7 +635,7 @@ function DetalleSolicitud({ idSolicitud, onSalir }) {
       if (!resultado?.solicitud) throw new Error('La solicitud no se encontró en la respuesta del servidor.')
       setDetalle(resultado)
       setError('')
-    } catch (err) { setError(err.message) }
+    } catch (err) { setError(err) }
     finally { setCargando(false) }
   }, [idSolicitud])
   useEffect(() => {
@@ -641,7 +645,7 @@ function DetalleSolicitud({ idSolicitud, onSalir }) {
         if (!resultado?.solicitud) throw new Error('La solicitud no se encontró en la respuesta del servidor.')
         if (activo) { setDetalle(resultado); setError('') }
       })
-      .catch((err) => { if (activo) setError(err.message) })
+      .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
   }, [idSolicitud])
@@ -683,7 +687,7 @@ function DetalleSolicitud({ idSolicitud, onSalir }) {
       acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={cargar} disabled={cargando || procesando}><RefreshCw size={16} />Actualizar</button>} />
     <div className="admin-cuerpo admin-detalle-pagina">
       <button className="admin-volver" type="button" onClick={() => navigate(location.state?.volver || '/admin')}><ArrowLeft size={17} />Volver a solicitudes</button>
-      {error && <ErrorCarga mensaje={error} reintentar={cargar} />}
+      {error && <ErrorCarga error={error} reintentar={cargar} recurso="la solicitud" />}
       {cargando && !detalle ? <Cargando mensaje="Cargando la ficha de revisión…" /> : solicitud && <>
         <div className="admin-detalle-hero"><div className="admin-detalle-icon"><Building2 size={31} /></div><div className="admin-detalle-hero-texto"><span className="admin-eyebrow">POSTULACIÓN DE CENTRO DE SALUD</span><h2>{texto(solicitud.nombre_clinica)}</h2><div className="admin-detalle-meta"><span><MapPin size={15} />{texto(solicitud.municipio)}</span><span><CalendarDays size={15} />{fecha(solicitud.fecha_solicitud)}</span></div></div><Estado estado={estado} /></div>
         {aviso && <div className="admin-aviso admin-aviso--exito" role="status"><CheckCircle2 size={19} /><p>{aviso}</p><button type="button" className="admin-cerrar" aria-label="Cerrar aviso" onClick={() => setAviso('')}><X size={17} /></button></div>}
@@ -756,7 +760,7 @@ function ListaClinicasAdmin({ onSalir }) {
           setError('')
         }
       })
-      .catch((err) => { if (activo) setError(err.message) })
+      .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
   }, [filtro, pagina, limite, busquedaAplicada, recarga])
@@ -777,7 +781,7 @@ function ListaClinicasAdmin({ onSalir }) {
     <Encabezado titulo="Clínicas registradas" descripcion="Consulta todas las clínicas almacenadas en la plataforma y gestiona su visibilidad." onSalir={onSalir}
       acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>} />
     <div className="admin-cuerpo">
-      {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
+      {error && <ErrorCarga error={error} reintentar={recargar} recurso="las clínicas registradas" />}
       {!error && <>
         <section className="admin-resumen" aria-label="Resumen de clínicas">
           {estadisticas.map(({ titulo, valor, icono: Icono, estilo }) => <article className="admin-metrica" key={titulo}>
@@ -836,7 +840,7 @@ function DetalleClinicaAdmin({ idClinica, onSalir }) {
       if (!resultado?.clinica) throw new Error('No se encontró la clínica solicitada.')
       setDetalle(resultado)
       setError('')
-    } catch (err) { setError(err.message) }
+    } catch (err) { setError(err) }
     finally { setCargando(false) }
   }, [idClinica])
 
@@ -847,7 +851,7 @@ function DetalleClinicaAdmin({ idClinica, onSalir }) {
         if (!resultado?.clinica) throw new Error('No se encontró la clínica solicitada.')
         if (activo) { setDetalle(resultado); setError('') }
       })
-      .catch((err) => { if (activo) setError(err.message) })
+      .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
   }, [idClinica])
@@ -892,7 +896,7 @@ function DetalleClinicaAdmin({ idClinica, onSalir }) {
       acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={cargar} disabled={cargando || procesando}><RefreshCw size={16} />Actualizar</button>} />
     <div className="admin-cuerpo admin-detalle-pagina">
       <button className="admin-volver" type="button" onClick={() => navigate('/admin/clinicas')}><ArrowLeft size={17} />Volver a clínicas</button>
-      {error && <ErrorCarga mensaje={error} reintentar={cargar} />}
+      {error && <ErrorCarga error={error} reintentar={cargar} recurso="la clínica" />}
       {cargando && !detalle ? <Cargando mensaje="Cargando información de la clínica…" /> : clinica && <>
         <div className="admin-detalle-hero"><div className="admin-detalle-icon"><Building2 size={31} /></div><div className="admin-detalle-hero-texto"><span className="admin-eyebrow">FICHA INSTITUCIONAL</span><h2>{texto(clinica.nombre)}</h2><div className="admin-detalle-meta"><span><MapPin size={15} />{texto(clinica.municipio)}</span><span><CalendarDays size={15} />Registro: {fecha(clinica.fecha_registro)}</span></div></div><Estado estado={clinica.estado_publicacion} /></div>
         {aviso && <div className="admin-aviso admin-aviso--exito" role="status"><CheckCircle2 size={19} /><p>{aviso}</p><button type="button" className="admin-cerrar" aria-label="Cerrar aviso" onClick={() => setAviso('')}><X size={17} /></button></div>}
@@ -1014,7 +1018,7 @@ function DetalleUsuarioAdmin({ idUsuario, onSalir }) {
       if (!resultado?.usuario) throw new Error('No se encontró la cuenta solicitada.')
       setUsuario(resultado.usuario)
       setError('')
-    } catch (err) { setError(err.message) }
+    } catch (err) { setError(err) }
     finally { setCargando(false) }
   }, [idUsuario])
 
@@ -1025,7 +1029,7 @@ function DetalleUsuarioAdmin({ idUsuario, onSalir }) {
         if (!resultado?.usuario) throw new Error('No se encontró la cuenta solicitada.')
         if (activo) { setUsuario(resultado.usuario); setError('') }
       })
-      .catch((err) => { if (activo) setError(err.message) })
+      .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
   }, [idUsuario])
@@ -1050,7 +1054,7 @@ function DetalleUsuarioAdmin({ idUsuario, onSalir }) {
       acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={cargar} disabled={cargando || procesando}><RefreshCw size={16} />Actualizar</button>} />
     <div className="admin-cuerpo admin-detalle-pagina">
       <button className="admin-volver" type="button" onClick={() => navigate('/admin/usuarios')}><ArrowLeft size={17} />Volver a usuarios</button>
-      {error && <ErrorCarga mensaje={error} reintentar={cargar} />}
+      {error && <ErrorCarga error={error} reintentar={cargar} recurso="el usuario" />}
       {cargando && !usuario ? <Cargando mensaje="Cargando información del usuario…" /> : usuario && <>
         <div className="admin-detalle-hero"><div className="admin-detalle-icon"><User size={31} /></div><div className="admin-detalle-hero-texto"><span className="admin-eyebrow">CUENTA DE PACIENTE</span><h2>{nombreCompleto(usuario) || 'Sin nombre registrado'}</h2><div className="admin-detalle-meta"><span><Mail size={15} />{texto(usuario.correo)}</span><span><CalendarDays size={15} />Registro: {fecha(usuario.fecha_registro)}</span></div></div><EstadoCuenta activo={usuario.activo} /></div>
         {aviso && <div className="admin-aviso admin-aviso--exito" role="status"><CheckCircle2 size={19} /><p>{aviso}</p><button type="button" className="admin-cerrar" aria-label="Cerrar aviso" onClick={() => setAviso('')}><X size={17} /></button></div>}
@@ -1190,7 +1194,7 @@ function ListaCitasAdmin({ onSalir }) {
           setError('')
         }
       })
-      .catch((err) => { if (activo) setError(err.message) })
+      .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
   }, [filtro, busquedaAplicada, pagina, limite, recarga])
@@ -1208,7 +1212,7 @@ function ListaCitasAdmin({ onSalir }) {
     <Encabezado titulo="Supervisión de citas" descripcion="Consulta general de citas registradas en las clínicas de PuntOax (solo lectura)." onSalir={onSalir}
       acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>} />
     <div className="admin-cuerpo">
-      {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
+      {error && <ErrorCarga error={error} reintentar={recargar} recurso="las citas" />}
       {!error && <>
         <section className="admin-resumen" aria-label="Resumen de citas">
           {estadisticas.map(({ titulo, valor, icono: Icono, estilo }) => <article className="admin-metrica" key={titulo}>
@@ -1259,7 +1263,7 @@ function SupervisionCalendariosAdmin({ onSalir }) {
     let activo = true
     consultarCalendarioAdmin(idClinica)
       .then((res) => { if (activo) { setDatos(res); setError('') } })
-      .catch((err) => { if (activo) setError(err.message) })
+      .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
   }, [idClinica, recarga])
@@ -1277,7 +1281,7 @@ function SupervisionCalendariosAdmin({ onSalir }) {
     <Encabezado titulo="Calendarios y disponibilidad" descripcion="Supervisión de horarios de atención, cupos próximos y días bloqueados por clínica." onSalir={onSalir}
       acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>} />
     <div className="admin-cuerpo">
-      {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
+      {error && <ErrorCarga error={error} reintentar={recargar} recurso="los calendarios" />}
       {!error && (
         <section className="admin-panel admin-detalle-bloque" aria-label="Selector de clínica">
           <div className="admin-herramientas" style={{ padding: 0, marginBottom: '16px' }}>
@@ -1348,12 +1352,21 @@ function MapaCentrosAdmin({ onSalir }) {
   useEffect(() => {
     let activo = true
     fetch('/api/clinicas')
+      .catch(() => {
+        const errorConexion = new Error('No se pudo conectar con el servidor.')
+        errorConexion.codigo = 'ERROR_CONEXION'
+        throw errorConexion
+      })
       .then((res) => {
-        if (!res.ok) throw new Error(`No se pudo consultar el mapa (${res.status}).`)
+        if (!res.ok) {
+          const errorRespuesta = new Error('No se pudo consultar el mapa.')
+          errorRespuesta.status = res.status
+          throw errorRespuesta
+        }
         return res.json()
       })
       .then((datos) => { if (activo) { setClinicas(Array.isArray(datos) ? datos : []); setError('') } })
-      .catch((err) => { if (activo) setError(err.message) })
+      .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
   }, [recarga])
@@ -1372,7 +1385,7 @@ function MapaCentrosAdmin({ onSalir }) {
         <button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>
       </>} />
     <div className="admin-cuerpo">
-      {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
+      {error && <ErrorCarga error={error} reintentar={recargar} recurso="el mapa" />}
       {cargando ? <Cargando mensaje="Cargando ubicaciones en el mapa…" /> : !error && (
         <section className="admin-panel admin-detalle-bloque">
           <div className="admin-panel-header" style={{ padding: '0 0 16px' }}>

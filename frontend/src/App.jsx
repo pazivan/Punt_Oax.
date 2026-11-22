@@ -20,6 +20,7 @@ import MisCitasUsuario from './components/Citas/MisCitasUsuario.jsx'
 import Administracion from './components/Admin/Administracion.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { CargandoSesion, ErrorSesionTemporal } from './components/EstadoSesion.jsx'
+import { describirErrorConsulta } from './utils/erroresConsulta.js'
 import { ROLES, obtenerDestinoPorRol } from './utils/permisos.js'
 import { cerrarSesion, consultarPerfil, leerSesion, revocarSesion } from './api/auth.js'
 import { borrarVerificacionPendiente, guardarVerificacionPendiente, leerVerificacionPendiente } from './api/verificacionPendiente.js'
@@ -35,6 +36,7 @@ function App() {
   const [perfil, setPerfil] = useState(null)
   const [verificandoPerfil, setVerificandoPerfil] = useState(() => Boolean(leerSesion()))
   const [errorPerfil, setErrorPerfil] = useState('')
+  const [errorPerfilReintentar, setErrorPerfilReintentar] = useState(true)
   const [reintentoPerfil, setReintentoPerfil] = useState(0)
   const consultaPerfil = useRef(0)
   const [clinicas, setClinicas] = useState([])
@@ -136,7 +138,9 @@ function App() {
       })
       .catch((err) => {
         if (activo && consulta === consultaPerfil.current) {
-          setErrorPerfil(err.message)
+          const aviso = describirErrorConsulta(err, 'tu sesión')
+          setErrorPerfil(aviso.mensaje)
+          setErrorPerfilReintentar(aviso.reintentar)
           setVerificandoPerfil(false)
           if (!leerSesion()) {
             setSesion(null)
@@ -152,11 +156,11 @@ function App() {
     return () => { activo = false }
   }, [sesion, pathname, reintentoPerfil])
 
-  function reintentarVerificacionPerfil() {
+  const reintentarVerificacionPerfil = errorPerfilReintentar ? () => {
     setErrorPerfil('')
     setVerificandoPerfil(true)
     setReintentoPerfil((valor) => valor + 1)
-  }
+  } : undefined
 
   useEffect(() => {
     function sincronizarSesion(evento) {

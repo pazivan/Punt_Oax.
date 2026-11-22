@@ -8,6 +8,7 @@ const pool = require("./db");
 const { listarCitasClinica } = require("./citasClinica");
 const { fichaPublica } = require("./catalogoPublico");
 const { actualizarEnlacesInformacion } = require("./enlacesInformacion");
+const { responderErrorEsquema } = require("./erroresEsquema");
 const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
 const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
@@ -464,16 +465,6 @@ async function guardarHorarios(client, idClinica, horarios) {
       ]
     );
   }
-}
-
-function responderErrorEsquema(res, error) {
-  if (error.code === "42703" || error.code === "42P01") {
-    res.status(503).json({
-      error: "La ficha institucional aún no está habilitada en la base de datos. Aplica las migraciones 004 y 005.",
-    });
-    return true;
-  }
-  return false;
 }
 
 app.get("/health", (req, res) => {
