@@ -203,7 +203,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
   const [apartadoActivo, setApartadoActivo] = useState('panorama');
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
   const esAdmin = sesion?.tipo === 'administrador';
-  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/cuenta') : '/';
+  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/inicio') : '/';
   const rutaPerfil = esAdmin ? '/admin' : '/mi-perfil';
 
   return (
@@ -286,7 +286,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
           {/* Enlace de regreso */}
           <div className="detalle-back-margin">
             <div className="detalle-back-wrap">
-              <Link to="/cuenta" className="detalle-back-link" style={{ textDecoration: 'none' }}>
+              <Link to="/inicio" className="detalle-back-link" style={{ textDecoration: 'none' }}>
                 <span className="detalle-back-icon" aria-hidden="true">
                   <ArrowLeft size={14} color="#001D14" />
                 </span>

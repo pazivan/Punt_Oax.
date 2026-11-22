@@ -310,7 +310,7 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
           <div className="inicio-header-container">
             <div className="inicio-header-left">
               <div className="inicio-brand-wrap">
-                <Link to="/cuenta" className="inicio-brand" style={{ textDecoration: 'none' }}>
+                <Link to="/inicio" className="inicio-brand" style={{ textDecoration: 'none' }}>
                   <img
                     src="/logo-puntoax.svg"
                     alt=""
@@ -322,7 +322,7 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
               </div>
 
               <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-                <Link to="/cuenta" className="inicio-nav-link">
+                <Link to="/inicio" className="inicio-nav-link">
                   Inicio
                 </Link>
                 <Link to="/mapa" className="inicio-nav-link">
@@ -374,7 +374,7 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
           <div className="detalle-back-margin">
             <div className="detalle-back-wrap">
               <Link
-                to={esClinica ? (enModoPanelAprobado ? '/panel-clinica' : '/mi-clinica') : '/cuenta'}
+                to={esClinica ? (enModoPanelAprobado ? '/panel-clinica' : '/mi-clinica') : '/inicio'}
                 className="detalle-back-link"
                 style={{ textDecoration: 'none' }}
               >

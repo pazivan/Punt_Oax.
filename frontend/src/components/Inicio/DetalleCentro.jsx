@@ -52,7 +52,7 @@ export default function DetalleCentro({
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
   const esAdmin = sesion?.tipo === 'administrador';
   const esUsuario = !sesion || sesion.tipo === 'usuario';
-  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/cuenta') : '/';
+  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/inicio') : '/';
   const rutaPerfil = esAdmin ? '/admin' : '/mi-perfil';
   const servicios = Array.isArray(clinica.servicios) ? clinica.servicios : [];
   const linksRelacionados = Array.isArray(clinica.links_relacionados)

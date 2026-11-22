@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
-import { ArrowRight, Building2, Check, Eye, EyeOff, MapPin, ShieldCheck, User } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Building2, Check, CheckCircle2, Eye, EyeOff, MapPin, ShieldCheck, User } from 'lucide-react';
 import '../../styles/Auth.css';
 import { guardarSesion, iniciarSesion, iniciarSesionAdmin, iniciarSesionClinica } from '../../api/auth';
 import { normalizarCorreo, validarEmail, validarRequerido } from '../../utils/validaciones';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { leerVerificacionPendiente } from '../../api/verificacionPendiente';
 
 export default function Login({
@@ -25,6 +25,23 @@ export default function Login({
   const [error, setError] = useState('');
   const enviando = useRef(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [avisoInicial] = useState(() => (typeof location.state?.aviso === 'string' ? location.state.aviso : ''));
+  const [avisoDescartado, setAvisoDescartado] = useState('');
+  const avisoActual = (typeof mensaje === 'string' && mensaje) || avisoInicial;
+  const avisoVisible = avisoActual && avisoActual !== avisoDescartado ? avisoActual : '';
+
+  useEffect(() => {
+    if (location.state?.aviso) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    if (!avisoVisible) return undefined;
+    const temporizador = setTimeout(() => setAvisoDescartado(avisoVisible), 5000);
+    return () => clearTimeout(temporizador);
+  }, [avisoVisible]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,6 +121,13 @@ export default function Login({
         </div>
       </header>
 
+      {avisoVisible && (
+        <div className="auth-info-banner auth-login-toast" role="status">
+          <CheckCircle2 size={18} className="auth-info-icon" aria-hidden="true" />
+          <span>{avisoVisible}</span>
+        </div>
+      )}
+
       {/* Main Container */}
       <main className="auth-main">
         <div className="auth-card-container">
@@ -171,9 +195,6 @@ export default function Login({
                   : 'Selecciona el tipo de cuenta con el que deseas continuar.'}
               </p>
 
-              {typeof mensaje === 'string' && mensaje && (
-                <div className="auth-info-banner" role="status">{mensaje}</div>
-              )}
               {/* Mensaje de error accesible */}
               {error && (
                 <div className="auth-error-alert" role="alert">

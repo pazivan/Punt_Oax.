@@ -49,7 +49,7 @@ export default function MapaCentros({
 
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
   const esAdmin = sesion?.tipo === 'administrador';
-  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/cuenta') : '/';
+  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/inicio') : '/';
   const rutaPerfil = esAdmin ? '/admin' : '/mi-perfil';
 
   const municipiosDisponibles = useMemo(() => {

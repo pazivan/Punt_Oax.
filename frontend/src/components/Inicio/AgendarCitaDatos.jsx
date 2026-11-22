@@ -505,7 +505,7 @@ export default function AgendarCitaDatos({
         <div className="inicio-header-container">
           <div className="inicio-header-left">
             <div className="inicio-brand-wrap">
-              <Link to="/cuenta" className="inicio-brand" style={{ textDecoration: 'none' }}>
+              <Link to="/inicio" className="inicio-brand" style={{ textDecoration: 'none' }}>
                 <img
                   src="/logo-puntoax.svg"
                   alt=""
@@ -517,7 +517,7 @@ export default function AgendarCitaDatos({
             </div>
 
             <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-              <Link to="/cuenta" className="inicio-nav-link">
+              <Link to="/inicio" className="inicio-nav-link">
                 Inicio
               </Link>
               <Link to="/mapa" className="inicio-nav-link">
