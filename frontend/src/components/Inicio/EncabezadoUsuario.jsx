@@ -35,7 +35,7 @@ export default function EncabezadoUsuario({
             : pathname === '/informacion-util' ? 'informacion'
               : pathname === '/conocenos' ? 'conocenos'
                 : pathname === '/mi-perfil' ? 'perfil'
-                  : pathname === '/admin' ? 'admin'
+                  : pathname === '/admin' || pathname.startsWith('/admin/') ? 'admin'
                     : ''
   );
 

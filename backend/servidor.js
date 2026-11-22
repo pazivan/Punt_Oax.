@@ -1615,7 +1615,7 @@ app.post("/api/auth/login-clinica", async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      "SELECT id_clinica, correo_acceso, password_hash, nombre, correo_verificado_en, version_sesion FROM clinicas WHERE correo_acceso = LOWER(TRIM($1))",
+      "SELECT id_clinica, correo_acceso, password_hash, nombre, correo_verificado_en, version_sesion, estado_publicacion FROM clinicas WHERE correo_acceso = LOWER(TRIM($1))",
       [correo]
     );
 
@@ -1645,6 +1645,7 @@ app.post("/api/auth/login-clinica", async (req, res) => {
         nombre: clinica.nombre,
         correo: clinica.correo_acceso,
         rol: "clinica",
+        estado_publicacion: clinica.estado_publicacion,
       },
     });
   } catch (error) {

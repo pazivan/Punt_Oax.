@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
   Columns2,
@@ -51,6 +52,7 @@ export default function MapaCentros({
   ComponenteMapa = MapaLeaflet,
   sinEncabezado = false,
 }) {
+  const navigate = useNavigate();
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [filtroServicio, setFiltroServicio] = useState('todos');
   const [filtroMunicipio, setFiltroMunicipio] = useState('todos');
@@ -319,7 +321,13 @@ export default function MapaCentros({
         sesion={sesion}
         onSalir={onSalir}
         onVolverAlMapa={() => setClinicaEnDetalle(null)}
-        onAgendarCita={puedeAgendar ? (sede) => setClinicaEnAgendar(sede) : undefined}
+        onAgendarCita={puedeAgendar ? (sede) => {
+          if (!sesion) {
+            navigate('/agendar-cita', { state: { clinica: sede } });
+            return;
+          }
+          setClinicaEnAgendar(sede);
+        } : undefined}
         sinEncabezado={sinEncabezado}
         esFavorita={favoritosIds.includes(clinicaEnDetalle.id_clinica)}
         onAlternarFavorito={alternarFavorito}
