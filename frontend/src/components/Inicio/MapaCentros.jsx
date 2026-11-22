@@ -32,6 +32,7 @@ export default function MapaCentros({
   clinicas = [],
   cargando = false,
   ComponenteMapa = MapaLeaflet,
+  sinEncabezado = false,
 }) {
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [filtroServicio, setFiltroServicio] = useState('todos');
@@ -155,6 +156,7 @@ export default function MapaCentros({
         sesion={sesion}
         onSalir={onSalir}
         onVolverAlCentro={() => setClinicaEnAgendar(null)}
+        sinEncabezado={sinEncabezado}
       />
     );
   }
@@ -168,6 +170,7 @@ export default function MapaCentros({
         onSalir={onSalir}
         onVolverAlMapa={() => setClinicaEnDetalle(null)}
         onAgendarCita={(sede) => setClinicaEnAgendar(sede)}
+        sinEncabezado={sinEncabezado}
       />
     );
   }
@@ -175,10 +178,12 @@ export default function MapaCentros({
   return (
     <div className="mapa-page">
       {/* Header (80px) */}
-      {sesion?.tipo === 'clinica' ? (
-        <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
-      ) : (
-        <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="mapa" />
+      {!sinEncabezado && (
+        sesion?.tipo === 'clinica' ? (
+          <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
+        ) : (
+          <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="mapa" />
+        )
       )}
 
       {/* Main (padding-top: 80px) */}

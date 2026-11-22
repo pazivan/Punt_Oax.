@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  AlertCircle, ArrowRight, CalendarDays, Clock3, MapPin,
+  AlertCircle, ArrowRight, CalendarDays, ExternalLink, MapPin,
   RefreshCw, ShieldCheck, X,
 } from 'lucide-react'
 import { cancelarCitaUsuario, consultarCitasUsuario } from '../../api/auth.js'
@@ -11,6 +11,8 @@ import PiePagina from '../Inicio/PiePagina.jsx'
 import {
   ETIQUETAS_ESTADO, filtrarCitas, formatearFechaCita,
 } from '../../utils/citasClinica.js'
+import { enlaceComoLlegar, ubicacionConfirmada } from '../../utils/centros.js'
+import { normalizarUrlExterna } from '../../utils/enlaces.js'
 import '../../styles/Inicio.css'
 import './Citas.css'
 
@@ -27,6 +29,15 @@ function esCancelable(cita, ahora = Date.now()) {
 
 function DetalleCita({ cita, ahora, cancelando, error, onCerrar, onCancelar }) {
   const puedeCancelar = esCancelable(cita, ahora)
+  const centroParaMapa = {
+    latitud: cita.latitud_clinica,
+    longitud: cita.longitud_clinica,
+    ubicacion_confirmada: cita.ubicacion_confirmada_clinica,
+    direccion: cita.direccion_clinica,
+    municipio: cita.municipio_clinica,
+  }
+  const urlMapsDirecto = normalizarUrlExterna(cita.ubicacion_maps_clinica)
+  const urlComoLlegar = urlMapsDirecto || (ubicacionConfirmada(centroParaMapa) ? enlaceComoLlegar(centroParaMapa) : null)
 
   return (
     <div className="citas-modal-fondo" onMouseDown={(evento) => {
@@ -49,6 +60,11 @@ function DetalleCita({ cita, ahora, cancelando, error, onCerrar, onCancelar }) {
           <div><dt>Teléfono de la clínica</dt><dd>{cita.telefono_clinica || 'No registrado'}</dd></div>
           <div><dt>Fecha de reserva</dt><dd>{formatearFechaCita(cita.fecha_reserva)}</dd></div>
         </dl>
+        {!urlComoLlegar && (
+          <p className="citas-modal-nota" role="status">
+            Ubicación exacta en mapa no disponible para este establecimiento.
+          </p>
+        )}
         {error && <p className="citas-alerta citas-alerta--error" role="alert">{error}</p>}
         <p className="citas-modal-nota">
           {puedeCancelar
@@ -56,6 +72,17 @@ function DetalleCita({ cita, ahora, cancelando, error, onCerrar, onCancelar }) {
             : 'Solo puedes cancelar citas confirmadas que todavía no han comenzado.'}
         </p>
         <div className="citas-modal-acciones">
+          {urlComoLlegar && (
+            <a
+              href={urlComoLlegar}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="citas-boton citas-boton--secundario"
+              style={{ textDecoration: 'none' }}
+            >
+              <MapPin size={15} aria-hidden="true" /> Cómo llegar <ExternalLink size={14} aria-hidden="true" />
+            </a>
+          )}
           {puedeCancelar && (
             <button type="button" className="citas-boton citas-boton--peligro" onClick={onCancelar} disabled={cancelando}>
               {cancelando ? 'Cancelando…' : 'Cancelar cita'}
@@ -94,7 +121,7 @@ function ConfirmarCancelacion({ cita, cancelando, error, onVolver, onConfirmar }
   )
 }
 
-export default function MisCitasUsuario({ sesion, onSalir }) {
+export default function MisCitasUsuario({ sesion, onSalir, sinEncabezado = false }) {
   const [citas, setCitas] = useState([])
   const [estado, setEstado] = useState('cargando')
   const [error, setError] = useState('')
@@ -109,7 +136,7 @@ export default function MisCitasUsuario({ sesion, onSalir }) {
 
   useEffect(() => {
     let vigente = true
-    consultarCitasUsuario()
+    consultarCitasUsuario({ forzar: recargar > 0 })
       .then((respuesta) => {
         if (!vigente) return
         if (!Array.isArray(respuesta.citas)) throw new Error('La respuesta de citas no tiene el formato esperado.')
@@ -174,7 +201,9 @@ export default function MisCitasUsuario({ sesion, onSalir }) {
 
   return (
     <div className="citas-clinica citas-usuario">
-      <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="citas" citasPreCargadas={citas} />
+      {!sinEncabezado && (
+        <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="citas" citasPreCargadas={citas} />
+      )}
 
       <main className="citas-contenedor citas-principal">
         <div className="citas-encabezado">
@@ -205,7 +234,18 @@ export default function MisCitasUsuario({ sesion, onSalir }) {
               ))}
             </div>
 
-            {estado === 'cargando' && <div className="citas-estado-mensaje" role="status"><Clock3 size={24} aria-hidden="true" /><h2>Cargando citas…</h2><p>Consultando tus reservas registradas.</p></div>}
+            {estado === 'cargando' && (
+              <div className="citas-listado" role="status" aria-label="Cargando citas">
+                {[1, 2, 3].map((n) => (
+                  <div key={n} className="citas-skeleton-card" aria-hidden="true">
+                    <div className="citas-skeleton-line citas-skeleton-line--short" />
+                    <div className="citas-skeleton-line citas-skeleton-line--title" />
+                    <div className="citas-skeleton-line" />
+                    <div className="citas-skeleton-line citas-skeleton-line--medium" />
+                  </div>
+                ))}
+              </div>
+            )}
             {estado === 'error' && <div className="citas-estado-mensaje" role="alert"><AlertCircle size={26} aria-hidden="true" /><h2>No pudimos consultar tus citas</h2><p>{error}</p><button type="button" className="citas-boton citas-boton--oscuro" onClick={actualizarCitas}>Reintentar</button></div>}
             {estado === 'listo' && visibles.length === 0 && (
               <div className="citas-estado-mensaje" role="status">
