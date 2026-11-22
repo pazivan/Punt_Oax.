@@ -25,7 +25,7 @@ export default function Inicio({ sesion, onSalir }) {
   const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
 
   return (
-    <div className="inicio-page">
+    <div className="inicio-page inicio-home-page">
       {/* Header (80px) */}
       <header className="inicio-header">
         <div className="inicio-header-container">
@@ -43,7 +43,7 @@ export default function Inicio({ sesion, onSalir }) {
             </div>
 
             <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-              <Link to="/cuenta" className="inicio-nav-link active">
+              <Link to="/inicio" className="inicio-nav-link active">
                 <span className="inicio-nav-link-active-text">Inicio</span>
               </Link>
               <Link to="/mapa" className="inicio-nav-link">

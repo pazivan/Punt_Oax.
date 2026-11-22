@@ -99,13 +99,13 @@ export default function DetalleCentro({ sesion, onSalir }) {
             <span title="Sección pendiente de integración">Orientación</span>
           </nav>
           <div className="detalle-nav-cuenta">
-            <Link to={sesion ? '/cuenta' : '/login'}>Mi cuenta</Link>
+            <Link to={sesion ? '/inicio' : '/login'}>Mi cuenta</Link>
             {sesion ? (
               <button type="button" className="detalle-btn-salir" onClick={onSalir}>Salir</button>
             ) : (
               <Link className="detalle-btn-salir" to="/login">Ingresar</Link>
             )}
-            <Link className="detalle-usuario" to={sesion ? '/cuenta' : '/login'} aria-label="Abrir mi cuenta">
+            <Link className="detalle-usuario" to={sesion ? '/inicio' : '/login'} aria-label="Abrir mi cuenta">
               <Icono tipo="usuario" size={17} />
             </Link>
           </div>

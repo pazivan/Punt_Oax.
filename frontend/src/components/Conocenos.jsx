@@ -3,7 +3,7 @@ import { ArrowRight, HeartHandshake, MapPin, ShieldCheck } from 'lucide-react'
 import './Conocenos.css'
 
 export default function Conocenos({ sesion, perfil, onSalir }) {
-  const rutaCuenta = perfil?.rol === 'clinica' ? '/mi-clinica' : perfil?.rol === 'administrador' ? '/admin' : '/cuenta'
+  const rutaCuenta = perfil?.rol === 'clinica' ? '/mi-clinica' : perfil?.rol === 'administrador' ? '/admin' : '/inicio'
 
   return <div className="conocenos-page">
     <header className="conocenos-header">

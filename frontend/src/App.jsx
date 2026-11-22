@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import Login from './components/Auth/Login.jsx'
 import Register from './components/Auth/Register.jsx'
@@ -190,7 +190,7 @@ function App() {
   if (pathname === '/login') {
     if (sesion) {
       if (verificandoPerfil) return <p role="status">Verificando tu sesión…</p>
-      if (perfil) return <Navigate to={sesion.tipo === 'clinica' ? '/mi-clinica' : sesion.tipo === 'administrador' ? '/admin' : '/cuenta'} replace />
+      if (perfil) return <Navigate to={sesion.tipo === 'clinica' ? '/mi-clinica' : sesion.tipo === 'administrador' ? '/admin' : '/inicio'} replace />
     }
     return <Login
       key={tipoRegistro}
@@ -210,7 +210,7 @@ function App() {
         setErrorPerfil('')
         setMensajeAuth('')
         // La ficha se consulta de nuevo en el servidor dentro de /mi-clinica.
-        navigate(nuevaSesion?.tipo === 'clinica' ? '/mi-clinica' : nuevaSesion?.tipo === 'administrador' ? '/admin' : '/cuenta')
+        navigate(nuevaSesion?.tipo === 'clinica' ? '/mi-clinica' : nuevaSesion?.tipo === 'administrador' ? '/admin' : '/inicio')
       }}
       mensaje={estadoRuta?.aviso || mensajeAuth}
     />
@@ -423,6 +423,23 @@ function App() {
     )
   }
 
+  if (pathname === '/inicio') {
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          rolesPermitidos={['usuario']}
+        >
+          <Inicio sesion={sesion} onSalir={salir} />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
+  }
+
   if (pathname === '/cuenta' && perfil?.rol === 'administrador') {
     return <Navigate to="/admin" replace />
   }
@@ -433,30 +450,7 @@ function App() {
   }
 
   if (pathname === '/cuenta') {
-    return (
-      <>
-        <RutaPrivada
-          sesion={sesion}
-          perfil={perfil}
-          verificando={verificandoPerfil}
-          error={errorPerfil}
-          rolesPermitidos={['usuario', 'clinica', 'administrador']}
-        >
-          {pathname === '/cuenta' && (perfil?.rol === 'usuario' || sesion?.tipo === 'usuario') ? (
-            <Inicio sesion={sesion} onSalir={salir} />
-          ) : (
-            <main className="app-container">
-              <h1>Mi cuenta</h1>
-              <p role="status">Sesión verificada: {sesion?.cuenta.correo || sesion?.cuenta.nombre}</p>
-              <p>Los paneles de cada rol aún no están disponibles.</p>
-              <Link to="/mapa">Volver al mapa</Link>{' '}
-              <button type="button" onClick={salir}>Cerrar sesión</button>
-            </main>
-          )}
-        </RutaPrivada>
-        {modalConfirmacionSalir}
-      </>
-    )
+    return <Navigate to="/inicio" replace />
   }
 
   if (pathname === '/directorio' || /^\/centro\/[^/]+$/.test(pathname)) {

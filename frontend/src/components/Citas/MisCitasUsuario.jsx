@@ -175,7 +175,7 @@ export default function MisCitasUsuario({ onSalir }) {
     <div className="citas-clinica citas-usuario">
       <header className="citas-header">
         <div className="citas-contenedor citas-nav">
-          <Link to="/cuenta" className="citas-marca">
+          <Link to="/inicio" className="citas-marca">
             <img
               src="/logo-puntoax.svg"
               alt=""
@@ -185,7 +185,7 @@ export default function MisCitasUsuario({ onSalir }) {
             <span>PuntOax</span>
           </Link>
           <nav className="citas-nav-enlaces" aria-label="Navegación de paciente">
-            <Link to="/cuenta">Inicio</Link>
+            <Link to="/inicio">Inicio</Link>
             <Link to="/mapa">Mapa de centros</Link>
             <Link to="/agendar-cita">Agendar cita</Link>
             <span className="citas-nav-activo" aria-current="page">Mis citas</span>
