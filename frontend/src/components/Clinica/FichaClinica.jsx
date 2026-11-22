@@ -28,6 +28,7 @@ import {
   validarFichaCompleta,
   validarFormatoFicha,
 } from '../../utils/validacionFicha'
+import { describirErrorConsulta } from '../../utils/erroresConsulta.js'
 import './FichaClinica.css'
 import EncabezadoClinica from './EncabezadoClinica.jsx'
 import PanelClinica from './PanelClinica.jsx'
@@ -138,7 +139,7 @@ export default function FichaClinica({ sesion, onSalir }) {
   const [ficha, setFicha] = useState(null)
   const [form, setForm] = useState(null)
   const [cargando, setCargando] = useState(true)
-  const [errorCarga, setErrorCarga] = useState('')
+  const [errorCarga, setErrorCarga] = useState(null)
   const [error, setError] = useState('')
   const [resumen, setResumen] = useState('')
   const [errores, setErrores] = useState({})
@@ -165,11 +166,11 @@ export default function FichaClinica({ sesion, onSalir }) {
 
   async function cargarFicha() {
     setCargando(true)
-    setErrorCarga('')
+    setErrorCarga(null)
     try {
       aplicarFicha(await consultarMiFicha())
     } catch (err) {
-      setErrorCarga(err.message)
+      setErrorCarga(err)
     } finally {
       setCargando(false)
     }
@@ -182,7 +183,7 @@ export default function FichaClinica({ sesion, onSalir }) {
         if (activo) aplicarFicha(datos)
       })
       .catch((err) => {
-        if (activo) setErrorCarga(err.message)
+        if (activo) setErrorCarga(err)
       })
       .finally(() => {
         if (activo) setCargando(false)
@@ -208,16 +209,17 @@ export default function FichaClinica({ sesion, onSalir }) {
   }
 
   if (errorCarga) {
+    const aviso = describirErrorConsulta(errorCarga, 'tu ficha')
     return (
       <div className="ficha-page">
         <CabeceraClinica sesion={sesion} onSalir={onSalir} />
         <main className="ficha-state-card" role="alert">
           <AlertTriangle size={30} aria-hidden="true" />
-          <h1>No pudimos cargar tu ficha</h1>
-          <p>{errorCarga}</p>
-          <button type="button" className="ficha-btn-primary" onClick={cargarFicha}>
+          <h1>{aviso.titulo}</h1>
+          <p>{aviso.mensaje}</p>
+          {aviso.reintentar && <button type="button" className="ficha-btn-primary" onClick={cargarFicha}>
             Reintentar
-          </button>
+          </button>}
           <Link to="/mi-perfil" className="ficha-inline-link">Ir a mi perfil</Link>
         </main>
       </div>

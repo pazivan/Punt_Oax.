@@ -28,6 +28,7 @@
  */
 
 const fs = require("node:fs/promises");
+const { responderErrorEsquema } = require("./erroresEsquema");
 const path = require("node:path");
 
 const { ETIQUETAS_AREA } = require("./comparacionFicha");
@@ -561,6 +562,7 @@ function registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, 
       return res.status(resultado.status).json(resultado.body);
     } catch (error) {
       console.error(`Error al ${etiqueta}:`, error.message);
+      if (responderErrorEsquema(res, error)) return;
       if (error.status) return res.status(error.status).json({ error: error.message });
       return res.status(500).json({ error: `No se pudo ${etiqueta}.` });
     }

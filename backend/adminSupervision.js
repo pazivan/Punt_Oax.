@@ -1,5 +1,6 @@
 const { festivoNacional } = require("./agendaClinica");
 const { esUuid } = require("./validacionesCitas");
+const { responderErrorEsquema } = require("./erroresEsquema");
 
 const ESTADOS_CITA = ["confirmada", "completada", "cancelada", "no_asistio"];
 const respuesta = (status, body) => ({ status, body });
@@ -216,6 +217,7 @@ function registrarRutasAdminSupervision(app, { pool, autenticarToken, requerirRo
       return res.status(resultado.status).json(resultado.body);
     } catch (error) {
       console.error(`Error al ${etiqueta}:`, error.message);
+      if (responderErrorEsquema(res, error)) return;
       return res.status(500).json({ error: `No se pudo ${etiqueta}.` });
     }
   };

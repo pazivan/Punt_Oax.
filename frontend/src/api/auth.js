@@ -1,7 +1,7 @@
 function mensajeError(estado) {
   if (estado === 400) return 'Revisa los datos enviados e inténtalo de nuevo.'
   if (estado === 401) return 'Correo o contraseña incorrectos.'
-  if (estado === 403) return 'Acceso denegado o sesión caducada.'
+  if (estado === 403) return 'No tienes permisos para realizar esta acción.'
   if (estado === 409) return 'Este correo ya está registrado.'
   return `Error del servidor (${estado}). Inténtalo más tarde.`
 }
@@ -170,7 +170,12 @@ export async function revocarSesion(token = leerSesion()?.token) {
 
 export async function enviarConSesion(ruta, opciones = {}) {
   const token = leerSesion()?.token
-  if (!token) throw new Error('Inicia sesión para continuar.')
+  if (!token) {
+    const error = new Error('Inicia sesión para continuar.')
+    error.status = 401
+    error.codigo = 'SESION_REQUERIDA'
+    throw error
+  }
 
   let respuesta
   try {
@@ -193,10 +198,11 @@ export async function enviarConSesion(ruta, opciones = {}) {
   try {
     return await leerRespuesta(respuesta)
   } catch (error) {
-    // Un 403 por estado de clínica no revoca el JWT: la ficha y el perfil
-    // continúan disponibles. Los 403 de sesión inválida sí se cierran.
+    // La falta de permisos o el estado de la clínica no invalidan la sesión.
+    // Solo las respuestas que indican credenciales inválidas la cierran.
     if ((respuesta.status === 401 ||
-        (respuesta.status === 403 && error.codigo !== 'CLINICA_NO_APROBADA')) &&
+        (respuesta.status === 403 &&
+          ['TOKEN_EXPIRADO', 'TOKEN_INVALIDO', 'SESION_INVALIDA', 'CUENTA_DESACTIVADA'].includes(error.codigo))) &&
         leerSesion()?.token === token) cerrarSesion()
     throw error
   }

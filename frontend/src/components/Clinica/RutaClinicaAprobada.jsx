@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { consultarMiFicha } from '../../api/auth'
+import { describirErrorConsulta } from '../../utils/erroresConsulta.js'
 
 /**
  * Protege las rutas operativas de una clínica (panel, citas y agenda).
@@ -11,7 +12,7 @@ import { consultarMiFicha } from '../../api/auth'
  */
 export default function RutaClinicaAprobada({ children }) {
   const [estado, setEstado] = useState('verificando')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
   const [intento, setIntento] = useState(0)
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export default function RutaClinicaAprobada({ children }) {
       })
       .catch((err) => {
         if (!activo) return
-        setError(err.message || 'No se pudo verificar el estado de tu clínica.')
+        setError(err)
         setEstado('error')
       })
     return () => { activo = false }
@@ -32,22 +33,26 @@ export default function RutaClinicaAprobada({ children }) {
   if (estado === 'restringido') return <Navigate to="/mi-clinica" replace />
 
   if (estado === 'error') {
+    const aviso = describirErrorConsulta(error, 'tu clínica')
     return (
       <div className="ficha-page">
         <main className="ficha-state-card" role="alert">
-          <h1>No pudimos verificar tu clínica</h1>
-          <p>{error}</p>
-          <button
+          <h1>{aviso.titulo}</h1>
+          <p>{aviso.mensaje}</p>
+          {aviso.reintentar && <button
             type="button"
             className="ficha-btn-primary"
             onClick={() => {
               setEstado('verificando')
-              setError('')
+              setError(null)
               setIntento((valor) => valor + 1)
             }}
           >
             Reintentar
-          </button>
+          </button>}
+          {error?.status === 401 || ['TOKEN_EXPIRADO', 'TOKEN_INVALIDO', 'SESION_INVALIDA'].includes(error?.codigo)
+            ? <Link to="/login" className="ficha-inline-link">Iniciar sesión</Link>
+            : null}
           <Link to="/mi-clinica" className="ficha-inline-link">Volver a mi clínica</Link>
         </main>
       </div>
