@@ -8,9 +8,9 @@ import {
   Mail,
   MapPin,
   Phone,
-  User,
 } from 'lucide-react';
-import CampanaNotificaciones from './CampanaNotificaciones.jsx';
+import EncabezadoUsuario from './EncabezadoUsuario.jsx';
+import PiePagina from './PiePagina.jsx';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
 import '../../styles/Inicio.css';
 import { normalizarUrlExterna, urlEnTexto } from '../../utils/enlaces.js';
@@ -49,11 +49,7 @@ export default function DetalleCentro({
 }) {
   if (!clinica) return null;
 
-  const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
-  const esAdmin = sesion?.tipo === 'administrador';
   const esUsuario = !sesion || sesion.tipo === 'usuario';
-  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/inicio') : '/';
-  const rutaPerfil = esAdmin ? '/admin' : '/mi-perfil';
   const servicios = Array.isArray(clinica.servicios) ? clinica.servicios : [];
   const linksRelacionados = Array.isArray(clinica.links_relacionados)
     ? clinica.links_relacionados.filter(Boolean)
@@ -80,92 +76,12 @@ export default function DetalleCentro({
       {sesion?.tipo === 'clinica' ? (
         <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
       ) : (
-      <header className="inicio-header">
-        <div className="inicio-header-container">
-          <div className="inicio-header-left">
-            <div className="inicio-brand-wrap">
-              <Link to={rutaInicio} className="inicio-brand" style={{ textDecoration: 'none' }}>
-                <img
-                  src="/logo-puntoax.svg"
-                  alt=""
-                  className="inicio-brand-logo"
-                  aria-hidden="true"
-                />
-                <span>PuntOax</span>
-              </Link>
-            </div>
-
-            <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-              <Link to={rutaInicio} className="inicio-nav-link">
-                Inicio
-              </Link>
-              <button
-                type="button"
-                onClick={onVolverAlMapa}
-                className="inicio-nav-link active detalle-nav-active-btn"
-              >
-                <span className="inicio-nav-link-active-text">Mapa de centros</span>
-              </button>
-              {sesion?.tipo === 'clinica' ? (
-              <Link to="/mi-clinica/citas" className="inicio-nav-link">
-                  Mis citas
-                </Link>
-              ) : esAdmin ? (
-                <Link to="/admin" className="inicio-nav-link">
-                  Administración
-                </Link>
-              ) : (
-                <>
-                  <Link to="/agendar-cita" className="inicio-nav-link">
-                    Agendar cita
-                  </Link>
-                  {sesion?.tipo === 'usuario' && (
-                    <Link to="/mis-citas" className="inicio-nav-link">
-                      Mis citas
-                    </Link>
-                  )}
-                </>
-              )}
-              <Link to="/informacion-util" className="inicio-nav-link">
-                Información útil
-              </Link>
-            </nav>
-          </div>
-
-          <div className="inicio-header-right">
-            {sesion ? (
-              <>
-                <CampanaNotificaciones sesion={sesion} />
-
-                <Link
-                  to={rutaPerfil}
-                  className="inicio-header-profile-link"
-                  title={nombreOCorreo}
-                  aria-label={esAdmin ? 'Administración' : 'Mi perfil'}
-                >
-                  <span className="inicio-avatar-circle" aria-hidden="true">
-                    <User size={14} color="#FFFFFF" />
-                  </span>
-                  <span>{esAdmin ? 'Administración' : 'Mi perfil'}</span>
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={onSalir}
-                  className="inicio-header-logout-btn"
-                >
-                  Salir
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="inicio-header-account-link">Iniciar sesión</Link>
-                <Link to="/registro" className="inicio-header-logout-btn">Crear cuenta</Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+        <EncabezadoUsuario
+          sesion={sesion}
+          onSalir={onSalir}
+          seccionActiva="mapa"
+          onClicMapa={onVolverAlMapa}
+        />
       )}
 
       {/* Main (padding-top: 80px) */}
@@ -437,14 +353,7 @@ export default function DetalleCentro({
         </div>
       </main>
 
-      {/* Footer (112px) */}
-      <footer className="inicio-footer">
-        <div className="inicio-footer-container">
-          <p className="inicio-footer-text">
-            © 2026 PuntOax · Salud, bienestar y orientación en Oaxaca.
-          </p>
-        </div>
-      </footer>
+      <PiePagina />
     </div>
   );
 }

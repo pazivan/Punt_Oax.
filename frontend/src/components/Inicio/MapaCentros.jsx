@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, User } from 'lucide-react';
+import { Columns2, List, Map as MapIcon, Search } from 'lucide-react';
 import ListadoClinicas from './ListadoClinicas.jsx';
 import EspacioMapa from './EspacioMapa.jsx';
 import DetalleCentro from './DetalleCentro.jsx';
 import AgendarCitaDatos from './AgendarCitaDatos.jsx';
 import MapaLeaflet from './MapaLeaflet.jsx';
-import CampanaNotificaciones from './CampanaNotificaciones.jsx';
+import EncabezadoUsuario from './EncabezadoUsuario.jsx';
+import PiePagina from './PiePagina.jsx';
+import FiltroDesplegable from './FiltroDesplegable.jsx';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
+import { claveMunicipioNormalizada } from '../../utils/centros.js';
 import '../../styles/Inicio.css';
 
 /**
@@ -36,6 +38,7 @@ export default function MapaCentros({
   const [filtroMunicipio, setFiltroMunicipio] = useState('todos');
   const [filtroHorario, setFiltroHorario] = useState('todos');
   const [filtroNivel, setFiltroNivel] = useState('todos');
+  const [modoVista, setModoVista] = useState('combinada');
   const [clinicaSeleccionadaId, setClinicaSeleccionadaId] = useState(
     () => clinicas[0]?.id_clinica ?? null
   );
@@ -47,19 +50,19 @@ export default function MapaCentros({
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [clinicaEnDetalle, clinicaEnAgendar]);
 
-  const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
-  const esAdmin = sesion?.tipo === 'administrador';
-  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/inicio') : '/';
-  const rutaPerfil = esAdmin ? '/admin' : '/mi-perfil';
-
   const municipiosDisponibles = useMemo(() => {
-    const conjunto = new Set();
+    const mapa = new Map();
     for (const c of clinicas) {
-      if (typeof c.municipio === 'string' && c.municipio.trim()) {
-        conjunto.add(c.municipio.trim());
+      if (typeof c.municipio !== 'string' || !c.municipio.trim()) continue;
+      const etiqueta = c.municipio.trim().replace(/\s+/g, ' ');
+      const clave = claveMunicipioNormalizada(etiqueta);
+      const existente = mapa.get(clave);
+      // Preferir la variante que incluye tildes o mayúsculas más completas al mostrar en el filtro.
+      if (!existente || (/[áéíóúüñÁÉÍÓÚÜÑ]/.test(etiqueta) && !/[áéíóúüñÁÉÍÓÚÜÑ]/.test(existente.label))) {
+        mapa.set(clave, { value: clave, label: etiqueta });
       }
     }
-    return Array.from(conjunto);
+    return Array.from(mapa.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
   }, [clinicas]);
 
   const clinicasFiltradas = useMemo(() => {
@@ -87,7 +90,7 @@ export default function MapaCentros({
         }
       }
 
-      if (filtroMunicipio !== 'todos' && c.municipio !== filtroMunicipio) {
+      if (filtroMunicipio !== 'todos' && claveMunicipioNormalizada(c.municipio) !== filtroMunicipio) {
         return false;
       }
 
@@ -173,90 +176,9 @@ export default function MapaCentros({
     <div className="mapa-page">
       {/* Header (80px) */}
       {sesion?.tipo === 'clinica' ? (
-      <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
+        <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
       ) : (
-      <header className="inicio-header">
-        <div className="inicio-header-container">
-          <div className="inicio-header-left">
-            <div className="inicio-brand-wrap">
-              <Link to={rutaInicio} className="inicio-brand" style={{ textDecoration: 'none' }}>
-                <img
-                  src="/logo-puntoax.svg"
-                  alt=""
-                  className="inicio-brand-logo"
-                  aria-hidden="true"
-                />
-                <span>PuntOax</span>
-              </Link>
-            </div>
-
-            <nav className="inicio-nav mapa-nav agendar-header-nav" aria-label="Navegación principal">
-              <Link to={rutaInicio} className="inicio-nav-link">
-                Inicio
-              </Link>
-              <Link to="/mapa" className="inicio-nav-link active mapa-nav-active">
-                <span className="inicio-nav-link-active-text">Mapa de centros</span>
-              </Link>
-              {sesion?.tipo === 'clinica' ? (
-              <Link to="/mi-clinica/citas" className="inicio-nav-link">
-                  Mis citas
-                </Link>
-              ) : esAdmin ? (
-                <Link to="/admin" className="inicio-nav-link">
-                  Administración
-                </Link>
-              ) : (
-                <>
-                  <Link to="/agendar-cita" className="inicio-nav-link">
-                    Agendar cita
-                  </Link>
-                  {sesion?.tipo === 'usuario' && (
-                    <Link to="/mis-citas" className="inicio-nav-link">
-                      Mis citas
-                    </Link>
-                  )}
-                </>
-              )}
-              <Link to="/informacion-util" className="inicio-nav-link">
-                Información útil
-              </Link>
-            </nav>
-          </div>
-
-          <div className="inicio-header-right">
-            {sesion ? (
-              <>
-                <CampanaNotificaciones sesion={sesion} />
-
-                <Link
-                  to={rutaPerfil}
-                  className="inicio-header-profile-link"
-                  title={nombreOCorreo}
-                  aria-label={esAdmin ? 'Administración' : 'Mi perfil'}
-                >
-                  <span className="inicio-avatar-circle" aria-hidden="true">
-                    <User size={14} color="#FFFFFF" />
-                  </span>
-                  <span>{esAdmin ? 'Administración' : 'Mi perfil'}</span>
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={onSalir}
-                  className="inicio-header-logout-btn"
-                >
-                  Salir
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="inicio-header-account-link">Iniciar sesión</Link>
-                <Link to="/registro" className="inicio-header-logout-btn">Crear cuenta</Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+        <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="mapa" />
       )}
 
       {/* Main (padding-top: 80px) */}
@@ -296,71 +218,64 @@ export default function MapaCentros({
                 />
               </div>
 
-              {/* Selector 1: Categoría de Servicio (Pestañas Filtración: ITS, Aborto, Ambos) */}
               <div className="mapa-select-wrap">
-                <select
+                <FiltroDesplegable
                   value={filtroServicio}
-                  onChange={(e) => setFiltroServicio(e.target.value)}
-                  aria-label="Filtrar por tipo de servicio"
-                  className="mapa-select-control"
-                >
-                  <option value="todos">Todos los servicios</option>
-                  <option value="ITS">Detección de ITS (VIH, Sífilis, VHC)</option>
-                  <option value="Aborto">Aborto Seguro (ILE)</option>
-                  <option value="Ambos">Ambos (ITS + ILE)</option>
-                </select>
+                  onChange={setFiltroServicio}
+                  ariaLabel="Filtrar por tipo de servicio"
+                  options={[
+                    { value: 'todos', label: 'Todos los servicios' },
+                    { value: 'ITS', label: 'Detección de ITS (VIH, Sífilis, VHC)' },
+                    { value: 'Aborto', label: 'Aborto Seguro (ILE)' },
+                    { value: 'Ambos', label: 'Ambos (ITS + ILE)' },
+                  ]}
+                />
               </div>
 
-              {/* Selector 2: Municipio */}
               <div className="mapa-select-wrap">
-                <select
+                <FiltroDesplegable
                   value={filtroMunicipio}
-                  onChange={(e) => setFiltroMunicipio(e.target.value)}
-                  aria-label="Filtrar por municipio"
-                  className="mapa-select-control"
-                >
-                  <option value="todos">Todos los municipios</option>
-                  {municipiosDisponibles.map((mun) => (
-                    <option key={mun} value={mun}>
-                      {mun}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setFiltroMunicipio}
+                  ariaLabel="Filtrar por municipio"
+                  options={[
+                    { value: 'todos', label: 'Todos los municipios' },
+                    ...municipiosDisponibles,
+                  ]}
+                />
               </div>
 
-              {/* Selector 3: Disponibilidad de Horario */}
               <div className="mapa-select-wrap">
-                <select
+                <FiltroDesplegable
                   value={filtroHorario}
-                  onChange={(e) => setFiltroHorario(e.target.value)}
-                  aria-label="Filtrar por disponibilidad de horario"
-                  className="mapa-select-control"
-                >
-                  <option value="todos">Cualquier horario</option>
-                  <option value="24-horas">Abierto 24 horas</option>
-                  <option value="fines-semana">Abre fines de semana (Sáb / Dom)</option>
-                  <option value="lunes-viernes">Lunes a Viernes</option>
-                </select>
+                  onChange={setFiltroHorario}
+                  ariaLabel="Filtrar por disponibilidad de horario"
+                  options={[
+                    { value: 'todos', label: 'Cualquier horario' },
+                    { value: '24-horas', label: 'Abierto 24 horas' },
+                    { value: 'fines-semana', label: 'Abre fines de semana (Sáb / Dom)' },
+                    { value: 'lunes-viernes', label: 'Lunes a Viernes' },
+                  ]}
+                />
               </div>
 
-              {/* Selector 4 + Limpiar: Nivel de Atención (columna Nivel de Atención del CSV) */}
               <div className="mapa-filter-right-group">
-                <select
+                <FiltroDesplegable
                   value={filtroNivel}
-                  onChange={(e) => setFiltroNivel(e.target.value)}
-                  aria-label="Filtrar por nivel de atención"
-                  className="mapa-select-control mapa-select-cost"
-                >
-                  <option value="todos">Cualquier nivel de atención</option>
-                  <option value="Primer Nivel">Primer Nivel</option>
-                  <option value="Segundo Nivel">Segundo Nivel</option>
-                  <option value="Tercer Nivel - ISSSTE">Tercer Nivel - ISSSTE</option>
-                  <option value="IMSS Ordinario">IMSS Ordinario</option>
-                  <option value="ISSSTE">ISSSTE</option>
-                  <option value="Comunitario / Social">Comunitario / Social</option>
-                  <option value="Privado">Privado</option>
-                  <option value="sin-especificar">Sin nivel especificado (Puntos fijos)</option>
-                </select>
+                  onChange={setFiltroNivel}
+                  ariaLabel="Filtrar por nivel de atención"
+                  className="mapa-select-cost"
+                  options={[
+                    { value: 'todos', label: 'Cualquier nivel de atención' },
+                    { value: 'Primer Nivel', label: 'Primer Nivel' },
+                    { value: 'Segundo Nivel', label: 'Segundo Nivel' },
+                    { value: 'Tercer Nivel - ISSSTE', label: 'Tercer Nivel - ISSSTE' },
+                    { value: 'IMSS Ordinario', label: 'IMSS Ordinario' },
+                    { value: 'ISSSTE', label: 'ISSSTE' },
+                    { value: 'Comunitario / Social', label: 'Comunitario / Social' },
+                    { value: 'Privado', label: 'Privado' },
+                    { value: 'sin-especificar', label: 'Sin nivel especificado (Puntos fijos)' },
+                  ]}
+                />
 
                 <button
                   type="button"
@@ -372,48 +287,79 @@ export default function MapaCentros({
               </div>
             </section>
 
-            {/* Zona de convivencia (1184px x 774px): Listado a la izquierda + Mapa a la derecha */}
-            <section className="mapa-workspace-grid" aria-label="Listado de centros y mapa">
-              <ListadoClinicas
-                clinicas={clinicasFiltradas}
-                vacioTexto={clinicas.length === 0
-                  ? 'No hay clínicas aprobadas para mostrar.'
-                  : 'Ningún centro coincide con los filtros seleccionados.'}
-                clinicaSeleccionadaId={clinicaActiva?.id_clinica ?? null}
-                onSeleccionarClinica={(clinica) => setClinicaSeleccionadaId(clinica.id_clinica)}
-                onVerDetallesClinica={(clinica) => {
-                  setClinicaSeleccionadaId(clinica.id_clinica);
-                  setClinicaEnDetalle(clinica);
-                }}
-                cargando={cargando}
-              />
+            {/* Selector de modo de visualización */}
+            <div className="mapa-view-toolbar">
+              <div className="mapa-view-mode-group" role="group" aria-label="Modo de visualización">
+                <button
+                  type="button"
+                  className={`mapa-view-mode-btn ${modoVista === 'centros' ? 'is-active' : ''}`}
+                  aria-pressed={modoVista === 'centros'}
+                  onClick={() => setModoVista('centros')}
+                >
+                  <List size={15} aria-hidden="true" />
+                  <span>Solo centros</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mapa-view-mode-btn ${modoVista === 'combinada' ? 'is-active' : ''}`}
+                  aria-pressed={modoVista === 'combinada'}
+                  onClick={() => setModoVista('combinada')}
+                >
+                  <Columns2 size={15} aria-hidden="true" />
+                  <span>Vista combinada</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mapa-view-mode-btn ${modoVista === 'mapa' ? 'is-active' : ''}`}
+                  aria-pressed={modoVista === 'mapa'}
+                  onClick={() => setModoVista('mapa')}
+                >
+                  <MapIcon size={15} aria-hidden="true" />
+                  <span>Solo mapa</span>
+                </button>
+              </div>
+            </div>
 
-              <EspacioMapa
-                clinicas={clinicasFiltradas}
-                clinicaSeleccionada={clinicaActiva}
-                onSeleccionarClinica={(clinica) => setClinicaSeleccionadaId(clinica.id_clinica)}
-                onVerDetallesClinica={(clinica) => {
-                  setClinicaSeleccionadaId(clinica.id_clinica);
-                  setClinicaEnDetalle(clinica);
-                }}
-                filtroServicio={filtroServicio}
-                filtroMunicipio={filtroMunicipio}
-                terminoBusqueda={terminoBusqueda}
-                ComponenteMapa={ComponenteMapa}
-              />
+            {/* Zona de convivencia: Listado y/o Mapa */}
+            <section className={`mapa-workspace-grid mode-${modoVista}`} aria-label="Listado de centros y mapa">
+              {modoVista !== 'mapa' && (
+                <ListadoClinicas
+                  clinicas={clinicasFiltradas}
+                  vacioTexto={clinicas.length === 0
+                    ? 'No hay clínicas aprobadas para mostrar.'
+                    : 'Ningún centro coincide con los filtros seleccionados.'}
+                  clinicaSeleccionadaId={clinicaActiva?.id_clinica ?? null}
+                  onSeleccionarClinica={(clinica) => setClinicaSeleccionadaId(clinica.id_clinica)}
+                  onVerDetallesClinica={(clinica) => {
+                    setClinicaSeleccionadaId(clinica.id_clinica);
+                    setClinicaEnDetalle(clinica);
+                  }}
+                  cargando={cargando}
+                />
+              )}
+
+              {modoVista !== 'centros' && (
+                <EspacioMapa
+                  clinicas={clinicasFiltradas}
+                  clinicaSeleccionada={clinicaActiva}
+                  onSeleccionarClinica={(clinica) => setClinicaSeleccionadaId(clinica.id_clinica)}
+                  onVerDetallesClinica={(clinica) => {
+                    setClinicaSeleccionadaId(clinica.id_clinica);
+                    setClinicaEnDetalle(clinica);
+                  }}
+                  filtroServicio={filtroServicio}
+                  filtroMunicipio={filtroMunicipio}
+                  terminoBusqueda={terminoBusqueda}
+                  modoVista={modoVista}
+                  ComponenteMapa={ComponenteMapa}
+                />
+              )}
             </section>
           </div>
         </div>
       </main>
 
-      {/* Footer (112px) */}
-      <footer className="inicio-footer">
-        <div className="inicio-footer-container">
-          <p className="inicio-footer-text">
-            © 2026 PuntOax · Salud, bienestar y orientación en Oaxaca.
-          </p>
-        </div>
-      </footer>
+      <PiePagina />
     </div>
   );
 }

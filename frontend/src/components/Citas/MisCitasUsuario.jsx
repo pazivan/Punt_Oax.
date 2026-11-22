@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   AlertCircle, ArrowRight, CalendarDays, Clock3, MapPin,
-  RefreshCw, ShieldCheck, User, X,
+  RefreshCw, ShieldCheck, X,
 } from 'lucide-react'
 import { cancelarCitaUsuario, consultarCitasUsuario } from '../../api/auth.js'
 import TarjetaCita from './TarjetaCita.jsx'
-import CampanaNotificaciones from '../Inicio/CampanaNotificaciones.jsx'
+import EncabezadoUsuario from '../Inicio/EncabezadoUsuario.jsx'
+import PiePagina from '../Inicio/PiePagina.jsx'
 import {
   ETIQUETAS_ESTADO, filtrarCitas, formatearFechaCita,
 } from '../../utils/citasClinica.js'
@@ -93,7 +94,7 @@ function ConfirmarCancelacion({ cita, cancelando, error, onVolver, onConfirmar }
   )
 }
 
-export default function MisCitasUsuario({ onSalir }) {
+export default function MisCitasUsuario({ sesion, onSalir }) {
   const [citas, setCitas] = useState([])
   const [estado, setEstado] = useState('cargando')
   const [error, setError] = useState('')
@@ -173,36 +174,7 @@ export default function MisCitasUsuario({ onSalir }) {
 
   return (
     <div className="citas-clinica citas-usuario">
-      <header className="citas-header">
-        <div className="citas-contenedor citas-nav">
-          <Link to="/inicio" className="citas-marca">
-            <img
-              src="/logo-puntoax.svg"
-              alt=""
-              className="inicio-brand-logo"
-              aria-hidden="true"
-            />
-            <span>PuntOax</span>
-          </Link>
-          <nav className="citas-nav-enlaces" aria-label="Navegación de paciente">
-            <Link to="/inicio">Inicio</Link>
-            <Link to="/mapa">Mapa de centros</Link>
-            <Link to="/agendar-cita">Agendar cita</Link>
-            <span className="citas-nav-activo" aria-current="page">Mis citas</span>
-            <Link to="/informacion-util">Información útil</Link>
-          </nav>
-          <div className="citas-nav-derecha">
-            <CampanaNotificaciones citasPreCargadas={citas} />
-            <Link to="/mi-perfil" className="inicio-header-profile-link" aria-label="Mi perfil">
-              <span className="inicio-avatar-circle" aria-hidden="true">
-                <User size={14} color="#FFFFFF" />
-              </span>
-              <span>Mi perfil</span>
-            </Link>
-            <button type="button" className="citas-boton-salir" onClick={onSalir}>Salir</button>
-          </div>
-        </div>
-      </header>
+      <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="citas" citasPreCargadas={citas} />
 
       <main className="citas-contenedor citas-principal">
         <div className="citas-encabezado">
@@ -268,7 +240,7 @@ export default function MisCitasUsuario({ onSalir }) {
         </div>
       </main>
 
-      <footer className="citas-footer"><div className="citas-contenedor">© 2026 PuntOax. Salud, bienestar y orientación en Oaxaca.</div></footer>
+      <PiePagina />
 
       {seleccionada && (
         <DetalleCita
