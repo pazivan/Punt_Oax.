@@ -36,7 +36,7 @@ const NOMBRES_SERVICIOS = {
   ile: "Interrupción Legal del Embarazo (ILE)",
 };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ESTADOS_SOLICITUD = ["pendiente", "aprobada", "rechazada"];
+const ESTADOS_SOLICITUD = ["pendiente", "aprobada", "rechazada", "suspendida"];
 const MIN_OBSERVACIONES_RECHAZO = 10;
 const MAX_OBSERVACIONES = 1000;
 
@@ -71,11 +71,43 @@ function limpiarObservaciones(valor) {
 // ------------------------------------------------------------------
 // 1. Lista de solicitudes
 // ------------------------------------------------------------------
-async function listarSolicitudes(db, { estado } = {}) {
+async function listarSolicitudes(db, { estado, page, limit, q } = {}) {
   const filtro = estado === undefined ? "pendiente" : estado;
   if (filtro !== "todas" && !ESTADOS_SOLICITUD.includes(filtro)) {
     return respuesta(400, { error: `Estado no válido. Usa: ${[...ESTADOS_SOLICITUD, "todas"].join(", ")}.` });
   }
+
+  const paginado = page !== undefined || limit !== undefined;
+  const tope = [10, 20, 50].includes(Number(limit)) ? Number(limit) : 10;
+  const paginaActual = Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+  const offset = (paginaActual - 1) * tope;
+  const busqueda = typeof q === "string" ? q.trim() : "";
+
+  const condiciones = [];
+  const params = [];
+
+  if (filtro === "suspendida") {
+    condiciones.push("(sc.estado = 'aprobada' AND c.estado_publicacion = 'suspendida')");
+  } else if (filtro === "aprobada") {
+    condiciones.push("(sc.estado = 'aprobada' AND c.estado_publicacion <> 'suspendida')");
+  } else if (filtro !== "todas") {
+    params.push(filtro);
+    condiciones.push(`sc.estado = $${params.length}::text`);
+  }
+
+  if (busqueda) {
+    params.push(`%${busqueda}%`);
+    condiciones.push(
+      `(COALESCE(c.nombre, '') ILIKE $${params.length} OR COALESCE(c.municipio, '') ILIKE $${params.length} OR COALESCE(c.tipo_institucion, '') ILIKE $${params.length})`
+    );
+  }
+
+  const where = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+  const paramsListado = [...params];
+  const paginacionSql = paginado
+    ? `LIMIT $${paramsListado.push(tope)} OFFSET $${paramsListado.push(offset)}`
+    : "";
+
   const { rows } = await db.query(
     `SELECT sc.id_solicitud, sc.estado, sc.fecha_solicitud, sc.fecha_resolucion, sc.observaciones,
             sc.tipo_solicitud, sc.motivo, sc.campos_modificados,
@@ -83,11 +115,49 @@ async function listarSolicitudes(db, { estado } = {}) {
             c.estado_publicacion
      FROM solicitudes_clinicas sc
      INNER JOIN clinicas c ON c.id_clinica = sc.id_clinica
-     WHERE ($1::text = 'todas' OR sc.estado = $1::text)
-     ORDER BY (sc.estado = 'pendiente') DESC, sc.fecha_solicitud DESC`,
-    [filtro]
+     ${where}
+     ORDER BY (sc.estado = 'pendiente') DESC, sc.fecha_solicitud DESC, sc.id_solicitud ASC
+     ${paginacionSql}`,
+    paramsListado
   );
-  return respuesta(200, { solicitudes: rows });
+
+  if (!paginado) {
+    return respuesta(200, { solicitudes: rows });
+  }
+
+  const [conteoRes, resumenRes] = await Promise.all([
+    db.query(
+      `SELECT COUNT(*)::int AS total
+       FROM solicitudes_clinicas sc
+       INNER JOIN clinicas c ON c.id_clinica = sc.id_clinica
+       ${where}`,
+      params
+    ),
+    db.query(
+      `SELECT COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE sc.estado = 'pendiente')::int AS pendientes,
+              COUNT(*) FILTER (WHERE sc.estado = 'aprobada')::int AS aprobadas,
+              COUNT(*) FILTER (WHERE sc.estado = 'rechazada')::int AS rechazadas
+       FROM solicitudes_clinicas sc`
+    ),
+  ]);
+
+  const total = conteoRes.rows[0]?.total ?? rows.length;
+  const resumen = resumenRes.rows[0] || {
+    total,
+    pendientes: 0,
+    aprobadas: 0,
+    rechazadas: 0,
+  };
+
+  return respuesta(200, {
+    solicitudes: rows,
+    total,
+    page: paginaActual,
+    limit: tope,
+    total_paginas: Math.max(1, Math.ceil(total / tope)),
+    resumen,
+  });
 }
 
 // ------------------------------------------------------------------
@@ -367,7 +437,12 @@ function registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, 
   };
 
   app.get("/api/admin/solicitudes", ...soloAdmin,
-    manejar("consultar las solicitudes", (req) => listarSolicitudes(pool, { estado: req.query.estado })));
+    manejar("consultar las solicitudes", (req) => listarSolicitudes(pool, {
+      estado: req.query.estado,
+      page: req.query.page,
+      limit: req.query.limit,
+      q: req.query.q,
+    })));
 
   app.get("/api/admin/solicitudes/:id", ...soloAdmin,
     manejar("consultar la solicitud", (req) => consultarSolicitud(pool, req.params.id)));

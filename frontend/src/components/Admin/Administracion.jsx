@@ -1,16 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle, ArrowLeft, ArrowRight, Building2, CalendarDays, Check,
   CheckCircle2, ChevronRight, CircleHelp, ClipboardList, Clock3,
   Download, Eye, EyeOff, FileText, LayoutDashboard, LoaderCircle,
-  LogOut, Mail, MapPin, Phone, RefreshCw, Search, ShieldCheck,
+  LogOut, Mail, Map as MapIcon, MapPin, Phone, RefreshCw, Search, ShieldCheck,
   SlidersHorizontal, User, Users, X, XCircle,
 } from 'lucide-react'
 import {
   cambiarVisibilidadAdmin, consultarSolicitudAdmin, consultarSolicitudesAdmin,
   consultarUsuariosAdmin, descargarDocumentoAdmin, resolverSolicitudAdmin,
 } from '../../api/admin.js'
+import Paginacion from './Paginacion.jsx'
 import L from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -102,23 +103,43 @@ function Lateral({ perfil, onSalir, detalle }) {
   const estado = new URLSearchParams(location.search).get('estado')
   const enUsuarios = location.pathname === '/admin/usuarios'
   const seccionActiva = detalle ? '' : enUsuarios ? 'usuarios' : (estado || 'resumen')
-  const opciones = [
-    { valor: 'resumen', destino: '/admin', titulo: 'Resumen y solicitudes', Icono: LayoutDashboard },
-    { valor: 'pendiente', destino: '/admin?estado=pendiente', titulo: 'Pendientes de revisión', Icono: Clock3 },
-    { valor: 'aprobada', destino: '/admin?estado=aprobada', titulo: 'Clínicas aprobadas', Icono: Building2 },
-    { valor: 'suspendida', destino: '/admin?estado=suspendida', titulo: 'Clínicas ocultas', Icono: EyeOff },
-    { valor: 'usuarios', destino: '/admin/usuarios', titulo: 'Usuarios registrados', Icono: Users },
+  const grupos = [
+    {
+      titulo: 'RESUMEN',
+      opciones: [
+        { valor: 'resumen', destino: '/admin', titulo: 'Resumen general', Icono: LayoutDashboard },
+      ],
+    },
+    {
+      titulo: 'SOLICITUDES Y CLÍNICAS',
+      opciones: [
+        { valor: 'pendiente', destino: '/admin?estado=pendiente', titulo: 'Pendientes de revisión', Icono: Clock3 },
+        { valor: 'aprobada', destino: '/admin?estado=aprobada', titulo: 'Clínicas aprobadas', Icono: Building2 },
+        { valor: 'suspendida', destino: '/admin?estado=suspendida', titulo: 'Clínicas ocultas', Icono: EyeOff },
+      ],
+    },
+    {
+      titulo: 'CUENTAS Y DIRECTORIO',
+      opciones: [
+        { valor: 'usuarios', destino: '/admin/usuarios', titulo: 'Usuarios registrados', Icono: Users },
+        { valor: 'mapa', destino: '/mapa', titulo: 'Mapa de centros', Icono: MapIcon },
+      ],
+    },
   ]
   return <aside className="admin-aside">
     <Link to="/admin" className="admin-logo"><span className="admin-logo-icon"><ShieldCheck size={22} /></span><span>PuntOax<small>PANEL DE ADMINISTRACIÓN</small></span></Link>
-    <div className="admin-aside-grupo">GESTIÓN CENTRAL</div>
     <nav className="admin-aside-nav" aria-label="Menú de administración">
-      {opciones.map(({ valor, destino, titulo, Icono }) =>
-        <Link key={valor} to={destino} aria-current={seccionActiva === valor ? 'page' : undefined}
-          className={`admin-aside-enlace ${seccionActiva === valor ? 'activo' : ''}`}>
-          <Icono size={18} />{titulo}
-        </Link>
-      )}
+      {grupos.map((grupo) => (
+        <div key={grupo.titulo}>
+          <div className="admin-aside-grupo">{grupo.titulo}</div>
+          {grupo.opciones.map(({ valor, destino, titulo, Icono }) =>
+            <Link key={valor} to={destino} aria-current={seccionActiva === valor ? 'page' : undefined}
+              className={`admin-aside-enlace ${seccionActiva === valor ? 'activo' : ''}`}>
+              <Icono size={18} />{titulo}
+            </Link>
+          )}
+        </div>
+      ))}
     </nav>
     <div className="admin-aside-pie">
       <div className="admin-aside-perfil"><span className="admin-perfil-icon">{nombre.slice(0, 1).toUpperCase()}</span><div><strong title={nombre}>{nombre}</strong><small>Administración</small></div></div>
@@ -129,19 +150,15 @@ function Lateral({ perfil, onSalir, detalle }) {
 function Encabezado({ titulo, descripcion, onSalir, acciones }) {
   return <header className="admin-header">
     <div><div className="admin-header-marca">ADMINISTRACIÓN / PUNTOAX</div><h1>{titulo}</h1><p>{descripcion}</p></div>
-    <div className="admin-header-acciones">{acciones}<button onClick={onSalir} type="button" className="admin-salir-movil" title="Cerrar sesión"><LogOut size={19} /></button><span className="admin-avatar" aria-hidden="true"><ShieldCheck size={19} /></span></div>
+    <div className="admin-header-acciones">{acciones}<button onClick={onSalir} type="button" className="admin-salir-movil" aria-label="Cerrar sesión" title="Cerrar sesión"><LogOut size={19} /></button><span className="admin-avatar" aria-hidden="true"><ShieldCheck size={19} /></span></div>
   </header>
 }
-function Resumen({ solicitudes }) {
-  const total = solicitudes.length
-  const pendientes = solicitudes.filter((s) => s.estado === 'pendiente').length
-  const aprobadas = solicitudes.filter((s) => s.estado === 'aprobada').length
-  const rechazadas = solicitudes.filter((s) => s.estado === 'rechazada').length
+function Resumen({ resumen }) {
   const estadisticas = [
-    { titulo: 'Pendientes de revisión', valor: pendientes, icono: Clock3, estilo: 'ambar' },
-    { titulo: 'Solicitudes aprobadas', valor: aprobadas, icono: CheckCircle2, estilo: 'verde' },
-    { titulo: 'Solicitudes rechazadas', valor: rechazadas, icono: XCircle, estilo: 'rojo' },
-    { titulo: 'Solicitudes registradas', valor: total, icono: ClipboardList, estilo: 'neutro' },
+    { titulo: 'Pendientes de revisión', valor: resumen.pendientes ?? 0, icono: Clock3, estilo: 'ambar' },
+    { titulo: 'Solicitudes aprobadas', valor: resumen.aprobadas ?? 0, icono: CheckCircle2, estilo: 'verde' },
+    { titulo: 'Solicitudes rechazadas', valor: resumen.rechazadas ?? 0, icono: XCircle, estilo: 'rojo' },
+    { titulo: 'Solicitudes registradas', valor: resumen.total ?? 0, icono: ClipboardList, estilo: 'neutro' },
   ]
   return <section className="admin-resumen" aria-label="Resumen de solicitudes">
     {estadisticas.map(({ titulo, valor, icono: Icono, estilo }) => <article className="admin-metrica" key={titulo}>
@@ -155,35 +172,64 @@ function ListaSolicitudes({ onSalir }) {
   const solicitado = parametros.get('estado') || 'todas'
   const filtro = FILTROS.some((f) => f.valor === solicitado) ? solicitado : 'todas'
   const [busqueda, setBusqueda] = useState('')
+  const [busquedaAplicada, setBusquedaAplicada] = useState('')
+  const [estadoPaginacion, setEstadoPaginacion] = useState({ filtro, pagina: 1 })
+  const [limite, setLimite] = useState(10)
   const [solicitudes, setSolicitudes] = useState([])
+  const [total, setTotal] = useState(0)
+  const [totalPaginas, setTotalPaginas] = useState(1)
+  const [resumen, setResumen] = useState({ total: 0, pendientes: 0, aprobadas: 0, rechazadas: 0 })
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [recarga, setRecarga] = useState(0)
+  const pagina = estadoPaginacion.filtro === filtro ? estadoPaginacion.pagina : 1
+
+  useEffect(() => {
+    const temporizador = setTimeout(() => {
+      const limpia = busqueda.trim()
+      if (limpia !== busquedaAplicada) {
+        setCargando(true)
+        setBusquedaAplicada(limpia)
+        setEstadoPaginacion({ filtro, pagina: 1 })
+      }
+    }, 250)
+    return () => clearTimeout(temporizador)
+  }, [busqueda, busquedaAplicada, filtro])
+
   useEffect(() => {
     let activo = true
-    consultarSolicitudesAdmin('todas')
+    consultarSolicitudesAdmin(filtro, { page: pagina, limit: limite, q: busquedaAplicada })
       .then((datos) => {
         if (activo) {
           if (!Array.isArray(datos.solicitudes)) throw new Error('La lista recibida no tiene el formato esperado.')
           setSolicitudes(datos.solicitudes)
+          setTotal(Number.isInteger(datos.total) ? datos.total : datos.solicitudes.length)
+          setTotalPaginas(Number.isInteger(datos.total_paginas) ? datos.total_paginas : 1)
+          if (datos.resumen) setResumen(datos.resumen)
           setError('')
         }
       })
       .catch((err) => { if (activo) setError(err.message) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
-  }, [recarga])
+  }, [filtro, pagina, limite, busquedaAplicada, recarga])
 
-  const visibles = useMemo(() => solicitudes.filter((s) => {
-    const estado = estadoEfectivo(s)
-    const coincideEstado = filtro === 'todas' || estado === filtro
-    const consulta = busqueda.trim().toLocaleLowerCase('es-MX')
-    return coincideEstado && (!consulta || [s.nombre_clinica, s.municipio, s.tipo_institucion]
-      .some((v) => String(v || '').toLocaleLowerCase('es-MX').includes(consulta)))
-  }), [solicitudes, filtro, busqueda])
-  const pendientes = solicitudes.filter((s) => s.estado === 'pendiente').length
+  const pendientes = resumen.pendientes ?? 0
 
-  function seleccionarFiltro(valor) { setParametros({ estado: valor }) }
+  function cambiarPagina(nuevaPagina) {
+    setCargando(true)
+    setEstadoPaginacion({ filtro, pagina: nuevaPagina })
+  }
+  function cambiarLimite(nuevoLimite) {
+    setCargando(true)
+    setLimite(nuevoLimite)
+    setEstadoPaginacion({ filtro, pagina: 1 })
+  }
+  function seleccionarFiltro(valor) {
+    setCargando(true)
+    setParametros({ estado: valor })
+    setEstadoPaginacion({ filtro: valor, pagina: 1 })
+  }
   function recargar() { setCargando(true); setRecarga((v) => v + 1) }
 
   const esResumen = !parametros.has('estado')
@@ -204,24 +250,36 @@ function ListaSolicitudes({ onSalir }) {
     <div className="admin-cuerpo">
       {esResumen && <div className="admin-bienvenida"><div><span className="admin-eyebrow">GESTIÓN DE CLÍNICAS</span><h2>Solicitudes de incorporación</h2><p>{seccion.introduccion}</p></div><span className="admin-bienvenida-icon"><Building2 size={38} /></span></div>}
       {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
-      {cargando ? <Cargando /> : !error && <>
-        {esResumen && <Resumen solicitudes={solicitudes} />}
+      {esResumen && !error && <Resumen resumen={resumen} />}
+      {!error && (
         <section className="admin-panel" aria-labelledby="admin-tabla-titulo">
-          <div className="admin-panel-header"><div><span className="admin-eyebrow">BANDEJA DE REVISIÓN</span><h2 id="admin-tabla-titulo">{esResumen ? 'Clínicas y solicitudes' : seccion.titulo} <span className="admin-contador">{visibles.length}</span></h2><p>{esResumen ? (pendientes ? `${pendientes} solicitud${pendientes === 1 ? '' : 'es'} pendiente${pendientes === 1 ? '' : 's'} de respuesta.` : 'No hay solicitudes pendientes de revisión.') : seccion.introduccion}</p></div></div>
+          <div className="admin-panel-header"><div><span className="admin-eyebrow">BANDEJA DE REVISIÓN</span><h2 id="admin-tabla-titulo">{esResumen ? 'Clínicas y solicitudes' : seccion.titulo} <span className="admin-contador">{total}</span></h2><p>{esResumen ? (pendientes ? `${pendientes} solicitud${pendientes === 1 ? '' : 'es'} pendiente${pendientes === 1 ? '' : 's'} de respuesta.` : 'No hay solicitudes pendientes de revisión.') : seccion.introduccion}</p></div></div>
           <div className="admin-herramientas">
             <div className="admin-filtros" role="group" aria-label="Filtrar por estado">{FILTROS.map((item) => <button key={item.valor} type="button" className={`admin-filtro ${filtro === item.valor ? 'activo' : ''}`} aria-pressed={filtro === item.valor} onClick={() => seleccionarFiltro(item.valor)}>{item.nombre}</button>)}</div>
             <label className="admin-buscador"><Search size={17} aria-hidden="true" /><span className="admin-solo-lectores">Buscar por nombre, municipio o institución</span><input type="search" value={busqueda} placeholder="Buscar clínica o municipio" onChange={(e) => setBusqueda(e.target.value)} /></label>
           </div>
-          {visibles.length ? <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Clínica</th><th>Municipio</th><th>Solicitud</th><th>Estado</th><th className="admin-tabla-accion">Acción</th></tr></thead><tbody>
-            {visibles.map((s) => <tr key={s.id_solicitud}>
-              <td data-label="Clínica"><div className="admin-fila-clinica"><span className="admin-fila-icon"><Building2 size={19} /></span><div><strong>{texto(s.nombre_clinica)}</strong><small>{ETIQUETAS_TIPO_SOLICITUD[s.tipo_solicitud] || TIPO[s.tipo_institucion] || texto(s.tipo_institucion)}</small></div></div></td>
-              <td data-label="Municipio"><span className="admin-celda-icon"><MapPin size={15} />{texto(s.municipio)}</span></td>
-              <td data-label="Solicitud"><span className="admin-celda-icon"><CalendarDays size={15} />{fecha(s.fecha_solicitud)}</span></td>
-              <td data-label="Estado"><Estado estado={estadoEfectivo(s)} /></td>
-              <td className="admin-tabla-accion"><Link to={`/admin/solicitudes/${s.id_solicitud}`} className="admin-revisar">{s.estado === 'pendiente' ? 'Revisar' : 'Ver detalle'}<ChevronRight size={17} /></Link></td>
-            </tr>)}</tbody></table></div> : <div className="admin-sin-datos"><SlidersHorizontal size={30} /><strong>No hay solicitudes con estos filtros</strong><p>{busqueda ? 'Prueba con otro nombre o elimina el texto de búsqueda.' : 'Selecciona otro estado para consultar solicitudes existentes.'}</p></div>}
+          {cargando ? <Cargando /> : solicitudes.length ? <>
+            <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Clínica</th><th>Municipio</th><th>Solicitud</th><th>Estado</th><th className="admin-tabla-accion">Acción</th></tr></thead><tbody>
+              {solicitudes.map((s) => <tr key={s.id_solicitud}>
+                <td data-label="Clínica"><div className="admin-fila-clinica"><span className="admin-fila-icon"><Building2 size={19} /></span><div><strong>{texto(s.nombre_clinica)}</strong><small>{ETIQUETAS_TIPO_SOLICITUD[s.tipo_solicitud] || TIPO[s.tipo_institucion] || texto(s.tipo_institucion)}</small></div></div></td>
+                <td data-label="Municipio"><span className="admin-celda-icon"><MapPin size={15} />{texto(s.municipio)}</span></td>
+                <td data-label="Solicitud"><span className="admin-celda-icon"><CalendarDays size={15} />{fecha(s.fecha_solicitud)}</span></td>
+                <td data-label="Estado"><Estado estado={estadoEfectivo(s)} /></td>
+                <td className="admin-tabla-accion"><Link to={`/admin/solicitudes/${s.id_solicitud}`} className="admin-revisar">{s.estado === 'pendiente' ? 'Revisar' : 'Ver detalle'}<ChevronRight size={17} /></Link></td>
+              </tr>)}</tbody></table></div>
+            <Paginacion
+              paginaActual={pagina}
+              totalPaginas={totalPaginas}
+              totalRegistros={total}
+              limite={limite}
+              mostrando={solicitudes.length}
+              onCambiarPagina={cambiarPagina}
+              onCambiarLimite={cambiarLimite}
+              etiquetaRegistros="solicitudes"
+            />
+          </> : <div className="admin-sin-datos"><SlidersHorizontal size={30} /><strong>No hay solicitudes con estos filtros</strong><p>{busquedaAplicada ? 'Prueba con otro nombre o elimina el texto de búsqueda.' : 'Selecciona otro estado para consultar solicitudes existentes.'}</p></div>}
         </section>
-      </>}
+      )}
       <p className="admin-nota"><CircleHelp size={16} />Los registros provienen del API de administración. Solo las clínicas aprobadas y visibles aparecen en el catálogo público.</p>
     </div>
   </>
@@ -230,41 +288,63 @@ function ListaSolicitudes({ onSalir }) {
 function ListaUsuarios({ onSalir }) {
   const [usuarios, setUsuarios] = useState([])
   const [total, setTotal] = useState(0)
+  const [totalVerificados, setTotalVerificados] = useState(0)
+  const [totalPaginas, setTotalPaginas] = useState(1)
+  const [pagina, setPagina] = useState(1)
+  const [limite, setLimite] = useState(10)
   const [busqueda, setBusqueda] = useState('')
+  const [busquedaAplicada, setBusquedaAplicada] = useState('')
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [recarga, setRecarga] = useState(0)
 
   useEffect(() => {
+    const temporizador = setTimeout(() => {
+      const limpia = busqueda.trim()
+      if (limpia !== busquedaAplicada) {
+        setCargando(true)
+        setBusquedaAplicada(limpia)
+        setPagina(1)
+      }
+    }, 250)
+    return () => clearTimeout(temporizador)
+  }, [busqueda, busquedaAplicada])
+
+  useEffect(() => {
     let activo = true
-    consultarUsuariosAdmin()
+    consultarUsuariosAdmin({ page: pagina, limit: limite, q: busquedaAplicada })
       .then((datos) => {
         if (activo) {
           if (!Array.isArray(datos.usuarios)) throw new Error('La lista recibida no tiene el formato esperado.')
           setUsuarios(datos.usuarios)
           setTotal(Number.isInteger(datos.total) ? datos.total : datos.usuarios.length)
+          setTotalVerificados(Number.isInteger(datos.total_verificados)
+            ? datos.total_verificados
+            : datos.usuarios.filter((u) => u.correo_verificado).length)
+          setTotalPaginas(Number.isInteger(datos.total_paginas) ? datos.total_paginas : 1)
           setError('')
         }
       })
       .catch((err) => { if (activo) setError(err.message) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
-  }, [recarga])
+  }, [pagina, limite, busquedaAplicada, recarga])
 
-  const visibles = useMemo(() => {
-    const consulta = busqueda.trim().toLocaleLowerCase('es-MX')
-    if (!consulta) return usuarios
-    return usuarios.filter((u) => [u.correo, u.nombre, u.apellidos, u.telefono]
-      .some((v) => String(v || '').toLocaleLowerCase('es-MX').includes(consulta)))
-  }, [usuarios, busqueda])
-
-  const verificados = usuarios.filter((u) => u.correo_verificado).length
   const estadisticas = [
     { titulo: 'Cuentas registradas', valor: total, icono: Users, estilo: 'neutro' },
-    { titulo: 'En este listado', valor: usuarios.length, icono: ClipboardList, estilo: 'ambar' },
-    { titulo: 'Correos verificados', valor: verificados, icono: CheckCircle2, estilo: 'verde' },
+    { titulo: 'En esta página', valor: usuarios.length, icono: ClipboardList, estilo: 'ambar' },
+    { titulo: 'Correos verificados', valor: totalVerificados, icono: CheckCircle2, estilo: 'verde' },
   ]
 
+  function cambiarPaginaUsuarios(nuevaPagina) {
+    setCargando(true)
+    setPagina(nuevaPagina)
+  }
+  function cambiarLimiteUsuarios(nuevoLimite) {
+    setCargando(true)
+    setLimite(nuevoLimite)
+    setPagina(1)
+  }
   function recargar() { setCargando(true); setRecarga((v) => v + 1) }
 
   return <>
@@ -276,7 +356,7 @@ function ListaUsuarios({ onSalir }) {
         <span className="admin-bienvenida-icon"><Users size={38} /></span>
       </div>
       {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
-      {cargando ? <Cargando mensaje="Consultando usuarios…" /> : !error && <>
+      {!error && <>
         <section className="admin-resumen" aria-label="Resumen de usuarios">
           {estadisticas.map(({ titulo, valor, icono: Icono, estilo }) => <article className="admin-metrica" key={titulo}>
             <div className={`admin-metrica-icon admin-metrica-icon--${estilo}`}><Icono size={20} /></div>
@@ -284,21 +364,33 @@ function ListaUsuarios({ onSalir }) {
           </article>)}
         </section>
         <section className="admin-panel" aria-labelledby="admin-usuarios-titulo">
-          <div className="admin-panel-header"><div><span className="admin-eyebrow">CUENTAS DE PACIENTE</span><h2 id="admin-usuarios-titulo">Usuarios <span className="admin-contador">{visibles.length}</span></h2><p>{total > usuarios.length ? `Se muestran las ${usuarios.length} cuentas más recientes de ${total}.` : 'Todas las cuentas registradas en la plataforma.'}</p></div></div>
+          <div className="admin-panel-header"><div><span className="admin-eyebrow">CUENTAS DE PACIENTE</span><h2 id="admin-usuarios-titulo">Usuarios <span className="admin-contador">{total}</span></h2><p>Listado paginado de cuentas registradas en la plataforma.</p></div></div>
           <div className="admin-herramientas">
             <label className="admin-buscador"><Search size={17} aria-hidden="true" /><span className="admin-solo-lectores">Buscar por correo, nombre o teléfono</span><input type="search" value={busqueda} placeholder="Buscar correo, nombre o teléfono" onChange={(e) => setBusqueda(e.target.value)} /></label>
           </div>
-          {visibles.length ? <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Usuario</th><th>Teléfono</th><th>Registro</th><th>Correo</th><th>Acceso</th></tr></thead><tbody>
-            {visibles.map((u) => <tr key={u.id_usuario}>
-              <td data-label="Usuario"><div className="admin-fila-clinica"><span className="admin-fila-icon"><User size={19} /></span><div><strong>{nombreCompleto(u) || 'Sin nombre registrado'}</strong><small>{texto(u.correo)}</small></div></div></td>
-              <td data-label="Teléfono"><span className="admin-celda-icon"><Phone size={15} />{texto(u.telefono)}</span></td>
-              <td data-label="Registro"><span className="admin-celda-icon"><CalendarDays size={15} />{fecha(u.fecha_registro)}</span></td>
-              <td data-label="Correo"><EstadoVerificacion verificado={Boolean(u.correo_verificado)} /></td>
-              <td data-label="Acceso">{[u.acceso_password ? 'Contraseña' : null, u.acceso_google ? 'Google' : null].filter(Boolean).join(' · ') || 'No especificado'}</td>
-            </tr>)}</tbody></table></div> : <div className="admin-sin-datos"><Users size={30} /><strong>No hay usuarios con esta búsqueda</strong><p>{busqueda ? 'Prueba con otro correo, nombre o teléfono.' : 'Todavía no se ha registrado ninguna cuenta de usuario.'}</p></div>}
+          {cargando ? <Cargando mensaje="Consultando usuarios…" /> : usuarios.length ? <>
+            <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Usuario</th><th>Teléfono</th><th>Registro</th><th>Correo</th><th>Acceso</th></tr></thead><tbody>
+              {usuarios.map((u) => <tr key={u.id_usuario}>
+                <td data-label="Usuario"><div className="admin-fila-clinica"><span className="admin-fila-icon"><User size={19} /></span><div><strong>{nombreCompleto(u) || 'Sin nombre registrado'}</strong><small>{texto(u.correo)}</small></div></div></td>
+                <td data-label="Teléfono"><span className="admin-celda-icon"><Phone size={15} />{texto(u.telefono)}</span></td>
+                <td data-label="Registro"><span className="admin-celda-icon"><CalendarDays size={15} />{fecha(u.fecha_registro)}</span></td>
+                <td data-label="Correo"><EstadoVerificacion verificado={Boolean(u.correo_verificado)} /></td>
+                <td data-label="Acceso">{[u.acceso_password ? 'Contraseña' : null, u.acceso_google ? 'Google' : null].filter(Boolean).join(' · ') || 'No especificado'}</td>
+              </tr>)}</tbody></table></div>
+            <Paginacion
+              paginaActual={pagina}
+              totalPaginas={totalPaginas}
+              totalRegistros={total}
+              limite={limite}
+              mostrando={usuarios.length}
+              onCambiarPagina={cambiarPaginaUsuarios}
+              onCambiarLimite={cambiarLimiteUsuarios}
+              etiquetaRegistros="usuarios"
+            />
+          </> : <div className="admin-sin-datos"><Users size={30} /><strong>No hay usuarios con esta búsqueda</strong><p>{busquedaAplicada ? 'Prueba con otro correo, nombre o teléfono.' : 'Todavía no se ha registrado ninguna cuenta de usuario.'}</p></div>}
         </section>
       </>}
-      <p className="admin-nota"><CircleHelp size={16} />El listado es de solo lectura y muestra hasta 200 cuentas, de la más reciente a la más antigua. Las contraseñas nunca se envían al navegador.</p>
+      <p className="admin-nota"><CircleHelp size={16} />El listado es de solo lectura y se consulta por páginas. Las contraseñas nunca se envían al navegador.</p>
     </div>
   </>
 }
@@ -469,7 +561,7 @@ function ModalAccion({ accion, procesando, error, observaciones, setObservacione
       {['aprobar', 'mostrar'].includes(accion) ? <CheckCircle2 size={25} /> : accion === 'rechazar' ? <XCircle size={25} /> : <EyeOff size={25} />}
     </span><button type="button" className="admin-cerrar" onClick={cerrar} disabled={procesando} aria-label="Cerrar"><X size={20} /></button></div>
     <h2 id="admin-modal-titulo">{NOMBRE_ACCION[accion]}</h2><p id="admin-modal-descripcion">{INFO_ACCION[accion]} ¿Deseas continuar?</p>
-    {['aprobar', 'rechazar'].includes(accion) && <label className="admin-observaciones"><span>{esRechazo ? 'Motivo del rechazo (obligatorio)' : 'Observaciones (opcional)'}</span><textarea autoFocus={esRechazo} placeholder={esRechazo ? 'Indica qué debe corregir la clínica…' : 'Agrega un comentario para la clínica…'} value={observaciones} maxLength={1000} rows={4} onChange={(e) => setObservaciones(e.target.value)} /><small>{esRechazo ? 'Mínimo 10 caracteres. ' : ''}{observaciones.trim().length}/1000</small></label>}
+    {esRechazo && <label className="admin-observaciones"><span>Motivo del rechazo administrativo (obligatorio)</span><textarea autoFocus placeholder="Indica qué debe corregir la clínica…" value={observaciones} maxLength={1000} rows={4} onChange={(e) => setObservaciones(e.target.value)} /><small>Mínimo 10 caracteres. {observaciones.trim().length}/1000</small></label>}
     {error && <div className="admin-modal-error" role="alert">{error}</div>}
     <div className="admin-modal-acciones"><button type="button" className="admin-btn admin-btn--outline" onClick={cerrar} disabled={procesando}>Cancelar</button><button type="button" className={`admin-btn ${['rechazar', 'ocultar'].includes(accion) ? 'admin-btn--peligro' : 'admin-btn--primario'}`} disabled={procesando || (esRechazo && observaciones.trim().length < 10)} onClick={confirmar}>{procesando ? 'Guardando…' : `Sí, ${accion === 'mostrar' ? 'mostrar' : accion}`}</button></div>
   </div></div>
@@ -558,7 +650,7 @@ function DetalleSolicitud({ idSolicitud, onSalir }) {
             {pendiente && <div className="admin-decisiones"><button type="button" className="admin-btn admin-btn--primario" onClick={() => abrir('aprobar')} disabled={procesando}><Check size={18} />Aprobar clínica</button><button type="button" className="admin-btn admin-btn--peligro-claro" onClick={() => abrir('rechazar')} disabled={procesando}><X size={18} />Rechazar solicitud</button></div>}
             {permiteVisibilidad && <div className="admin-decisiones"><button type="button" className={`admin-btn ${publicado === 'aprobada' ? 'admin-btn--peligro-claro' : 'admin-btn--primario'}`} disabled={procesando} onClick={() => abrir(publicado === 'aprobada' ? 'ocultar' : 'mostrar')}>{publicado === 'aprobada' ? <EyeOff size={18} /> : <Eye size={18} />}{publicado === 'aprobada' ? 'Ocultar del mapa' : 'Volver a mostrar'}</button></div>}
             {solicitud.estado === 'rechazada' && <p className="admin-dictamen-nota">Esta solicitud fue rechazada y ya no puede resolverse de nuevo. La clínica puede volver a postular.</p>}
-            {solicitud.observaciones && <div className="admin-observaciones-anteriores"><strong>Observaciones registradas</strong><p>{solicitud.observaciones}</p></div>}
+            {solicitud.observaciones && <div className="admin-observaciones-anteriores"><strong>Motivo registrado de la resolución</strong><p>{solicitud.observaciones}</p></div>}
             <div className="admin-dictamen-pie"><CircleHelp size={17} /><span>Las decisiones se guardan directamente en el servidor y requieren una cuenta administradora.</span></div>
           </section>
           <section className="admin-panel admin-ayuda-panel"><h2><Mail size={18} /> Datos para seguimiento</h2><p>Correo: {texto(solicitud.correo_contacto || solicitud.datos_ficha?.clinica?.correo_contacto)}</p><p>Teléfono: {texto(solicitud.telefono || solicitud.datos_ficha?.clinica?.telefono)}</p></section>

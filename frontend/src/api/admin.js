@@ -1,8 +1,12 @@
 // Sprint 7 · Contratos acordados en backend/adminClinicas.js (Kelly).
 import { cerrarSesion, enviarConSesion, leerSesion } from './auth.js'
 
-export function consultarSolicitudesAdmin(estado = 'todas') {
-  return enviarConSesion(`/api/admin/solicitudes?estado=${encodeURIComponent(estado)}`)
+export function consultarSolicitudesAdmin(estado = 'todas', { page, limit, q } = {}) {
+  const params = new URLSearchParams({ estado })
+  if (page !== undefined) params.set('page', String(page))
+  if (limit !== undefined) params.set('limit', String(limit))
+  if (typeof q === 'string' && q.trim()) params.set('q', q.trim())
+  return enviarConSesion(`/api/admin/solicitudes?${params.toString()}`)
 }
 
 export function consultarSolicitudAdmin(idSolicitud) {
@@ -10,8 +14,13 @@ export function consultarSolicitudAdmin(idSolicitud) {
 }
 
 // Listado de solo lectura de las cuentas de usuario registradas.
-export function consultarUsuariosAdmin() {
-  return enviarConSesion('/api/admin/usuarios')
+export function consultarUsuariosAdmin({ page, limit, q } = {}) {
+  const params = new URLSearchParams()
+  if (page !== undefined) params.set('page', String(page))
+  if (limit !== undefined) params.set('limit', String(limit))
+  if (typeof q === 'string' && q.trim()) params.set('q', q.trim())
+  const query = params.toString()
+  return enviarConSesion(`/api/admin/usuarios${query ? `?${query}` : ''}`)
 }
 
 export function resolverSolicitudAdmin(idSolicitud, decision, observaciones = '') {
