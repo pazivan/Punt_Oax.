@@ -298,6 +298,14 @@ export function guardarEnlacesInformacion(enlaces) {
   })
 }
 
+export function solicitarCambioUbicacionClinica({ latitud, longitud }) {
+  return enviarConSesion('/api/clinicas/mi-ficha/ubicacion', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ latitud, longitud }),
+  })
+}
+
 export async function subirDocumentosClinica(archivos) {
   const formulario = new FormData()
   for (const archivo of archivos) formulario.append('documentos', archivo)

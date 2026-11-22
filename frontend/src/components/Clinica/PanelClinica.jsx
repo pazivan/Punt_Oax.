@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle,
+  CalendarDays,
   CheckCircle2,
   Clock3,
   Edit3,
@@ -11,33 +12,97 @@ import {
   MapPin,
   Phone,
   Save,
-  Trash2,
 } from 'lucide-react'
 import {
   consultarCitasClinica,
   consultarMiFicha,
   guardarBorradorClinica,
+  guardarHorariosAgenda,
   leerSesion,
+  solicitarCambioUbicacionClinica,
 } from '../../api/auth'
 import EncabezadoClinica from './EncabezadoClinica.jsx'
 import FuentesInformacion from './FuentesInformacion.jsx'
+import EditorHorarios from './EditorHorarios.jsx'
+import SelectorUbicacionMapa from './SelectorUbicacionMapa.jsx'
 import MapaLeaflet from '../Inicio/MapaLeaflet.jsx'
-import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js'
-import { OAXACA, coordenadas } from '../../utils/centros.js'
-import { filtrarCitas } from '../../utils/citasClinica'
+import { DIAS, coordenadas } from '../../utils/centros.js'
+import { ZONA_HORARIA, filtrarCitas } from '../../utils/citasClinica'
+import { validarCoordenadas, validarHorarios } from '../../utils/validacionFicha'
 import { validarEmail, validarTelefono } from '../../utils/validaciones'
 import '../../styles/Inicio.css'
 import '../../css/PanelClinica.css'
 
-const DIAS = [
-  { numero: 0, nombre: 'Domingo' },
-  { numero: 1, nombre: 'Lunes' },
-  { numero: 2, nombre: 'Martes' },
-  { numero: 3, nombre: 'Miércoles' },
-  { numero: 4, nombre: 'Jueves' },
-  { numero: 5, nombre: 'Viernes' },
-  { numero: 6, nombre: 'Sábado' },
-]
+function numeroUbicacion(valor) {
+  if (valor == null || valor === '') return null
+  const numero = Number(valor)
+  return Number.isFinite(numero) ? numero : null
+}
+
+function obtenerClaveFechaMexico(fechaIso) {
+  if (!fechaIso) return ''
+  const fecha = new Date(fechaIso)
+  if (Number.isNaN(fecha.getTime())) return ''
+  const partes = new Intl.DateTimeFormat('es-MX', {
+    timeZone: ZONA_HORARIA,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(fecha)
+  const obtener = (tipo) => partes.find((p) => p.type === tipo)?.value || ''
+  return `${obtener('year')}-${obtener('month')}-${obtener('day')}`
+}
+
+const ETIQUETA_ESTADO_PUBLICACION = {
+  aprobada: 'PUBLICADA',
+  pendiente: 'PENDIENTE DE REVISIÓN',
+  suspendida: 'SUSPENDIDA',
+  rechazada: 'REQUIERE CORRECCIONES',
+  borrador: 'BORRADOR',
+}
+
+function estadoInicialDesdeFicha(ficha) {
+  const servicios = {
+    its: { seleccionado: false, detalle: '' },
+    ile: { seleccionado: false, detalle: '' },
+  }
+  for (const servicio of ficha.servicios || []) {
+    if (servicio.categoria in servicios) {
+      servicios[servicio.categoria] = {
+        seleccionado: true,
+        detalle: servicio.detalle_servicio || '',
+      }
+    }
+  }
+  const latitud = numeroUbicacion(ficha.clinica?.latitud)
+  const longitud = numeroUbicacion(ficha.clinica?.longitud)
+  return {
+    nombre: ficha.clinica?.nombre || '',
+    tipo_institucion: ficha.clinica?.tipo_institucion || '',
+    descripcion: ficha.clinica?.descripcion || '',
+    telefono: ficha.clinica?.telefono || '',
+    correo_contacto: ficha.clinica?.correo_contacto || '',
+    sitio_web: ficha.clinica?.sitio_web || '',
+    municipio: ficha.clinica?.municipio || '',
+    localidad: ficha.clinica?.localidad || '',
+    direccion: ficha.clinica?.direccion || '',
+    codigo_postal: ficha.clinica?.codigo_postal || '',
+    ubicacion_maps_url: ficha.clinica?.ubicacion_maps_url || '',
+    ubicacion: {
+      latitud,
+      longitud,
+      confirmada: latitud !== null && longitud !== null,
+    },
+    servicios,
+    horarios: (ficha.horarios || []).map((horario) => ({
+      dia_semana: horario.dia_semana,
+      apertura: horario.apertura,
+      cierre: horario.cierre,
+      es_24_horas: Boolean(horario.es_24_horas),
+      cruza_medianoche: Boolean(horario.cruza_medianoche),
+    })),
+  }
+}
 
 const AREAS = [
   {
@@ -59,40 +124,6 @@ const ETIQUETA_TIPO_INSTITUCION = {
   otra: 'Otra institución',
 }
 
-function estadoInicialDesdeFicha(ficha) {
-  const servicios = {
-    its: { seleccionado: false, detalle: '' },
-    ile: { seleccionado: false, detalle: '' },
-  }
-  for (const servicio of ficha.servicios || []) {
-    if (servicio.categoria in servicios) {
-      servicios[servicio.categoria] = {
-        seleccionado: true,
-        detalle: servicio.detalle_servicio || '',
-      }
-    }
-  }
-  return {
-    nombre: ficha.clinica?.nombre || '',
-    tipo_institucion: ficha.clinica?.tipo_institucion || '',
-    descripcion: ficha.clinica?.descripcion || '',
-    telefono: ficha.clinica?.telefono || '',
-    correo_contacto: ficha.clinica?.correo_contacto || '',
-    sitio_web: ficha.clinica?.sitio_web || '',
-    municipio: ficha.clinica?.municipio || '',
-    localidad: ficha.clinica?.localidad || '',
-    direccion: ficha.clinica?.direccion || '',
-    codigo_postal: ficha.clinica?.codigo_postal || '',
-    ubicacion_maps_url: ficha.clinica?.ubicacion_maps_url || '',
-    servicios,
-    horarios: (ficha.horarios || []).map((horario) => ({
-      dia_semana: horario.dia_semana,
-      apertura: horario.apertura,
-      cierre: horario.cierre,
-    })),
-  }
-}
-
 function construirPayload(form) {
   return {
     nombre: form.nombre.trim(),
@@ -111,8 +142,10 @@ function construirPayload(form) {
       .map(([categoria, valor]) => ({ categoria, detalle: valor.detalle.trim() })),
     horarios: form.horarios.map((horario) => ({
       dia_semana: horario.dia_semana,
-      apertura: horario.apertura,
-      cierre: horario.cierre,
+      apertura: horario.es_24_horas ? '00:00' : horario.apertura,
+      cierre: horario.es_24_horas ? '00:00' : horario.cierre,
+      es_24_horas: Boolean(horario.es_24_horas),
+      cruza_medianoche: Boolean(horario.cruza_medianoche) && !horario.es_24_horas,
     })),
   }
 }
@@ -142,25 +175,9 @@ function validarInformacion(form) {
       return `El ${campo} debe iniciar con http:// o https://.`
     }
   }
-  const ordenados = [...form.horarios].sort(
-    (a, b) => a.dia_semana - b.dia_semana || a.apertura.localeCompare(b.apertura)
-  )
-  for (let i = 0; i < ordenados.length; i += 1) {
-    const horario = ordenados[i]
-    if (!horario.apertura || !horario.cierre) {
-      return 'Completa la apertura y el cierre de cada horario.'
-    }
-    if (horario.apertura >= horario.cierre) {
-      return 'La apertura debe ser anterior al cierre. Los turnos nocturnos aún no están disponibles.'
-    }
-    if (
-      i > 0 &&
-      ordenados[i - 1].dia_semana === horario.dia_semana &&
-      horario.apertura < ordenados[i - 1].cierre
-    ) {
-      return 'Las franjas de un mismo día no deben solaparse.'
-    }
-  }
+  const erroresHorarios = validarHorarios(form.horarios)
+  const primerErrorHorario = Object.values(erroresHorarios)[0]
+  if (primerErrorHorario) return primerErrorHorario
   return ''
 }
 
@@ -174,6 +191,7 @@ export default function PanelClinica({ sesion, onSalir }) {
   const [ficha, setFicha] = useState(null)
   const [form, setForm] = useState(null)
   const [citasClinica, setCitasClinica] = useState([])
+  const [estadoCitas, setEstadoCitas] = useState('cargando')
   const [catalogoClinicas, setCatalogoClinicas] = useState([])
   const [clinicaMapaSeleccionada, setClinicaMapaSeleccionada] = useState(null)
   const vistaActiva = searchParams.get('vista') === 'editar' ? 'editar' : 'inicio'
@@ -182,6 +200,10 @@ export default function PanelClinica({ sesion, onSalir }) {
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [ubicacionModificada, setUbicacionModificada] = useState(false)
+  const [enviandoUbicacion, setEnviandoUbicacion] = useState(false)
+  const [mensajeUbicacion, setMensajeUbicacion] = useState('')
+  const [errorUbicacion, setErrorUbicacion] = useState('')
 
   useEffect(() => {
     sessionStorage.setItem('puntoax_panel_aprobado', '1')
@@ -231,9 +253,12 @@ export default function PanelClinica({ sesion, onSalir }) {
       .then((res) => {
         if (!activo) return
         setCitasClinica(Array.isArray(res?.citas) ? res.citas : [])
+        setEstadoCitas('listo')
       })
       .catch(() => {
-        if (activo) setCitasClinica([])
+        if (!activo) return
+        setCitasClinica([])
+        setEstadoCitas('error')
       })
 
     fetch('/api/clinicas')
@@ -256,6 +281,19 @@ export default function PanelClinica({ sesion, onSalir }) {
     [citasClinica]
   )
 
+  const claveHoy = useMemo(() => obtenerClaveFechaMexico(new Date().toISOString()), [])
+  const citasHoyCount = useMemo(
+    () =>
+      citasClinica.filter(
+        (c) => c.estado === 'confirmada' && obtenerClaveFechaMexico(c.fecha_hora_inicio) === claveHoy
+      ).length,
+    [citasClinica, claveHoy]
+  )
+  const citasPendientesCierreCount = useMemo(
+    () => citasClinica.filter((c) => c.estado === 'confirmada').length,
+    [citasClinica]
+  )
+
   const areasSeleccionadas = useMemo(() => {
     if (!form?.servicios) return []
     return AREAS.filter((area) => form.servicios[area.categoria]?.seleccionado).map(
@@ -267,10 +305,7 @@ export default function PanelClinica({ sesion, onSalir }) {
   }, [form])
 
   const centrosParaMapa = useMemo(() => {
-    const base =
-      catalogoClinicas.length > 0
-        ? catalogoClinicas
-        : normalizarYUnificarClinicas(CLINICAS_DEMO)
+    const base = Array.isArray(catalogoClinicas) ? catalogoClinicas : []
 
     if (!ficha?.clinica || !form) return base
 
@@ -284,22 +319,22 @@ export default function PanelClinica({ sesion, onSalir }) {
     )
 
     const coordsExistentes = coordenadas(existente || ficha.clinica)
-    const [lat, lng] = coordsExistentes || OAXACA
-
-    const miCentroEnMapa = {
-      ...(existente || {}),
-      id_clinica: idPropio || 'mi-clinica-actual',
-      nombre: form.nombre.trim() || ficha.clinica.nombre || 'Mi clínica',
-      municipio: form.municipio.trim() || ficha.clinica.municipio || 'Oaxaca de Juárez',
-      direccion: form.direccion.trim() || ficha.clinica.direccion || 'Dirección registrada',
-      telefono: form.telefono.trim() || ficha.clinica.telefono || '',
-      servicios: areasSeleccionadas.map((a) => a.nombre),
-      horarios: form.horarios,
-      latitud: lat,
-      longitud: lng,
-      ubicacion_confirmada: true,
-      esMiCentro: true,
-    }
+    const miCentroEnMapa = coordsExistentes
+      ? {
+          ...(existente || {}),
+          id_clinica: idPropio || 'mi-clinica-actual',
+          nombre: form.nombre.trim() || ficha.clinica.nombre || 'Mi clínica',
+          municipio: form.municipio.trim() || ficha.clinica.municipio || 'Oaxaca',
+          direccion: form.direccion.trim() || ficha.clinica.direccion || 'Dirección registrada',
+          telefono: form.telefono.trim() || ficha.clinica.telefono || '',
+          servicios: areasSeleccionadas.map((a) => a.nombre),
+          horarios: form.horarios,
+          latitud: coordsExistentes[0],
+          longitud: coordsExistentes[1],
+          ubicacion_confirmada: true,
+          esMiCentro: true,
+        }
+      : null
 
     const resto = base.filter(
       (c) =>
@@ -307,7 +342,7 @@ export default function PanelClinica({ sesion, onSalir }) {
         (!existente || c.id_clinica !== existente.id_clinica)
     )
 
-    return [miCentroEnMapa, ...resto]
+    return miCentroEnMapa ? [miCentroEnMapa, ...resto] : resto
   }, [catalogoClinicas, ficha, form, areasSeleccionadas])
 
   const centroActivoEnMapa =
@@ -396,46 +431,64 @@ export default function PanelClinica({ sesion, onSalir }) {
     setMensaje('')
   }
 
-  const franjasDelDia = (dia) =>
-    form.horarios
-      .map((horario, indice) => ({ ...horario, indice }))
-      .filter((horario) => horario.dia_semana === dia)
-
-  const alternarDia = (dia) => {
-    const franjas = franjasDelDia(dia)
+  const confirmarUbicacion = ({ latitud, longitud }) => {
+    const coords = validarCoordenadas(latitud, longitud)
+    if (coords.error) {
+      setErrorUbicacion(coords.error)
+      return
+    }
     setForm((actual) => ({
       ...actual,
-      horarios: franjas.length
-        ? actual.horarios.filter((horario) => horario.dia_semana !== dia)
-        : [...actual.horarios, { dia_semana: dia, apertura: '09:00', cierre: '17:00' }],
+      ubicacion: {
+        latitud: coords.latitud,
+        longitud: coords.longitud,
+        confirmada: true,
+      },
     }))
-    setMensaje('')
+    setUbicacionModificada(true)
+    setErrorUbicacion('')
+    setMensajeUbicacion('')
   }
 
-  const agregarFranja = (dia) => {
+  const corregirUbicacion = () => {
     setForm((actual) => ({
       ...actual,
-      horarios: [...actual.horarios, { dia_semana: dia, apertura: '18:00', cierre: '20:00' }],
+      ubicacion: {
+        ...actual.ubicacion,
+        confirmada: false,
+      },
     }))
-    setMensaje('')
+    setErrorUbicacion('')
+    setMensajeUbicacion('')
   }
 
-  const actualizarHorario = (indice, campo, valor) => {
-    setForm((actual) => ({
-      ...actual,
-      horarios: actual.horarios.map((horario, posicion) =>
-        posicion === indice ? { ...horario, [campo]: valor } : horario
-      ),
-    }))
-    setMensaje('')
-  }
-
-  const eliminarFranja = (indice) => {
-    setForm((actual) => ({
-      ...actual,
-      horarios: actual.horarios.filter((_, posicion) => posicion !== indice),
-    }))
-    setMensaje('')
+  const enviarCambioUbicacion = async () => {
+    if (enviandoUbicacion || !form.ubicacion?.confirmada) return
+    const coords = validarCoordenadas(form.ubicacion.latitud, form.ubicacion.longitud)
+    if (coords.error) {
+      setErrorUbicacion(coords.error)
+      return
+    }
+    setEnviandoUbicacion(true)
+    setErrorUbicacion('')
+    setMensajeUbicacion('')
+    try {
+      const resp = await solicitarCambioUbicacionClinica({
+        latitud: coords.latitud,
+        longitud: coords.longitud,
+      })
+      const actualizada = await consultarMiFicha()
+      setFicha(actualizada)
+      setUbicacionModificada(false)
+      setMensajeUbicacion(
+        resp.mensaje ||
+          'Solicitud de cambio de ubicación enviada para revisión. Tu ubicación pública actual se mantiene visible hasta su aprobación.'
+      )
+    } catch (err) {
+      setErrorUbicacion(err.message || 'No se pudo enviar la solicitud de cambio de ubicación.')
+    } finally {
+      setEnviandoUbicacion(false)
+    }
   }
 
   async function persistirCambios() {
@@ -467,13 +520,26 @@ export default function PanelClinica({ sesion, onSalir }) {
         }),
       })
 
-      if (respuestaHttp.ok) {
-        const actualizada = await consultarMiFicha()
-        setFicha(actualizada)
-        return actualizada
+      if (!respuestaHttp.ok) {
+        const errJson = await respuestaHttp.json().catch(() => null)
+        throw new Error(errJson?.error || 'No se pudieron actualizar los datos publicados.')
       }
-      const errJson = await respuestaHttp.json().catch(() => null)
-      throw new Error(errJson?.error || 'No se pudieron actualizar los datos publicados.')
+
+      if (ficha?.clinica?.estado_publicacion === 'aprobada') {
+        await guardarHorariosAgenda(
+          form.horarios.map((h) => ({
+            dia_semana: h.dia_semana,
+            apertura: h.es_24_horas ? '00:00' : h.apertura,
+            cierre: h.es_24_horas ? '00:00' : h.cierre,
+            es_24_horas: Boolean(h.es_24_horas),
+            cruza_medianoche: Boolean(h.cruza_medianoche) && !h.es_24_horas,
+          }))
+        )
+      }
+
+      const actualizada = await consultarMiFicha()
+      setFicha(actualizada)
+      return actualizada
     }
 
     const respuesta = await guardarBorradorClinica(construirPayload(form))
@@ -546,25 +612,39 @@ export default function PanelClinica({ sesion, onSalir }) {
                 <div className="panel-clinica-top-overview-left">
                   <div className="panel-clinica-badge-row">
                     <span className="panel-clinica-status-pill">
-                      ACTIVO
+                      {ETIQUETA_ESTADO_PUBLICACION[ficha?.clinica?.estado_publicacion] || 'ACTIVA'}
                     </span>
                     <span className="panel-clinica-center-meta">
                       {nombreCentroMostrado} • {municipioMostrado}
                     </span>
                   </div>
                   <h2 className="panel-clinica-welcome-title">
-                    ¡Bienvenido, equipo!
+                    {nombreCentroMostrado}
                   </h2>
-                  <div className="panel-clinica-welcome-actions">
+                  <div className="panel-clinica-welcome-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {vistaActiva === 'inicio' ? (
-                      <button
-                        type="button"
-                        className="panel-clinica-edit-shortcut"
-                        onClick={() => setVistaActiva('editar')}
-                      >
-                        <Edit3 size={14} color="#FFFFFF" aria-hidden="true" />
-                        <span>Actualizar información</span>
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="panel-clinica-edit-shortcut"
+                          onClick={() => setVistaActiva('editar')}
+                        >
+                          <Edit3 size={14} color="#FFFFFF" aria-hidden="true" />
+                          <span>Actualizar información</span>
+                        </button>
+                        <Link to="/mi-clinica/citas" className="panel-clinica-back-shortcut" style={{ textDecoration: 'none' }}>
+                          <CalendarDays size={14} aria-hidden="true" />
+                          <span>Mis citas</span>
+                        </Link>
+                        <Link to="/mi-clinica/agenda" className="panel-clinica-back-shortcut" style={{ textDecoration: 'none' }}>
+                          <Clock3 size={14} aria-hidden="true" />
+                          <span>Gestionar agenda</span>
+                        </Link>
+                        <Link to="/mapa" className="panel-clinica-back-shortcut" style={{ textDecoration: 'none' }}>
+                          <MapPin size={14} aria-hidden="true" />
+                          <span>Ver mapa</span>
+                        </Link>
+                      </>
                     ) : (
                       <button
                         type="button"
@@ -577,20 +657,62 @@ export default function PanelClinica({ sesion, onSalir }) {
                   </div>
                 </div>
 
-                {/* Indicador compacto */}
+                {/* Indicadores reales de citas */}
                 <div className="panel-clinica-top-overview-right">
                   <div className="panel-clinica-stats-row">
                     <div className="panel-clinica-stat-card">
                       <span className="panel-clinica-stat-value">
-                        {citasProximasCount}
+                        {estadoCitas === 'cargando' ? '—' : citasHoyCount}
                       </span>
                       <span className="panel-clinica-stat-label">
-                        Citas próximas
+                        Citas de hoy
+                      </span>
+                    </div>
+                    <div className="panel-clinica-stat-card">
+                      <span className="panel-clinica-stat-value">
+                        {estadoCitas === 'cargando' ? '—' : citasProximasCount}
+                      </span>
+                      <span className="panel-clinica-stat-label">
+                        Próximas citas
+                      </span>
+                    </div>
+                    <div className="panel-clinica-stat-card">
+                      <span className="panel-clinica-stat-value">
+                        {estadoCitas === 'cargando' ? '—' : citasPendientesCierreCount}
+                      </span>
+                      <span className="panel-clinica-stat-label">
+                        Citas pendientes
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {vistaActiva === 'inicio' && estadoCitas === 'listo' && citasClinica.length === 0 && (
+                <div
+                  className="ficha-doc-note"
+                  role="status"
+                  style={{ marginTop: '14px', width: '100%', boxSizing: 'border-box' }}
+                >
+                  <CalendarDays size={18} aria-hidden="true" />
+                  <p>
+                    <strong>Sin citas agendadas todavía.</strong> Cuando los pacientes reserven horarios en tu centro aparecerán aquí y en{' '}
+                    <Link to="/mi-clinica/citas" style={{ color: '#103328', fontWeight: 700 }}>Mis citas</Link>.
+                    {' '}Puedes publicar cupos desde <Link to="/mi-clinica/agenda" style={{ color: '#103328', fontWeight: 700 }}>Gestionar agenda</Link>.
+                  </p>
+                </div>
+              )}
+
+              {vistaActiva === 'inicio' && estadoCitas === 'error' && (
+                <div
+                  className="ficha-alert ficha-alert-error"
+                  role="alert"
+                  style={{ marginTop: '14px', width: '100%', boxSizing: 'border-box' }}
+                >
+                  <AlertTriangle size={18} aria-hidden="true" />
+                  <p>No se pudieron consultar las citas reales de tu clínica en este momento.</p>
+                </div>
+              )}
 
               {error && (
                 <div
@@ -743,12 +865,15 @@ export default function PanelClinica({ sesion, onSalir }) {
                           {form.horarios.length > 0 ? (
                             <ul className="panel-clinica-schedule-list">
                               {form.horarios.map((h, idx) => {
-                                const nombreDia =
-                                  DIAS.find((d) => d.numero === Number(h.dia_semana))?.nombre ||
-                                  'Día'
+                                const nombreDia = DIAS[Number(h.dia_semana)] || 'Día'
+                                const textoFranja = h.es_24_horas
+                                  ? '24 horas'
+                                  : h.cruza_medianoche
+                                    ? `${h.apertura} - ${h.cierre} (nocturno)`
+                                    : `${h.apertura} - ${h.cierre}`
                                 return (
                                   <li key={`${h.dia_semana}-${idx}`}>
-                                    <strong>{nombreDia}:</strong> {h.apertura} - {h.cierre}
+                                    <strong>{nombreDia}:</strong> {textoFranja}
                                   </li>
                                 )
                               })}
@@ -1042,76 +1167,70 @@ export default function PanelClinica({ sesion, onSalir }) {
                     </h3>
                   </div>
 
-                  <div className="ficha-days" style={{ width: '100%' }}>
-                    {DIAS.map((dia) => {
-                      const franjas = franjasDelDia(dia.numero)
-                      return (
-                        <div
-                          className={`ficha-day-card ${franjas.length ? 'is-selected' : ''}`}
-                          key={dia.numero}
-                        >
-                          <div className="ficha-day-header">
-                            <label className="ficha-check-row">
-                              <input
-                                type="checkbox"
-                                checked={franjas.length > 0}
-                                onChange={() => alternarDia(dia.numero)}
-                              />
-                              <span>
-                                <strong>{dia.nombre}</strong>
-                              </span>
-                            </label>
-                            {franjas.length > 0 && (
-                              <button
-                                type="button"
-                                className="ficha-link-button"
-                                onClick={() => agregarFranja(dia.numero)}
-                              >
-                                + Agregar franja
-                              </button>
-                            )}
-                          </div>
-                          {franjas.map((franja) => (
-                            <div className="ficha-time-row" key={franja.indice}>
-                              <div className="ficha-field">
-                                <label htmlFor={`ficha-apertura-${franja.indice}`}>Apertura</label>
-                                <input
-                                  id={`ficha-apertura-${franja.indice}`}
-                                  className="ficha-input"
-                                  type="time"
-                                  value={franja.apertura}
-                                  onChange={(evento) =>
-                                    actualizarHorario(franja.indice, 'apertura', evento.target.value)
-                                  }
-                                />
-                              </div>
-                              <div className="ficha-field">
-                                <label htmlFor={`ficha-cierre-${franja.indice}`}>Cierre</label>
-                                <input
-                                  id={`ficha-cierre-${franja.indice}`}
-                                  className="ficha-input"
-                                  type="time"
-                                  value={franja.cierre}
-                                  onChange={(evento) =>
-                                    actualizarHorario(franja.indice, 'cierre', evento.target.value)
-                                  }
-                                />
-                              </div>
-                              {franjas.length > 1 && (
-                                <button
-                                  type="button"
-                                  className="ficha-icon-button"
-                                  onClick={() => eliminarFranja(franja.indice)}
-                                  aria-label={`Eliminar franja del ${dia.nombre}`}
-                                >
-                                  <Trash2 size={16} aria-hidden="true" />
-                                </button>
-                              )}
-                            </div>
-                          ))}
+                  <EditorHorarios
+                    horarios={form.horarios}
+                    idPrefijo="panel"
+                    disabled={guardando}
+                    onChange={(nuevosHorarios) => {
+                      setForm((actual) => ({ ...actual, horarios: nuevosHorarios }))
+                      setMensaje('')
+                      setError('')
+                    }}
+                  />
+
+                  <div className="panel-clinica-section-title-wrap" style={{ paddingTop: '28px' }}>
+                    <h3 className="panel-clinica-section-title">
+                      Ubicación geográfica del centro
+                    </h3>
+                  </div>
+
+                  <div style={{ width: '100%' }}>
+                    {ficha?.ubicacion_pendiente && (
+                      <div className="ficha-ubicacion-pendiente-banner" role="status">
+                        <AlertTriangle size={18} aria-hidden="true" />
+                        <div>
+                          <strong>Cambio de ubicación pendiente de revisión</strong>
+                          <p style={{ margin: '4px 0 0' }}>
+                            Solicitaste actualizar la ubicación a ({Number(ficha.ubicacion_pendiente.latitud).toFixed(6)}, {Number(ficha.ubicacion_pendiente.longitud).toFixed(6)}).
+                            Tu ubicación pública aprobada permanece visible en el mapa hasta que el administrador apruebe el cambio.
+                          </p>
                         </div>
-                      )
-                    })}
+                      </div>
+                    )}
+
+                    {mensajeUbicacion && (
+                      <div className="ficha-alert ficha-alert-success" role="status" style={{ marginBottom: '12px' }}>
+                        <CheckCircle2 size={18} aria-hidden="true" />
+                        <p>{mensajeUbicacion}</p>
+                      </div>
+                    )}
+
+                    <SelectorUbicacionMapa
+                      latitud={form.ubicacion?.latitud}
+                      longitud={form.ubicacion?.longitud}
+                      confirmada={form.ubicacion?.confirmada === true}
+                      error={errorUbicacion}
+                      deshabilitado={guardando || enviandoUbicacion || Boolean(ficha?.ubicacion_pendiente)}
+                      onConfirmar={confirmarUbicacion}
+                      onCorregir={corregirUbicacion}
+                    />
+
+                    {ubicacionModificada && form.ubicacion?.confirmada && !ficha?.ubicacion_pendiente && (
+                      <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="panel-clinica-btn-primary"
+                          onClick={enviarCambioUbicacion}
+                          disabled={enviandoUbicacion}
+                        >
+                          <MapPin size={15} color="#FFFFFF" aria-hidden="true" />
+                          <span>{enviandoUbicacion ? 'Enviando solicitud…' : 'Enviar nueva ubicación a revisión'}</span>
+                        </button>
+                        <small style={{ color: '#414845' }}>
+                          El cambio de ubicación requiere revisión administrativa; la ubicación actual seguirá publicada hasta su aprobación.
+                        </small>
+                      </div>
+                    )}
                   </div>
 
                   <div className="panel-clinica-actions-row">

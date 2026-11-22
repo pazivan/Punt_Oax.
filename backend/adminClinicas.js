@@ -131,10 +131,11 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
 
   return enTransaccion(pool, async (db) => {
     const { rows } = await db.query(
-      `SELECT sc.estado, sc.id_clinica
+      `SELECT sc.estado, sc.id_clinica, sc.datos_ficha, c.estado_publicacion AS estado_clinica
        FROM solicitudes_clinicas sc
+       INNER JOIN clinicas c ON c.id_clinica = sc.id_clinica
        WHERE sc.id_solicitud = $1
-       FOR UPDATE`,
+       FOR UPDATE OF sc, c`,
       [idSolicitud]
     );
     const actual = rows[0];
@@ -142,9 +143,13 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
     if (actual.estado !== "pendiente") {
       return respuesta(409, { error: `Esta solicitud ya fue ${actual.estado}; no se puede volver a resolver.` });
     }
-    await db.query("SELECT 1 FROM clinicas WHERE id_clinica = $1 FOR UPDATE", [actual.id_clinica]);
 
     const nuevoEstado = decision === "aprobar" ? "aprobada" : "rechazada";
+    const esCambioUbicacion =
+      actual.datos_ficha?.tipo_solicitud === "actualizacion_ubicacion" &&
+      actual.estado_clinica === "aprobada";
+    const ubicacionSolicitada = actual.datos_ficha?.ubicacion_solicitada;
+
     const solicitud = await db.query(
       `UPDATE solicitudes_clinicas
        SET estado = $1, observaciones = COALESCE($2, observaciones)
@@ -152,16 +157,57 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
        RETURNING id_solicitud, estado, fecha_solicitud, observaciones`,
       [nuevoEstado, obs.valor, idSolicitud]
     );
-    const clinica = await db.query(
-      `UPDATE clinicas SET estado_publicacion = $1
-       WHERE id_clinica = $2
-       RETURNING id_clinica, nombre, estado_publicacion`,
-      [nuevoEstado, actual.id_clinica]
-    );
+
+    let clinica;
+    if (
+      decision === "aprobar" &&
+      ubicacionSolicitada &&
+      Number.isFinite(Number(ubicacionSolicitada.latitud)) &&
+      Number.isFinite(Number(ubicacionSolicitada.longitud))
+    ) {
+      clinica = await db.query(
+        `UPDATE clinicas
+         SET estado_publicacion = 'aprobada',
+             ubicacion_geo = ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+             situacion_ubicacion = 'fija',
+             verificacion_datos = 'verificado'
+         WHERE id_clinica = $3
+         RETURNING id_clinica, nombre, estado_publicacion`,
+        [Number(ubicacionSolicitada.longitud), Number(ubicacionSolicitada.latitud), actual.id_clinica]
+      );
+    } else if (decision === "rechazar" && esCambioUbicacion) {
+      // Si se rechaza un cambio de ubicación de una clínica ya aprobada, conserva su publicación actual.
+      clinica = await db.query(
+        `SELECT id_clinica, nombre, estado_publicacion
+         FROM clinicas
+         WHERE id_clinica = $1`,
+        [actual.id_clinica]
+      );
+    } else {
+      clinica = await db.query(
+        `UPDATE clinicas
+         SET estado_publicacion = $1,
+             situacion_ubicacion = CASE
+               WHEN $1 = 'aprobada' AND ubicacion_geo IS NOT NULL AND situacion_ubicacion = 'pendiente' THEN 'fija'
+               ELSE situacion_ubicacion
+             END,
+             verificacion_datos = CASE
+               WHEN $1 = 'aprobada' THEN 'verificado'
+               ELSE verificacion_datos
+             END
+         WHERE id_clinica = $2
+         RETURNING id_clinica, nombre, estado_publicacion`,
+        [nuevoEstado, actual.id_clinica]
+      );
+    }
     return respuesta(200, {
       mensaje: decision === "aprobar"
-        ? "Solicitud aprobada. La clínica ya aparece en el directorio público."
-        : "Solicitud rechazada. La clínica puede corregir su ficha y volver a postular.",
+        ? (esCambioUbicacion
+          ? "Ubicación aprobada y actualizada en el directorio público."
+          : "Solicitud aprobada. La clínica ya aparece en el directorio público.")
+        : (esCambioUbicacion
+          ? "Cambio de ubicación rechazado. La clínica conserva su ubicación aprobada anterior."
+          : "Solicitud rechazada. La clínica puede corregir su ficha y volver a postular."),
       solicitud: solicitud.rows[0],
       clinica: clinica.rows[0],
     });
