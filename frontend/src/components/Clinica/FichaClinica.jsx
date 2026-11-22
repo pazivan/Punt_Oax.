@@ -32,16 +32,7 @@ import './FichaClinica.css'
 import EncabezadoClinica from './EncabezadoClinica.jsx'
 import PanelClinica from './PanelClinica.jsx'
 import SelectorUbicacionMapa from './SelectorUbicacionMapa.jsx'
-
-const DIAS = [
-  { numero: 0, nombre: 'Domingo' },
-  { numero: 1, nombre: 'Lunes' },
-  { numero: 2, nombre: 'Martes' },
-  { numero: 3, nombre: 'Miércoles' },
-  { numero: 4, nombre: 'Jueves' },
-  { numero: 5, nombre: 'Viernes' },
-  { numero: 6, nombre: 'Sábado' },
-]
+import EditorHorarios from './EditorHorarios.jsx'
 
 const AREAS = [
   {
@@ -99,6 +90,8 @@ function estadoInicialDesdeFicha(ficha) {
       dia_semana: horario.dia_semana,
       apertura: horario.apertura,
       cierre: horario.cierre,
+      es_24_horas: Boolean(horario.es_24_horas),
+      cruza_medianoche: Boolean(horario.cruza_medianoche),
     })),
   }
 }
@@ -415,10 +408,6 @@ export default function FichaClinica({ sesion, onSalir }) {
     setMensaje('')
   }
 
-  const franjasDelDia = (dia) => form.horarios
-    .map((horario, indice) => ({ ...horario, indice }))
-    .filter((horario) => horario.dia_semana === dia)
-
   const limpiarErroresHorario = () => {
     setErrores((actual) => {
       const copia = { ...actual }
@@ -430,46 +419,6 @@ export default function FichaClinica({ sesion, onSalir }) {
     })
     setResumen('')
     setError('')
-  }
-
-  const alternarDia = (dia) => {
-    const franjas = franjasDelDia(dia)
-    setForm((actual) => ({
-      ...actual,
-      horarios: franjas.length
-        ? actual.horarios.filter((horario) => horario.dia_semana !== dia)
-        : [...actual.horarios, { dia_semana: dia, apertura: '09:00', cierre: '17:00' }],
-    }))
-    limpiarErroresHorario()
-    setMensaje('')
-  }
-
-  const agregarFranja = (dia) => {
-    setForm((actual) => ({
-      ...actual,
-      horarios: [...actual.horarios, { dia_semana: dia, apertura: '18:00', cierre: '20:00' }],
-    }))
-    limpiarErroresHorario()
-    setMensaje('')
-  }
-
-  const actualizarHorario = (indice, campo, valor) => {
-    setForm((actual) => ({
-      ...actual,
-      horarios: actual.horarios.map((horario, posicion) =>
-        posicion === indice ? { ...horario, [campo]: valor } : horario),
-    }))
-    limpiarErroresHorario()
-    setMensaje('')
-  }
-
-  const eliminarFranja = (indice) => {
-    setForm((actual) => ({
-      ...actual,
-      horarios: actual.horarios.filter((_, posicion) => posicion !== indice),
-    }))
-    limpiarErroresHorario()
-    setMensaje('')
   }
 
   const confirmarUbicacion = ({ latitud, longitud }) => {
@@ -970,76 +919,21 @@ export default function FichaClinica({ sesion, onSalir }) {
                   <p>Marca los días de servicio y define una o más franjas por día.</p>
                 </div>
               </div>
-              <div className="ficha-days">
-                {DIAS.map((dia) => {
-                  const franjas = franjasDelDia(dia.numero)
-                  return (
-                    <div className={`ficha-day-card ${franjas.length ? 'is-selected' : ''}`} key={dia.numero}>
-                      <div className="ficha-day-header">
-                        <label className="ficha-check-row">
-                          <input
-                            id={`ficha-dia-${dia.numero}`}
-                            type="checkbox"
-                            checked={franjas.length > 0}
-                            onChange={() => alternarDia(dia.numero)}
-                          />
-                          <span><strong>{dia.nombre}</strong></span>
-                        </label>
-                        {franjas.length > 0 && (
-                          <button type="button" className="ficha-link-button" onClick={() => agregarFranja(dia.numero)}>
-                            + Agregar franja
-                          </button>
-                        )}
-                      </div>
-                      {franjas.map((franja) => (
-                        <div className="ficha-time-row-wrap" key={franja.indice}>
-                          <div className={`ficha-time-row ${errores[`horario:${franja.indice}`] ? 'has-error' : ''}`}>
-                            <div className={`ficha-field ${errores[`horario:${franja.indice}`] ? 'has-error' : ''}`}>
-                              <label htmlFor={`ficha-apertura-${franja.indice}`}>Apertura</label>
-                              <input
-                                id={`ficha-apertura-${franja.indice}`}
-                                className={`ficha-input ${errores[`horario:${franja.indice}`] ? 'is-invalid' : ''}`}
-                                type="time"
-                                value={franja.apertura}
-                                aria-invalid={Boolean(errores[`horario:${franja.indice}`])}
-                                aria-describedby={errores[`horario:${franja.indice}`] ? idError(`horario:${franja.indice}`) : undefined}
-                                onChange={(evento) => actualizarHorario(franja.indice, 'apertura', evento.target.value)}
-                              />
-                            </div>
-                            <div className={`ficha-field ${errores[`horario:${franja.indice}`] ? 'has-error' : ''}`}>
-                              <label htmlFor={`ficha-cierre-${franja.indice}`}>Cierre</label>
-                              <input
-                                id={`ficha-cierre-${franja.indice}`}
-                                className={`ficha-input ${errores[`horario:${franja.indice}`] ? 'is-invalid' : ''}`}
-                                type="time"
-                                value={franja.cierre}
-                                aria-invalid={Boolean(errores[`horario:${franja.indice}`])}
-                                aria-describedby={errores[`horario:${franja.indice}`] ? idError(`horario:${franja.indice}`) : undefined}
-                                onChange={(evento) => actualizarHorario(franja.indice, 'cierre', evento.target.value)}
-                              />
-                            </div>
-                            {franjas.length > 1 && (
-                              <button
-                                type="button"
-                                className="ficha-icon-button"
-                                onClick={() => eliminarFranja(franja.indice)}
-                                aria-label={`Eliminar franja del ${dia.nombre}`}
-                              >
-                                <Trash2 size={16} aria-hidden="true" />
-                              </button>
-                            )}
-                          </div>
-                          <ErrorCampo errores={errores} campo={`horario:${franja.indice}`} />
-                        </div>
-                      ))}
-                    </div>
-                  )
-                })}
-              </div>
+              <EditorHorarios
+                horarios={form.horarios}
+                errores={errores}
+                idPrefijo="ficha"
+                disabled={guardando || postulando}
+                onChange={(nuevosHorarios) => {
+                  setForm((actual) => ({ ...actual, horarios: nuevosHorarios }))
+                  limpiarErroresHorario()
+                  setMensaje('')
+                }}
+              />
               <ErrorCampo errores={errores} campo="horarios" />
               <p className="ficha-help">
-                <Clock3 size={14} aria-hidden="true" /> Por ahora se admiten horarios dentro del mismo día;
-                no turnos nocturnos ni de 24 horas.
+                <Clock3 size={14} aria-hidden="true" /> Puedes usar las flechas o escribir directamente la hora.
+                También puedes marcar atención de 24 horas o turno nocturno.
               </p>
             </section>
 

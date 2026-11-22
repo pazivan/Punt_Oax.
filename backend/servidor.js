@@ -124,25 +124,40 @@ function validarHorarios(valor, { permitirVacio }) {
         !Number.isInteger(item.dia_semana) || item.dia_semana < 0 || item.dia_semana > 6) {
       return { error: "Cada horario debe indicar un día válido de la semana." };
     }
-    if (typeof item.apertura !== "string" || typeof item.cierre !== "string" ||
-        !REGEX_HORA.test(item.apertura) || !REGEX_HORA.test(item.cierre)) {
+    const es24 = Boolean(item.es_24_horas);
+    const cruza = Boolean(item.cruza_medianoche) && !es24;
+    const apertura = es24 ? "00:00" : item.apertura;
+    const cierre = es24 ? "00:00" : item.cierre;
+    if (typeof apertura !== "string" || typeof cierre !== "string" ||
+        !REGEX_HORA.test(apertura) || !REGEX_HORA.test(cierre)) {
       return { error: "Cada horario debe usar horas válidas en formato HH:MM." };
     }
-    if (item.apertura >= item.cierre) {
-      return { error: "La hora de apertura debe ser anterior a la de cierre. Los turnos nocturnos aún no están disponibles." };
+    if (!es24 && !cruza && apertura >= cierre) {
+      return { error: "La hora de apertura debe ser anterior a la de cierre. Los turnos nocturnos requieren activar la opción correspondiente." };
+    }
+    if (cruza && apertura <= cierre) {
+      return { error: "Un turno nocturno debe iniciar después de la hora de cierre." };
     }
     horarios.push({
       dia_semana: item.dia_semana,
-      apertura: item.apertura,
-      cierre: item.cierre,
+      apertura,
+      cierre,
+      es_24_horas: es24,
+      cruza_medianoche: cruza,
     });
   }
   const ordenados = [...horarios].sort((a, b) => a.dia_semana - b.dia_semana ||
     a.apertura.localeCompare(b.apertura));
   for (let i = 1; i < ordenados.length; i += 1) {
-    if (ordenados[i].dia_semana === ordenados[i - 1].dia_semana &&
-        ordenados[i].apertura < ordenados[i - 1].cierre) {
-      return { error: "Las franjas de un mismo día no deben solaparse." };
+    const prev = ordenados[i - 1];
+    const curr = ordenados[i];
+    if (curr.dia_semana === prev.dia_semana) {
+      if (prev.es_24_horas || curr.es_24_horas) {
+        return { error: "Un día con horario de 24 horas no admite franjas adicionales." };
+      }
+      if (prev.cruza_medianoche || curr.apertura < prev.cierre) {
+        return { error: "Las franjas de un mismo día no deben solaparse." };
+      }
     }
   }
   return { horarios: ordenados };
@@ -281,7 +296,8 @@ async function cargarFicha(idClinica, db = pool) {
 
   const [solicitudResultado, serviciosResultado, horariosResultado, documentosResultado] = await Promise.all([
     db.query(
-      `SELECT id_solicitud, estado, fecha_solicitud, observaciones
+      `SELECT id_solicitud, estado, fecha_solicitud, observaciones,
+              datos_ficha->'ubicacion_solicitada' AS ubicacion_solicitada
        FROM solicitudes_clinicas
        WHERE id_clinica = $1
        ORDER BY fecha_solicitud DESC
@@ -298,7 +314,8 @@ async function cargarFicha(idClinica, db = pool) {
     ),
     db.query(
       `SELECT dia_semana, to_char(hora_apertura, 'HH24:MI') AS apertura,
-         to_char(hora_cierre, 'HH24:MI') AS cierre
+         to_char(hora_cierre, 'HH24:MI') AS cierre,
+         es_24_horas, cruza_medianoche
        FROM horarios_atencion
        WHERE id_clinica = $1
        ORDER BY dia_semana, hora_apertura`,
@@ -320,6 +337,10 @@ async function cargarFicha(idClinica, db = pool) {
   clinica.longitud = longitud;
   clinica.ubicacion_confirmada = latitud !== null && longitud !== null;
   const postulacion = solicitudResultado.rows[0] || null;
+  const ubicacionPendiente = postulacion?.estado === "pendiente" && postulacion.ubicacion_solicitada
+    ? postulacion.ubicacion_solicitada
+    : null;
+  if (postulacion) delete postulacion.ubicacion_solicitada;
   const pendiente = postulacion?.estado === "pendiente";
   const faltantes = evaluarFaltantes(
     clinica,
@@ -346,6 +367,7 @@ async function cargarFicha(idClinica, db = pool) {
     horarios: horariosResultado.rows,
     documentos: documentosResultado.rows,
     postulacion,
+    ubicacion_pendiente: ubicacionPendiente,
   };
 }
 
@@ -424,9 +446,16 @@ async function guardarHorarios(client, idClinica, horarios) {
   await client.query("DELETE FROM horarios_atencion WHERE id_clinica = $1", [idClinica]);
   for (const horario of horarios) {
     await client.query(
-      `INSERT INTO horarios_atencion (id_clinica, dia_semana, hora_apertura, hora_cierre)
-       VALUES ($1, $2, $3, $4)`,
-      [idClinica, horario.dia_semana, horario.apertura, horario.cierre]
+      `INSERT INTO horarios_atencion (id_clinica, dia_semana, hora_apertura, hora_cierre, es_24_horas, cruza_medianoche)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        idClinica,
+        horario.dia_semana,
+        horario.apertura,
+        horario.cierre,
+        Boolean(horario.es_24_horas),
+        Boolean(horario.cruza_medianoche),
+      ]
     );
   }
 }
@@ -835,6 +864,80 @@ app.post(
   }
 );
 
+// Solicitud de cambio de ubicación para clínica ya aprobada: requiere revisión administrativa
+// y conserva la ubicación pública actual hasta su aprobación.
+app.post(
+  "/api/clinicas/mi-ficha/ubicacion",
+  autenticarToken,
+  requerirRol(["clinica"]),
+  async (req, res) => {
+    const coords = validarCoordenadas(req.body?.latitud, req.body?.longitud);
+    if (coords.error) {
+      return res.status(400).json({ error: coords.error });
+    }
+    let client;
+    try {
+      client = await pool.connect();
+      await client.query("BEGIN");
+      const { rows } = await client.query(
+        "SELECT id_clinica, estado_publicacion FROM clinicas WHERE id_clinica = $1 FOR UPDATE",
+        [req.usuario.id]
+      );
+      if (!rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ error: "No se encontró la ficha de tu clínica." });
+      }
+      if (rows[0].estado_publicacion !== "aprobada") {
+        await client.query("ROLLBACK");
+        return res.status(409).json({
+          error: "Solo las clínicas aprobadas pueden solicitar un cambio de ubicación publicado.",
+        });
+      }
+      const ficha = await cargarFicha(req.usuario.id, client);
+      if (ficha.postulacion?.estado === "pendiente") {
+        await client.query("ROLLBACK");
+        return res.status(409).json({
+          error: "Ya tienes una solicitud pendiente de revisión. Espera la respuesta del administrador.",
+        });
+      }
+
+      const ubicacionSolicitada = { latitud: coords.latitud, longitud: coords.longitud };
+      const snapshot = {
+        clinica: ficha.clinica,
+        servicios: ficha.servicios,
+        horarios: ficha.horarios,
+        documentos: ficha.documentos,
+        tipo_solicitud: "actualizacion_ubicacion",
+        ubicacion_solicitada: ubicacionSolicitada,
+      };
+      const { rows: solicitudes } = await client.query(
+        `INSERT INTO solicitudes_clinicas (id_clinica, estado, datos_ficha)
+         VALUES ($1, 'pendiente', $2)
+         RETURNING id_solicitud, estado, fecha_solicitud`,
+        [req.usuario.id, snapshot]
+      );
+      await client.query("COMMIT");
+      return res.status(201).json({
+        mensaje: "Solicitud de cambio de ubicación enviada para revisión. Tu ubicación pública actual se mantiene visible hasta ser aprobada.",
+        solicitud: solicitudes[0],
+        ubicacion_pendiente: ubicacionSolicitada,
+      });
+    } catch (error) {
+      if (client) {
+        try { await client.query("ROLLBACK"); } catch { /* Conservar el error original. */ }
+      }
+      console.error("Error al solicitar cambio de ubicación:", error.message);
+      if (error.code === "23505") {
+        return res.status(409).json({ error: "Ya tienes una solicitud pendiente de revisión." });
+      }
+      if (responderErrorEsquema(res, error)) return;
+      return res.status(500).json({ error: "No se pudo enviar el cambio de ubicación." });
+    } finally {
+      client?.release();
+    }
+  }
+);
+
 app.get("/api/clinicas", async (req, res) => {
   try {
     const { nombre, municipio, servicios } = req.query;
@@ -969,7 +1072,9 @@ app.get("/api/clinicas", async (req, res) => {
           SELECT json_agg(json_build_object(
             'dia_semana', h.dia_semana,
             'apertura', to_char(h.hora_apertura, 'HH24:MI'),
-            'cierre', to_char(h.hora_cierre, 'HH24:MI')
+            'cierre', to_char(h.hora_cierre, 'HH24:MI'),
+            'es_24_horas', h.es_24_horas,
+            'cruza_medianoche', h.cruza_medianoche
           ) ORDER BY h.dia_semana, h.hora_apertura)
           FROM horarios_atencion h
           WHERE h.id_clinica = c.id_clinica
@@ -1099,7 +1204,8 @@ app.get("/api/clinicas/:id", async (req, res) => {
       `, [id]),
       pool.query(`
         SELECT dia_semana, to_char(hora_apertura, 'HH24:MI') AS apertura,
-          to_char(hora_cierre, 'HH24:MI') AS cierre
+          to_char(hora_cierre, 'HH24:MI') AS cierre,
+          es_24_horas, cruza_medianoche
         FROM horarios_atencion
         WHERE id_clinica = $1
         ORDER BY dia_semana, hora_apertura

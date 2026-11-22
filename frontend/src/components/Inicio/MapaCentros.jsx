@@ -147,8 +147,10 @@ export default function MapaCentros({
     setFiltroNivel('todos');
   };
 
+  const puedeAgendar = !sesion || sesion.tipo === 'usuario';
+
   // Si el usuario pulsó "Agendar cita" desde DetalleCentro, mostramos la ventana Agendar cita (Datos) - PuntoOax
-  if (clinicaEnAgendar) {
+  if (clinicaEnAgendar && puedeAgendar) {
     return (
       <AgendarCitaDatos
         clinica={clinicaEnAgendar}
@@ -169,7 +171,7 @@ export default function MapaCentros({
         sesion={sesion}
         onSalir={onSalir}
         onVolverAlMapa={() => setClinicaEnDetalle(null)}
-        onAgendarCita={(sede) => setClinicaEnAgendar(sede)}
+        onAgendarCita={puedeAgendar ? (sede) => setClinicaEnAgendar(sede) : undefined}
         sinEncabezado={sinEncabezado}
       />
     );

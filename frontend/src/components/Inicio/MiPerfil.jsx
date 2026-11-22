@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
+  Building2,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -569,13 +571,65 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
                     </>
                   )}
 
-                  <div className="perfil-form-actions">
+                      <div className="perfil-form-actions">
                     <button type="submit" className="agendar-submit-btn">
                       <span className="agendar-submit-text">Guardar datos de perfil</span>
                     </button>
                   </div>
                 </form>
               </section>
+
+              {esClinica && (
+                <section className="perfil-card" aria-labelledby="perfil-clinica-info-heading">
+                  <div className="perfil-card-header">
+                    <div className="perfil-card-icon" aria-hidden="true">
+                      <Building2 size={18} color="#001D14" />
+                    </div>
+                    <div>
+                      <h2 id="perfil-clinica-info-heading" className="perfil-card-title">
+                        Información de mi clínica
+                      </h2>
+                      <p className="perfil-card-desc">
+                        Administra los datos institucionales del establecimiento (información general, servicios, horarios y ubicación en el mapa), independientes de tu cuenta personal.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="perfil-meta-list" style={{ marginBottom: '16px' }}>
+                    <div className="perfil-meta-item">
+                      <span className="perfil-meta-label">Establecimiento</span>
+                      <span className="perfil-meta-value">
+                        {fichaClinica?.clinica?.nombre || 'Por registrar'}
+                      </span>
+                    </div>
+                    <div className="perfil-meta-item">
+                      <span className="perfil-meta-label">Estado institucional</span>
+                      <span className="perfil-meta-value">{estadoSolicitudClinica}</span>
+                    </div>
+                    {fichaClinica?.clinica?.municipio && (
+                      <div className="perfil-meta-item">
+                        <span className="perfil-meta-label">Municipio</span>
+                        <span className="perfil-meta-value">{fichaClinica.clinica.municipio}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="perfil-form-actions">
+                    <Link
+                      to={enModoPanelAprobado ? '/panel-clinica?vista=editar' : '/mi-clinica'}
+                      className="agendar-submit-btn"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <span className="agendar-submit-text">
+                        {enModoPanelAprobado
+                          ? 'Información de mi clínica'
+                          : 'Ir a la ficha de mi clínica'}
+                      </span>
+                      <ArrowRight size={15} color="#FFFFFF" aria-hidden="true" />
+                    </Link>
+                  </div>
+                </section>
+              )}
 
               {/* Tarjeta 2: Seguridad y cambio de contraseña */}
               <section className="perfil-card" aria-labelledby="perfil-password-heading">

@@ -95,31 +95,48 @@ function esUrlValida(valor) {
   }
 }
 
-function validarHorarios(horarios) {
+export function validarHorarios(horarios) {
   const errores = {}
   const filas = Array.isArray(horarios) ? horarios : []
   filas.forEach((horario, indice) => {
     const clave = `horario:${indice}`
+    if (horario.es_24_horas) return
     if (!horario.apertura || !horario.cierre) {
       errores[clave] = 'Completa la apertura y el cierre.'
       return
     }
+    if (horario.cruza_medianoche) {
+      if (horario.apertura <= horario.cierre) {
+        errores[clave] = 'En un turno nocturno, la hora de apertura debe ser posterior a la de cierre.'
+      }
+      return
+    }
     if (horario.apertura >= horario.cierre) {
-      errores[clave] = 'La apertura debe ser anterior al cierre. Los turnos nocturnos aún no están disponibles.'
+      errores[clave] = 'La apertura debe ser anterior al cierre, o activa "Turno nocturno".'
     }
   })
 
   const ordenados = filas
-    .map((horario, indice) => ({ ...horario, indice }))
-    .filter((horario) => horario.apertura && horario.cierre)
+    .map((horario, indice) => ({
+      ...horario,
+      indice,
+      apertura: horario.es_24_horas ? '00:00' : horario.apertura,
+      cierre: horario.es_24_horas ? '00:00' : horario.cierre,
+    }))
+    .filter((horario) => horario.es_24_horas || (horario.apertura && horario.cierre))
     .sort((a, b) => a.dia_semana - b.dia_semana || a.apertura.localeCompare(b.apertura))
 
   for (let i = 1; i < ordenados.length; i += 1) {
     const anterior = ordenados[i - 1]
     const actual = ordenados[i]
-    if (anterior.dia_semana === actual.dia_semana && actual.apertura < anterior.cierre) {
-      errores[`horario:${anterior.indice}`] ||= 'Esta franja se cruza con otra del mismo día.'
-      errores[`horario:${actual.indice}`] ||= 'Esta franja se cruza con otra del mismo día.'
+    if (anterior.dia_semana === actual.dia_semana) {
+      if (anterior.es_24_horas || actual.es_24_horas) {
+        errores[`horario:${anterior.indice}`] ||= 'Un día de 24 horas no admite franjas adicionales.'
+        errores[`horario:${actual.indice}`] ||= 'Un día de 24 horas no admite franjas adicionales.'
+      } else if (anterior.cruza_medianoche || actual.apertura < anterior.cierre) {
+        errores[`horario:${anterior.indice}`] ||= 'Esta franja se cruza con otra del mismo día.'
+        errores[`horario:${actual.indice}`] ||= 'Esta franja se cruza con otra del mismo día.'
+      }
     }
   }
   return errores
@@ -249,8 +266,10 @@ export function construirPayloadFicha(form) {
       .map(([categoria, valor]) => ({ categoria, detalle: valor.detalle.trim() })),
     horarios: (form.horarios || []).map((horario) => ({
       dia_semana: horario.dia_semana,
-      apertura: horario.apertura,
-      cierre: horario.cierre,
+      apertura: horario.es_24_horas ? '00:00' : horario.apertura,
+      cierre: horario.es_24_horas ? '00:00' : horario.cierre,
+      es_24_horas: Boolean(horario.es_24_horas),
+      cruza_medianoche: Boolean(horario.cruza_medianoche) && !horario.es_24_horas,
     })),
   }
 

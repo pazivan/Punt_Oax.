@@ -4771,18 +4771,7 @@ html {
   }
 }
 
-/* La navegación de la clínica tiene menos elementos: en móvil se muestra completa. */
-@media (max-width: 560px) {
-  .inicio-header.clinica-header .inicio-nav {
-    flex-wrap: wrap;
-    height: auto;
-    overflow: visible;
-    white-space: normal;
-    row-gap: 8px;
-    column-gap: 18px;
-    padding-bottom: 12px;
-  }
-}
+/* Encabezado clínico mantiene la altura constante en todas las vistas. */
 
 /* ==========================================================================
    Encapsulación de /inicio: ajuste vertical en escritorio sin afectar móvil
