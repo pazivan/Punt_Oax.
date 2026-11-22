@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ocultarCorreo, insertarDigitos } from '../src/components/Auth/codigoVerificacion.js'
+import { ocultarCorreo, insertarDigitos } from '../src/components/Auth/codigoVerificacionUtils.js'
 
 test('el correo se muestra parcialmente oculto sin alterar la dirección original', () => {
   assert.equal(ocultarCorreo('miguel@gmail.com'), 'migu***@gmail.com')

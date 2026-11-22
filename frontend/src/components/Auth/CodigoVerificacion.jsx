@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { insertarDigitos } from './codigoVerificacion'
+import { insertarDigitos } from './codigoVerificacionUtils.js'
 
 export default function CodigoVerificacion({ digitos, onChange, error, correcto, disabled }) {
   const cajas = useRef([])
