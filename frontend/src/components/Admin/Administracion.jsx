@@ -8,8 +8,9 @@ import {
   SlidersHorizontal, User, Users, X, XCircle,
 } from 'lucide-react'
 import {
-  cambiarEstadoUsuarioAdmin, cambiarVisibilidadAdmin, consultarClinicaAdmin,
-  consultarClinicasAdmin, consultarSolicitudAdmin, consultarSolicitudesAdmin,
+  cambiarEstadoUsuarioAdmin, cambiarVisibilidadAdmin, consultarCalendarioAdmin,
+  consultarCitasAdmin, consultarClinicaAdmin, consultarClinicasAdmin,
+  consultarResumenAdmin, consultarSolicitudAdmin, consultarSolicitudesAdmin,
   consultarUsuarioAdmin, consultarUsuariosAdmin, descargarDocumentoAdmin,
   resolverSolicitudAdmin,
 } from '../../api/admin.js'
@@ -110,7 +111,16 @@ function Lateral({ perfil, onSalir, detalle }) {
   const estado = new URLSearchParams(location.search).get('estado')
   const enUsuarios = location.pathname === '/admin/usuarios'
   const enClinicas = location.pathname === '/admin/clinicas'
-  const seccionActiva = detalle ? '' : enUsuarios ? 'usuarios' : enClinicas ? 'clinicas' : (estado || 'resumen')
+  const enCitas = location.pathname === '/admin/citas'
+  const enCalendarios = location.pathname === '/admin/calendarios'
+  const enMapa = location.pathname === '/admin/mapa'
+  const seccionActiva = detalle ? ''
+    : enUsuarios ? 'usuarios'
+    : enClinicas ? 'clinicas'
+    : enCitas ? 'citas'
+    : enCalendarios ? 'calendarios'
+    : enMapa ? 'mapa'
+    : (estado || 'resumen')
   const grupos = [
     {
       titulo: 'RESUMEN',
@@ -128,10 +138,17 @@ function Lateral({ perfil, onSalir, detalle }) {
       ],
     },
     {
-      titulo: 'CUENTAS Y DIRECTORIO',
+      titulo: 'SUPERVISIÓN',
+      opciones: [
+        { valor: 'citas', destino: '/admin/citas', titulo: 'Citas registradas', Icono: CalendarDays },
+        { valor: 'calendarios', destino: '/admin/calendarios', titulo: 'Calendarios y cupos', Icono: Clock3 },
+        { valor: 'mapa', destino: '/admin/mapa', titulo: 'Mapa de centros', Icono: MapIcon },
+      ],
+    },
+    {
+      titulo: 'CUENTAS',
       opciones: [
         { valor: 'usuarios', destino: '/admin/usuarios', titulo: 'Usuarios registrados', Icono: Users },
-        { valor: 'mapa', destino: '/mapa', titulo: 'Mapa de centros', Icono: MapIcon },
       ],
     },
   ]
@@ -162,14 +179,21 @@ function Encabezado({ titulo, descripcion, onSalir, acciones }) {
     <div className="admin-header-acciones">{acciones}<button onClick={onSalir} type="button" className="admin-salir-movil" aria-label="Cerrar sesión" title="Cerrar sesión"><LogOut size={19} /></button><span className="admin-avatar" aria-hidden="true"><ShieldCheck size={19} /></span></div>
   </header>
 }
-function Resumen({ resumen }) {
+function Resumen({ resumenGeneral, resumenSolicitudes }) {
+  const clinicas = resumenGeneral?.clinicas || {}
+  const usuarios = resumenGeneral?.usuarios || {}
+  const citas = resumenGeneral?.citas || {}
   const estadisticas = [
-    { titulo: 'Pendientes de revisión', valor: resumen.pendientes ?? 0, icono: Clock3, estilo: 'ambar' },
-    { titulo: 'Solicitudes aprobadas', valor: resumen.aprobadas ?? 0, icono: CheckCircle2, estilo: 'verde' },
-    { titulo: 'Solicitudes rechazadas', valor: resumen.rechazadas ?? 0, icono: XCircle, estilo: 'rojo' },
-    { titulo: 'Solicitudes registradas', valor: resumen.total ?? 0, icono: ClipboardList, estilo: 'neutro' },
+    { titulo: 'Clínicas registradas', valor: clinicas.total ?? 0, icono: Building2, estilo: 'neutro' },
+    { titulo: 'Clínicas aprobadas', valor: clinicas.aprobadas ?? 0, icono: CheckCircle2, estilo: 'verde' },
+    { titulo: 'Pendientes de revisión', valor: clinicas.pendientes ?? resumenSolicitudes?.pendientes ?? 0, icono: Clock3, estilo: 'ambar' },
+    { titulo: 'Clínicas ocultas', valor: clinicas.ocultas ?? 0, icono: EyeOff, estilo: 'rojo' },
+    { titulo: 'Usuarios registrados', valor: usuarios.total ?? 0, icono: Users, estilo: 'neutro' },
+    { titulo: 'Citas programadas', valor: citas.programadas ?? 0, icono: CalendarDays, estilo: 'ambar' },
+    { titulo: 'Citas completadas', valor: citas.completadas ?? 0, icono: Check, estilo: 'verde' },
+    { titulo: 'Citas canceladas', valor: citas.canceladas ?? 0, icono: XCircle, estilo: 'rojo' },
   ]
-  return <section className="admin-resumen" aria-label="Resumen de solicitudes">
+  return <section className="admin-resumen" aria-label="Resumen general de la plataforma">
     {estadisticas.map(({ titulo, valor, icono: Icono, estilo }) => <article className="admin-metrica" key={titulo}>
       <div className={`admin-metrica-icon admin-metrica-icon--${estilo}`}><Icono size={20} /></div>
       <span>{titulo}</span><strong>{valor}</strong>
@@ -188,10 +212,21 @@ function ListaSolicitudes({ onSalir }) {
   const [total, setTotal] = useState(0)
   const [totalPaginas, setTotalPaginas] = useState(1)
   const [resumen, setResumen] = useState({ total: 0, pendientes: 0, aprobadas: 0, rechazadas: 0 })
+  const [resumenGeneral, setResumenGeneral] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [recarga, setRecarga] = useState(0)
   const pagina = estadoPaginacion.filtro === filtro ? estadoPaginacion.pagina : 1
+  const esResumen = !parametros.has('estado')
+
+  useEffect(() => {
+    if (!esResumen) return undefined
+    let activo = true
+    consultarResumenAdmin()
+      .then((datos) => { if (activo) setResumenGeneral(datos) })
+      .catch(() => { /* si falla, se conservan los conteos disponibles de solicitudes */ })
+    return () => { activo = false }
+  }, [esResumen, recarga])
 
   useEffect(() => {
     const temporizador = setTimeout(() => {
@@ -241,7 +276,6 @@ function ListaSolicitudes({ onSalir }) {
   }
   function recargar() { setCargando(true); setRecarga((v) => v + 1) }
 
-  const esResumen = !parametros.has('estado')
   const contenidoSeccion = {
     pendiente: { titulo: 'Pendientes de revisión', descripcion: 'Solicitudes que todavía necesitan una decisión.', introduccion: 'Revisa la información de cada clínica antes de aprobarla o rechazarla.' },
     aprobada: { titulo: 'Clínicas aprobadas', descripcion: 'Solicitudes que ya fueron autorizadas.', introduccion: 'Consulta las clínicas aprobadas y administra su visibilidad.' },
@@ -259,7 +293,7 @@ function ListaSolicitudes({ onSalir }) {
     <div className="admin-cuerpo">
       {esResumen && <div className="admin-bienvenida"><div><span className="admin-eyebrow">GESTIÓN DE CLÍNICAS</span><h2>Solicitudes de incorporación</h2><p>{seccion.introduccion}</p></div><span className="admin-bienvenida-icon"><Building2 size={38} /></span></div>}
       {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
-      {esResumen && !error && <Resumen resumen={resumen} />}
+      {esResumen && !error && <Resumen resumenGeneral={resumenGeneral} resumenSolicitudes={resumen} />}
       {!error && (
         <section className="admin-panel" aria-labelledby="admin-tabla-titulo">
           <div className="admin-panel-header"><div><span className="admin-eyebrow">BANDEJA DE REVISIÓN</span><h2 id="admin-tabla-titulo">{esResumen ? 'Clínicas y solicitudes' : seccion.titulo} <span className="admin-contador">{total}</span></h2><p>{esResumen ? (pendientes ? `${pendientes} solicitud${pendientes === 1 ? '' : 'es'} pendiente${pendientes === 1 ? '' : 's'} de respuesta.` : 'No hay solicitudes pendientes de revisión.') : seccion.introduccion}</p></div></div>
@@ -1083,6 +1117,293 @@ function DetalleUsuarioAdmin({ idUsuario, onSalir }) {
   </>
 }
 
+const FILTROS_CITAS = [
+  { valor: 'todas', nombre: 'Todas' },
+  { valor: 'confirmada', nombre: 'Programadas' },
+  { valor: 'completada', nombre: 'Completadas' },
+  { valor: 'cancelada', nombre: 'Canceladas' },
+  { valor: 'no_asistio', nombre: 'No asistió' },
+]
+
+function fechaHoraMexico(valor) {
+  if (!valor) return 'Sin fecha'
+  const d = new Date(valor)
+  return Number.isNaN(d.getTime()) ? 'Sin fecha' : new Intl.DateTimeFormat('es-MX', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/Mexico_City',
+  }).format(d)
+}
+
+function etiquetaEstadoCita(estado) {
+  return {
+    confirmada: 'Programada',
+    completada: 'Completada',
+    cancelada: 'Cancelada',
+    no_asistio: 'No asistió',
+  }[estado] || texto(estado)
+}
+
+function claseEstadoCita(estado) {
+  if (estado === 'completada') return 'aprobada'
+  if (estado === 'confirmada') return 'pendiente'
+  if (estado === 'cancelada') return 'rechazada'
+  return 'suspendida'
+}
+
+function ListaCitasAdmin({ onSalir }) {
+  const [filtro, setFiltro] = useState('todas')
+  const [busqueda, setBusqueda] = useState('')
+  const [busquedaAplicada, setBusquedaAplicada] = useState('')
+  const [pagina, setPagina] = useState(1)
+  const [limite, setLimite] = useState(10)
+  const [citas, setCitas] = useState([])
+  const [total, setTotal] = useState(0)
+  const [totalPaginas, setTotalPaginas] = useState(1)
+  const [resumen, setResumen] = useState({ total: 0, programadas: 0, completadas: 0, canceladas: 0, no_asistio: 0 })
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+  const [recarga, setRecarga] = useState(0)
+
+  useEffect(() => {
+    const temporizador = setTimeout(() => {
+      const limpia = busqueda.trim()
+      if (limpia !== busquedaAplicada) {
+        setCargando(true)
+        setBusquedaAplicada(limpia)
+        setPagina(1)
+      }
+    }, 250)
+    return () => clearTimeout(temporizador)
+  }, [busqueda, busquedaAplicada])
+
+  useEffect(() => {
+    let activo = true
+    consultarCitasAdmin({ estado: filtro, q: busquedaAplicada, page: pagina, limit: limite })
+      .then((datos) => {
+        if (activo) {
+          if (!Array.isArray(datos.citas)) throw new Error('La lista de citas no tiene el formato esperado.')
+          setCitas(datos.citas)
+          setTotal(Number.isInteger(datos.total) ? datos.total : datos.citas.length)
+          setTotalPaginas(Number.isInteger(datos.total_paginas) ? datos.total_paginas : 1)
+          if (datos.resumen) setResumen(datos.resumen)
+          setError('')
+        }
+      })
+      .catch((err) => { if (activo) setError(err.message) })
+      .finally(() => { if (activo) setCargando(false) })
+    return () => { activo = false }
+  }, [filtro, busquedaAplicada, pagina, limite, recarga])
+
+  const estadisticas = [
+    { titulo: 'Citas registradas', valor: resumen.total ?? 0, icono: ClipboardList, estilo: 'neutro' },
+    { titulo: 'Citas programadas', valor: resumen.programadas ?? 0, icono: CalendarDays, estilo: 'ambar' },
+    { titulo: 'Citas completadas', valor: resumen.completadas ?? 0, icono: CheckCircle2, estilo: 'verde' },
+    { titulo: 'Citas canceladas', valor: resumen.canceladas ?? 0, icono: XCircle, estilo: 'rojo' },
+  ]
+
+  function recargar() { setCargando(true); setRecarga((v) => v + 1) }
+
+  return <>
+    <Encabezado titulo="Supervisión de citas" descripcion="Consulta general de citas registradas en las clínicas de PuntOax (solo lectura)." onSalir={onSalir}
+      acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>} />
+    <div className="admin-cuerpo">
+      {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
+      {!error && <>
+        <section className="admin-resumen" aria-label="Resumen de citas">
+          {estadisticas.map(({ titulo, valor, icono: Icono, estilo }) => <article className="admin-metrica" key={titulo}>
+            <div className={`admin-metrica-icon admin-metrica-icon--${estilo}`}><Icono size={20} /></div>
+            <span>{titulo}</span><strong>{valor}</strong>
+          </article>)}
+        </section>
+        <section className="admin-panel" aria-labelledby="admin-citas-titulo">
+          <div className="admin-panel-header"><div><span className="admin-eyebrow">SUPERVISIÓN DE CITAS</span><h2 id="admin-citas-titulo">Citas <span className="admin-contador">{total}</span></h2><p>Listado paginado de citas por clínica, servicio y estado.</p></div></div>
+          <div className="admin-herramientas">
+            <div className="admin-filtros" role="group" aria-label="Filtrar por estado">{FILTROS_CITAS.map((item) => <button key={item.valor} type="button" className={`admin-filtro ${filtro === item.valor ? 'activo' : ''}`} aria-pressed={filtro === item.valor} onClick={() => { setCargando(true); setFiltro(item.valor); setPagina(1) }}>{item.nombre}</button>)}</div>
+            <label className="admin-buscador"><Search size={17} aria-hidden="true" /><span className="admin-solo-lectores">Buscar por clínica, servicio o paciente</span><input type="search" value={busqueda} placeholder="Buscar clínica, servicio o paciente" onChange={(e) => setBusqueda(e.target.value)} /></label>
+          </div>
+          {cargando ? <Cargando mensaje="Consultando citas…" /> : citas.length ? <>
+            <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Clínica y servicio</th><th>Paciente</th><th>Fecha y hora</th><th>Estado</th><th className="admin-tabla-accion">Clínica</th></tr></thead><tbody>
+              {citas.map((c) => <tr key={c.id_cita}>
+                <td data-label="Clínica y servicio"><div className="admin-fila-clinica"><span className="admin-fila-icon"><CalendarDays size={19} /></span><div><strong>{texto(c.nombre_clinica)}</strong><small>{texto(c.nombre_servicio)}</small></div></div></td>
+                <td data-label="Paciente"><div className="admin-fila-clinica"><div><strong>{[c.paciente_nombre, c.paciente_apellidos].filter(Boolean).join(' ').trim() || 'Paciente'}</strong><small>{texto(c.paciente_correo)}</small></div></div></td>
+                <td data-label="Fecha y hora"><span className="admin-celda-icon"><Clock3 size={15} />{fechaHoraMexico(c.fecha_hora_inicio)}</span></td>
+                <td data-label="Estado"><span className={`admin-estado admin-estado--${claseEstadoCita(c.estado)}`}><span aria-hidden="true" className="admin-estado-punto" />{etiquetaEstadoCita(c.estado)}</span></td>
+                <td className="admin-tabla-accion"><Link to={`/admin/clinicas/${c.id_clinica}`} className="admin-revisar">Ver clínica<ChevronRight size={17} /></Link></td>
+              </tr>)}</tbody></table></div>
+            <Paginacion
+              paginaActual={pagina}
+              totalPaginas={totalPaginas}
+              totalRegistros={total}
+              limite={limite}
+              mostrando={citas.length}
+              onCambiarPagina={(p) => { setCargando(true); setPagina(p) }}
+              onCambiarLimite={(l) => { setCargando(true); setLimite(l); setPagina(1) }}
+              etiquetaRegistros="citas"
+            />
+          </> : <div className="admin-sin-datos"><CalendarDays size={30} /><strong>No hay citas con estos filtros</strong><p>{busquedaAplicada ? 'Prueba con otro término de búsqueda.' : 'No hay citas registradas en este estado.'}</p></div>}
+        </section>
+      </>}
+    </div>
+  </>
+}
+
+function SupervisionCalendariosAdmin({ onSalir }) {
+  const [idClinica, setIdClinica] = useState('')
+  const [datos, setDatos] = useState(null)
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+  const [recarga, setRecarga] = useState(0)
+
+  useEffect(() => {
+    let activo = true
+    consultarCalendarioAdmin(idClinica)
+      .then((res) => { if (activo) { setDatos(res); setError('') } })
+      .catch((err) => { if (activo) setError(err.message) })
+      .finally(() => { if (activo) setCargando(false) })
+    return () => { activo = false }
+  }, [idClinica, recarga])
+
+  const clinicas = Array.isArray(datos?.clinicas) ? datos.clinicas : []
+  const clinica = datos?.clinica
+  const horarios = Array.isArray(datos?.horarios) ? datos.horarios : []
+  const espacios = Array.isArray(datos?.espacios) ? datos.espacios : []
+  const bloqueados = Array.isArray(datos?.bloqueados) ? datos.bloqueados : []
+  const festivos = Array.isArray(datos?.festivos) ? datos.festivos : []
+
+  function recargar() { setCargando(true); setRecarga((v) => v + 1) }
+
+  return <>
+    <Encabezado titulo="Calendarios y disponibilidad" descripcion="Supervisión de horarios de atención, cupos próximos y días bloqueados por clínica." onSalir={onSalir}
+      acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>} />
+    <div className="admin-cuerpo">
+      {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
+      {!error && (
+        <section className="admin-panel admin-detalle-bloque" aria-label="Selector de clínica">
+          <div className="admin-herramientas" style={{ padding: 0, marginBottom: '16px' }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 280px' }}>
+              <strong style={{ fontSize: '12px', color: '#365440' }}>Seleccionar clínica</strong>
+              <select
+                value={idClinica || clinica?.id_clinica || ''}
+                onChange={(e) => { setCargando(true); setIdClinica(e.target.value) }}
+                style={{ padding: '10px 12px', borderRadius: '9px', border: '1px solid #d9e2dc', background: '#fff', color: '#143626', font: 'inherit' }}
+              >
+                {clinicas.map((c) => (
+                  <option key={c.id_clinica} value={c.id_clinica}>
+                    {c.nombre} ({c.municipio || 'Oaxaca'}) · {etiquetaEstado(c.estado_publicacion)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {clinica && (
+              <Link to={`/admin/clinicas/${clinica.id_clinica}`} className="admin-btn admin-btn--outline">
+                Ver ficha de clínica <ChevronRight size={16} />
+              </Link>
+            )}
+          </div>
+          {cargando ? <Cargando mensaje="Consultando calendario y cupos…" /> : !clinica ? (
+            <div className="admin-sin-datos"><CalendarDays size={30} /><strong>No hay clínicas disponibles</strong><p>Aún no hay clínicas aprobadas o suspendidas para consultar su agenda.</p></div>
+          ) : (
+            <div className="admin-detalle-grid">
+              <div className="admin-detalle-contenido">
+                <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><Clock3 size={19} /><h2>Horarios de atención semanales</h2></div>
+                  {horarios.length ? <div className="admin-horarios">{horarios.map((h, i) => <div className="admin-horario" key={i}><span>{DIAS[Number(h.dia_semana)] || 'Día'}</span><strong>{h.es_24_horas ? '24 horas' : `${texto(h.apertura)} – ${texto(h.cierre)}${h.cruza_medianoche ? ' (nocturno)' : ''}`}</strong></div>)}</div> : <p className="admin-vacio-pequeno">Sin horarios configurados.</p>}
+                </section>
+                <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><CalendarDays size={19} /><h2>Cupos próximos (15 días) <span className="admin-contador">{espacios.length}</span></h2></div>
+                  {espacios.length ? <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Fecha y hora</th><th>Servicio</th><th>Estado</th></tr></thead><tbody>
+                    {espacios.map((e) => <tr key={e.id_espacio}>
+                      <td data-label="Fecha y hora">{fechaHoraMexico(e.fecha_hora_inicio)}</td>
+                      <td data-label="Servicio">{texto(e.nombre_servicio)}</td>
+                      <td data-label="Estado">
+                        <span className={`admin-estado admin-estado--${e.ocupado ? 'pendiente' : e.habilitado ? 'aprobada' : 'suspendida'}`}>
+                          <span aria-hidden="true" className="admin-estado-punto" />
+                          {e.ocupado ? 'Reservado' : e.habilitado ? 'Disponible' : 'Deshabilitado'}
+                        </span>
+                      </td>
+                    </tr>)}</tbody></table></div> : <p className="admin-vacio-pequeno">No hay cupos publicados para los próximos 15 días.</p>}
+                </section>
+              </div>
+              <aside className="admin-detalle-lateral">
+                <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><EyeOff size={19} /><h2>Días bloqueados</h2></div>
+                  {bloqueados.length ? <div className="admin-items">{bloqueados.map((b) => <div className="admin-item" key={b.fecha}><strong>{b.fecha}</strong><p>{b.motivo || 'Sin motivo especificado'}</p></div>)}</div> : <p className="admin-vacio-pequeno">Sin días bloqueados en los próximos 15 días.</p>}
+                </section>
+                <section className="admin-panel admin-detalle-bloque" style={{ marginTop: '17px' }}><div className="admin-seccion-titulo"><CalendarDays size={19} /><h2>Días festivos oficiales</h2></div>
+                  {festivos.length ? <div className="admin-items">{festivos.map((f) => <div className="admin-item" key={f.fecha}><strong>{f.fecha}</strong><p>{f.nombre}</p></div>)}</div> : <p className="admin-vacio-pequeno">Sin días festivos en los próximos 15 días.</p>}
+                </section>
+              </aside>
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  </>
+}
+
+function MapaCentrosAdmin({ onSalir }) {
+  const [clinicas, setClinicas] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+  const [recarga, setRecarga] = useState(0)
+
+  useEffect(() => {
+    let activo = true
+    fetch('/api/clinicas')
+      .then((res) => {
+        if (!res.ok) throw new Error(`No se pudo consultar el mapa (${res.status}).`)
+        return res.json()
+      })
+      .then((datos) => { if (activo) { setClinicas(Array.isArray(datos) ? datos : []); setError('') } })
+      .catch((err) => { if (activo) setError(err.message) })
+      .finally(() => { if (activo) setCargando(false) })
+    return () => { activo = false }
+  }, [recarga])
+
+  const conCoordenadas = clinicas.filter((c) => Number.isFinite(Number(c.latitud)) && Number.isFinite(Number(c.longitud)))
+  const centroOaxaca = conCoordenadas[0]
+    ? [Number(conCoordenadas[0].latitud), Number(conCoordenadas[0].longitud)]
+    : [17.0654, -96.7236]
+
+  function recargar() { setCargando(true); setRecarga((v) => v + 1) }
+
+  return <>
+    <Encabezado titulo="Mapa de centros" descripcion="Supervisión geográfica de clínicas publicadas en el directorio de Oaxaca." onSalir={onSalir}
+      acciones={<>
+        <Link to="/mapa" className="admin-btn admin-btn--outline">Abrir mapa completo <ExternalLink size={15} /></Link>
+        <button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>
+      </>} />
+    <div className="admin-cuerpo">
+      {error && <ErrorCarga mensaje={error} reintentar={recargar} />}
+      {cargando ? <Cargando mensaje="Cargando ubicaciones en el mapa…" /> : !error && (
+        <section className="admin-panel admin-detalle-bloque">
+          <div className="admin-panel-header" style={{ padding: '0 0 16px' }}>
+            <div>
+              <span className="admin-eyebrow">GEOLOCALIZACIÓN</span>
+              <h2>Centros visibles en el directorio <span className="admin-contador">{conCoordenadas.length}</span></h2>
+              <p>Se muestran {conCoordenadas.length} clínicas con coordenadas confirmadas de {clinicas.length} publicadas.</p>
+            </div>
+          </div>
+          {conCoordenadas.length ? (
+            <div style={{ height: '480px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #d9e2dc' }}>
+              <MapContainer center={centroOaxaca} zoom={12} style={{ width: '100%', height: '100%' }}>
+                <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                {conCoordenadas.map((c) => (
+                  <Marker key={c.id_clinica} position={[Number(c.latitud), Number(c.longitud)]} icon={crearPinAdmin('#103328')}>
+                    <Popup>
+                      <strong>{texto(c.nombre)}</strong><br />
+                      <span>{texto(c.municipio)}</span><br />
+                      <Link to={`/admin/clinicas/${c.id_clinica}`}>Ver ficha administrativa</Link>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
+          ) : <div className="admin-sin-datos"><MapPin size={30} /><strong>No hay centros con ubicación confirmada</strong><p>Las clínicas aprobadas con coordenadas aparecerán aquí.</p></div>}
+        </section>
+      )}
+    </div>
+  </>
+}
+
 export default function Administracion({
   sesion,
   onSalir,
@@ -1091,12 +1412,16 @@ export default function Administracion({
   idUsuario = null,
   listaUsuarios = false,
   listaClinicas = false,
+  vistaAdmin = null,
 }) {
   const enDetalle = Boolean(idSolicitud || idClinica || idUsuario)
   return <div className="admin-app"><Lateral perfil={sesion} onSalir={onSalir} detalle={enDetalle} />
     <div className="admin-contenedor"><main className="admin-main">
       {listaUsuarios ? <ListaUsuarios onSalir={onSalir} />
         : listaClinicas ? <ListaClinicasAdmin onSalir={onSalir} />
+        : vistaAdmin === 'citas' ? <ListaCitasAdmin onSalir={onSalir} />
+        : vistaAdmin === 'calendarios' ? <SupervisionCalendariosAdmin onSalir={onSalir} />
+        : vistaAdmin === 'mapa' ? <MapaCentrosAdmin onSalir={onSalir} />
         : idUsuario ? <DetalleUsuarioAdmin key={idUsuario} idUsuario={idUsuario} onSalir={onSalir} />
         : idClinica ? <DetalleClinicaAdmin key={idClinica} idClinica={idClinica} onSalir={onSalir} />
         : idSolicitud ? <DetalleSolicitud key={idSolicitud} idSolicitud={idSolicitud} onSalir={onSalir} />

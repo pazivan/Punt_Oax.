@@ -12,6 +12,7 @@ const { hashearPassword, verificarPassword, generarToken, autenticarToken, reque
 const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
 const { registrarRutasAdminUsuarios } = require("./adminUsuarios");
+const { registrarRutasAdminSupervision } = require("./adminSupervision");
 const { registrarRutasAgendaClinica } = require("./agendaClinica");
 const { registrarRutasCercania } = require("./cercania");
 const { registrarRutasDatosClinica } = require("./datosClinica");
@@ -1805,6 +1806,9 @@ registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, prepararC
 
 // Listado de usuarios registrados para el administrador (solo lectura).
 registrarRutasAdminUsuarios(app, { pool, autenticarToken, requerirRol });
+
+// Supervisión administrativa de resumen, citas y calendarios.
+registrarRutasAdminSupervision(app, { pool, autenticarToken, requerirRol });
 
 // Datos de la clínica publicada desde su panel (Sprint 7 · issue #65). Ver backend/datosClinica.js
 registrarRutasDatosClinica(app, { pool, autenticarToken, requerirRol });

@@ -47,6 +47,26 @@ export function consultarClinicaAdmin(idClinica) {
   return enviarConSesion(`/api/admin/clinicas/${encodeURIComponent(idClinica)}`)
 }
 
+export function consultarResumenAdmin() {
+  return enviarConSesion('/api/admin/resumen')
+}
+
+export function consultarCitasAdmin({ estado = 'todas', idClinica = '', q = '', page, limit } = {}) {
+  const params = new URLSearchParams({ estado })
+  if (idClinica) params.set('id_clinica', idClinica)
+  if (typeof q === 'string' && q.trim()) params.set('q', q.trim())
+  if (page !== undefined) params.set('page', String(page))
+  if (limit !== undefined) params.set('limit', String(limit))
+  return enviarConSesion(`/api/admin/citas?${params.toString()}`)
+}
+
+export function consultarCalendarioAdmin(idClinica = '') {
+  const params = new URLSearchParams()
+  if (idClinica) params.set('id_clinica', idClinica)
+  const query = params.toString()
+  return enviarConSesion(`/api/admin/calendarios${query ? `?${query}` : ''}`)
+}
+
 export function resolverSolicitudAdmin(idSolicitud, decision, observaciones = '') {
   return enviarConSesion(`/api/admin/solicitudes/${encodeURIComponent(idSolicitud)}`, {
     method: 'PATCH',
