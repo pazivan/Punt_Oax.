@@ -4,6 +4,14 @@ const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 const HORA_CON_SEGUNDOS = /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/;
 const MAX_FRANJAS_HORARIO = 14;
+const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+function formatearHorario(fila) {
+  return {
+    ...fila,
+    dia_nombre: DIAS_SEMANA[fila.dia_semana] || 'Día',
+  };
+}
 
 function normalizarHora(valor) {
   if (typeof valor !== 'string') return null;
@@ -133,12 +141,28 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
       return { fecha, nombre: festivoNacional(fecha) };
     }).filter((d) => d.nombre);
     responder(res, 200, { servicios: servicios.rows, espacios: espacios.rows,
-      bloqueados: bloqueados.rows, horarios: horarios.rows, festivos, hoy: hoy.rows[0].fecha });
+      bloqueados: bloqueados.rows, horarios: horarios.rows.map(formatearHorario), festivos, hoy: hoy.rows[0].fecha });
   }));
 
   app.get('/api/clinicas/mi-agenda/horarios', ...soloClinica, envolver(async (req, res) => {
-    const { rows } = await pool.query(SELECT_HORARIOS_CLINICA, [req.usuario.id]);
-    return responder(res, 200, { horarios: rows });
+    const [clinicaRes, horariosRes] = await Promise.all([
+      pool.query(
+        'SELECT estado_publicacion, horario_texto FROM clinicas WHERE id_clinica = $1',
+        [req.usuario.id]
+      ),
+      pool.query(SELECT_HORARIOS_CLINICA, [req.usuario.id]),
+    ]);
+    const clinica = clinicaRes.rows[0];
+    if (!clinica) return responder(res, 404, { error: 'Clínica no encontrada.' });
+    const horarios = horariosRes.rows.map(formatearHorario);
+    return responder(res, 200, {
+      estado_publicacion: clinica.estado_publicacion,
+      puede_editar_horarios: clinica.estado_publicacion === 'aprobada',
+      horario_texto: clinica.horario_texto || null,
+      total: horarios.length,
+      maximo_franjas: MAX_FRANJAS_HORARIO,
+      horarios,
+    });
   }));
 
   app.post('/api/clinicas/mi-agenda/horarios', ...soloClinica, envolver(async (req, res) => {
@@ -170,7 +194,7 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
         [req.usuario.id, nueva.dia_semana, nueva.apertura, nueva.cierre, nueva.es_24_horas]
       );
       await client.query('COMMIT');
-      return responder(res, 201, { mensaje: 'Horario guardado.', horario: insertados[0] });
+      return responder(res, 201, { mensaje: 'Horario guardado.', horario: formatearHorario(insertados[0]) });
     } finally { await client.query('ROLLBACK').catch(() => {}); client.release(); }
   }));
 
@@ -212,7 +236,7 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
       return responder(res, 200, {
         mensaje: 'Horario actualizado; las citas existentes se conservan.',
         cupos_deshabilitados: cuposDeshabilitados,
-        horarios: guardados,
+        horarios: guardados.map(formatearHorario),
       });
     } finally { await client.query('ROLLBACK').catch(() => {}); client.release(); }
   }));
@@ -251,7 +275,7 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
       await client.query('COMMIT');
       return responder(res, 200, {
         mensaje: 'Horario actualizado; las citas existentes se conservan.',
-        horario: editados[0],
+        horario: formatearHorario(editados[0]),
         cupos_deshabilitados: cuposDeshabilitados,
       });
     } finally { await client.query('ROLLBACK').catch(() => {}); client.release(); }

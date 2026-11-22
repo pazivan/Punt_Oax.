@@ -267,3 +267,64 @@ test("DELETE /api/clinicas/mi-agenda/horarios/:id elimina horario y deshabilita 
   assert.equal(res.codigo, 200);
   assert.equal(res.cuerpo.cupos_deshabilitados, 1);
 });
+
+test("GET /api/clinicas/mi-agenda/horarios carga horarios guardados con metadatos para el panel y solo usa id del JWT", async () => {
+  const app = appFalsa();
+  const idClinica = "11111111-1111-4111-8111-111111111111";
+  const idAjeno = "99999999-9999-4999-8999-999999999999";
+  const paramsUsados = [];
+
+  const pool = {
+    async query(sql, params = []) {
+      paramsUsados.push(params);
+      if (/FROM clinicas WHERE id_clinica/.test(sql)) {
+        return { rows: [{ estado_publicacion: "aprobada", horario_texto: "Lunes a viernes 09:00-17:00" }] };
+      }
+      if (/FROM horarios_atencion/.test(sql)) {
+        return {
+          rows: [
+            {
+              id_horario: "66666666-6666-4666-8666-666666666666",
+              dia_semana: 1,
+              apertura: "09:00",
+              cierre: "17:00",
+              es_24_horas: false,
+              cruza_medianoche: false,
+            },
+          ],
+        };
+      }
+      return { rows: [] };
+    },
+  };
+
+  registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol });
+  const res = resFalsa();
+  await app.rutas["GET /api/clinicas/mi-agenda/horarios"].at(-1)(
+    { usuario: { id: idClinica, rol: "clinica" }, query: { id_clinica: idAjeno } },
+    res
+  );
+
+  assert.equal(res.codigo, 200);
+  assert.equal(res.cuerpo.estado_publicacion, "aprobada");
+  assert.equal(res.cuerpo.puede_editar_horarios, true);
+  assert.equal(res.cuerpo.horario_texto, "Lunes a viernes 09:00-17:00");
+  assert.equal(res.cuerpo.total, 1);
+  assert.equal(res.cuerpo.maximo_franjas, 14);
+  assert.equal(res.cuerpo.horarios[0].dia_nombre, "Lunes");
+  assert.ok(!paramsUsados.flat().includes(idAjeno), "Nunca debe usar id_clinica de query");
+});
+
+test("GET /api/clinicas/mi-agenda/horarios responde 404 si la clinica no existe", async () => {
+  const app = appFalsa();
+  const pool = { async query() { return { rows: [] }; } };
+  registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol });
+
+  const res = resFalsa();
+  await app.rutas["GET /api/clinicas/mi-agenda/horarios"].at(-1)(
+    { usuario: { id: "11111111-1111-4111-8111-111111111111", rol: "clinica" } },
+    res
+  );
+
+  assert.equal(res.codigo, 404);
+});
