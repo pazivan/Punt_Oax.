@@ -129,7 +129,15 @@ export function guardarSesion(respuesta, tipo) {
   return sesion
 }
 
+let cacheCitas = { token: null, ts: 0, promesa: null, resultado: null }
+const TTL_CITAS_MS = 10000
+
+export function invalidarCacheCitas() {
+  cacheCitas = { token: null, ts: 0, promesa: null, resultado: null }
+}
+
 export function cerrarSesion() {
+  invalidarCacheCitas()
   try {
     localStorage.setItem(CLAVE_MIGRACION, '1')
     localStorage.removeItem(CLAVE_SESION)
@@ -201,14 +209,35 @@ export const bloquearDiaClinica = (fecha) => enviarConSesion('/api/clinicas/mi-a
 })
 
 // Citas del paciente autenticado: el servidor filtra por su JWT.
-export function consultarCitasUsuario() {
-  return enviarConSesion('/api/citas')
+// Deduplica solicitudes simultáneas y reutiliza respuesta reciente para acelerar Inicio/Campana.
+export function consultarCitasUsuario({ forzar = false } = {}) {
+  const token = leerSesion()?.token || null
+  const ahora = Date.now()
+  if (!forzar && token && cacheCitas.token === token) {
+    if (cacheCitas.promesa) return cacheCitas.promesa
+    if (cacheCitas.resultado && ahora - cacheCitas.ts < TTL_CITAS_MS) {
+      return Promise.resolve(cacheCitas.resultado)
+    }
+  }
+  const promesa = enviarConSesion('/api/citas')
+    .then((datos) => {
+      cacheCitas = { token, ts: Date.now(), promesa: null, resultado: datos }
+      return datos
+    })
+    .catch((err) => {
+      if (cacheCitas.promesa === promesa) cacheCitas.promesa = null
+      throw err
+    })
+  cacheCitas = { token, ts: ahora, promesa, resultado: null }
+  return promesa
 }
 
-export function cancelarCitaUsuario(idCita) {
-  return enviarConSesion(`/api/citas/${encodeURIComponent(idCita)}/cancelar`, {
+export async function cancelarCitaUsuario(idCita) {
+  const respuesta = await enviarConSesion(`/api/citas/${encodeURIComponent(idCita)}/cancelar`, {
     method: 'PATCH',
   })
+  invalidarCacheCitas()
+  return respuesta
 }
 
 // La clínica solo puede operar sobre citas de sus propios servicios (lo valida el servidor).
@@ -221,21 +250,25 @@ export function actualizarEstadoCitaClinica(idCita, estado) {
 }
 
 // Horarios reservables de una sede y confirmación de la cita (Sprint 6).
-export function consultarEspaciosClinica(idClinica, { desde, hasta } = {}) {  const parametros = new URLSearchParams()
+export function consultarEspaciosClinica(idClinica, { desde, hasta, incluirEstado = false } = {}) {
+  const parametros = new URLSearchParams()
   if (desde) parametros.set('desde', desde)
   if (hasta) parametros.set('hasta', hasta)
+  if (incluirEstado) parametros.set('incluir_estado', '1')
   const consulta = parametros.toString()
   return enviarConSesion(
     `/api/clinicas/${encodeURIComponent(idClinica)}/espacios${consulta ? `?${consulta}` : ''}`
   )
 }
 
-export function solicitarCita(idEspacio) {
-  return enviarConSesion('/api/citas', {
+export async function solicitarCita(idEspacio) {
+  const respuesta = await enviarConSesion('/api/citas', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id_espacio: idEspacio }),
   })
+  invalidarCacheCitas()
+  return respuesta
 }
 
 export function consultarMiFicha() {

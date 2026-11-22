@@ -2,6 +2,10 @@
    PuntOax - Ventanas de Inicio, Mapa y Detalle de centro (Estilos de Figma)
    ========================================================================== */
 
+html {
+  scrollbar-gutter: stable;
+}
+
 /* Inicio */
 .inicio-page {
   display: flex;
@@ -89,28 +93,54 @@
 
 /* Nav */
 .inicio-nav {
+  position: relative;
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 0;
-  gap: 24px;
-  height: 40px;
+  gap: 6px;
+  height: 36px;
+}
+
+.inicio-nav-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 36px;
+  border-radius: 8px;
+  background: #103328;
+  box-shadow: 0 2px 6px rgba(16, 51, 40, 0.16);
+  pointer-events: none;
+  z-index: 0;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), width 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inicio-nav-indicator {
+    transition: none;
+  }
 }
 
 .inicio-nav-link {
+  position: relative;
+  z-index: 1;
   font-family: var(--sans);
   font-style: normal;
-  font-weight: 400;
+  font-weight: 500;
   font-size: 14px;
   line-height: 20px;
-  display: flex;
+  height: 36px;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   color: #414845;
   text-decoration: none;
   background: transparent;
   border: none;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-radius: 8px;
+  white-space: nowrap;
+  box-sizing: border-box;
   cursor: pointer;
   transition: color 0.18s ease, background-color 0.18s ease;
 }
@@ -121,13 +151,15 @@
 }
 
 .inicio-nav-link.active {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
   justify-content: center;
-  padding: 8px 16px;
-  height: 40px;
+  padding: 8px 12px;
+  height: 36px;
   background: #103328;
+  color: #FFFFFF;
+  font-weight: 500;
   border-radius: 8px;
   border: none;
   cursor: pointer;
@@ -135,12 +167,18 @@
   box-shadow: 0 2px 6px rgba(16, 51, 40, 0.16);
 }
 
+.inicio-desktop-nav .inicio-nav-link.active {
+  background: transparent;
+  box-shadow: none;
+  color: #FFFFFF;
+}
+
 .inicio-nav-link-active-text {
   font-family: var(--sans);
   font-style: normal;
-  font-weight: 700;
-  font-size: 16px;
-  line-height: 24px;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
   display: flex;
   align-items: center;
   color: #FFFFFF;
@@ -4750,30 +4788,25 @@
    Encapsulación de /inicio: ajuste vertical en escritorio sin afectar móvil
    ========================================================================== */
 @media (min-width: 1081px) {
-  .inicio-home-page .inicio-header,
-  .inicio-home-page .inicio-header-container {
-    height: 68px;
-  }
-
   .inicio-home-page .inicio-main {
-    padding-top: 68px;
+    padding-top: 80px;
     min-height: 0;
     justify-content: center;
   }
 
   .inicio-home-page .inicio-container {
-    padding: 14px 24px;
-    gap: 16px;
+    padding: 10px 24px;
+    gap: 14px;
     min-height: 0;
   }
 
   .inicio-home-page .inicio-hero-section {
-    min-height: 276px;
+    min-height: 270px;
     gap: 32px;
   }
 
   .inicio-home-page .inicio-hero-left {
-    gap: 14px;
+    gap: 12px;
   }
 
   .inicio-home-page .inicio-hero-heading {
@@ -4782,7 +4815,7 @@
   }
 
   .inicio-home-page .inicio-hero-right-card {
-    height: 276px;
+    height: 270px;
     padding: 16px;
   }
 
@@ -4796,8 +4829,8 @@
   }
 
   .inicio-home-page .inicio-feature-card {
-    min-height: 170px;
-    padding: 16px 18px;
+    min-height: 166px;
+    padding: 14px 18px;
   }
 
   .inicio-home-page .inicio-footer {
@@ -5278,4 +5311,139 @@
     padding: 7px 8px;
     font-size: 12px;
   }
+}
+
+
+/* ==========================================================================
+   Agendar cita: búsqueda en desplegable, horarios transcurridos y skeletons
+   ========================================================================== */
+.mapa-dropdown-trigger.is-placeholder {
+  color: #596763;
+}
+
+.mapa-dropdown.is-disabled .mapa-dropdown-trigger {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.mapa-dropdown-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(460px, 90vw);
+  background: #FFFFFF;
+  border: 1px solid #D6E6E0;
+  border-radius: 10px;
+  box-shadow: 0 14px 30px rgba(16, 51, 40, 0.14);
+  z-index: 45;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.mapa-dropdown-popover .mapa-dropdown-menu {
+  position: static;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  width: 100%;
+  max-width: none;
+}
+
+.mapa-dropdown-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 2px 2px 6px;
+  border-bottom: 1px solid #E8ECEA;
+}
+
+.mapa-dropdown-search-icon {
+  position: absolute;
+  left: 10px;
+  color: #596763;
+  pointer-events: none;
+}
+
+.mapa-dropdown-search-input {
+  width: 100%;
+  height: 32px;
+  padding: 4px 10px 4px 30px;
+  border-radius: 6px;
+  border: 1px solid #DCE4DF;
+  background: #F9F9F8;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: #191C1C;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.mapa-dropdown-search-input:focus {
+  border-color: #103328;
+  background: #FFFFFF;
+}
+
+.mapa-dropdown-empty {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #596763;
+}
+
+.agendar-slot-btn.is-elapsed {
+  background: #ECEEED;
+  border-color: #D5DBD7;
+  color: #6B7570;
+  cursor: not-allowed;
+}
+
+.agendar-submit-btn:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.agendar-loading-skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.agendar-skeleton-box {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #ECEEED 25%, #F5F7F6 50%, #ECEEED 75%);
+  background-size: 200% 100%;
+  animation: puntoaxShimmer 1.3s infinite linear;
+}
+
+.agendar-skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.agendar-skeleton-chip,
+.agendar-skeleton-slot {
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #ECEEED 25%, #F5F7F6 50%, #ECEEED 75%);
+  background-size: 200% 100%;
+  animation: puntoaxShimmer 1.3s infinite linear;
+}
+
+.agendar-spin {
+  animation: puntoaxSpin 0.9s linear infinite;
+}
+
+@keyframes puntoaxShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes puntoaxSpin {
+  to { transform: rotate(360deg); }
 }

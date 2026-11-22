@@ -36,7 +36,7 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null 
     if (!esUsuarioNormal || Array.isArray(citasPreCargadas)) return undefined;
 
     let activo = true;
-    consultarCitasUsuario()
+    consultarCitasUsuario({ forzar: abierto })
       .then((res) => {
         if (!activo) return;
         setCitasInternas(Array.isArray(res?.citas) ? res.citas : []);
@@ -53,8 +53,6 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null 
     return () => {
       activo = false;
     };
-    // Al abrir se vuelve a consultar: una reserva o cancelación pudo ocurrir
-    // en otra vista. Si la vista ya entregó las citas, no se repite la llamada.
   }, [esUsuarioNormal, citasPreCargadas, abierto]);
 
   // Actualiza el reloj cada minuto para mantener al día el cálculo de "cuánto falta"
@@ -100,7 +98,7 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null 
         className={`notif-bell-btn${abierto ? ' is-open' : ''}`}
         onClick={() => {
           setAhora(Date.now());
-          if (!abierto) {
+          if (!abierto && !Array.isArray(citasPreCargadas)) {
             setCargando(true);
             setErrorCitas(false);
           }

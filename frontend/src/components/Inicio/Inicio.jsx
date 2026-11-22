@@ -22,10 +22,10 @@ import '../../styles/Inicio.css';
  *   - Fila de 3 tarjetas (228px): Mapa de centros, Información útil (dirige a /informacion-util) y Agenda tu visita.
  * - Footer (112px): Texto institucional centrado.
  */
-export default function Inicio({ sesion, onSalir }) {
+export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
   return (
     <div className="inicio-page inicio-home-page">
-      <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="inicio" />
+      {!sinEncabezado && <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="inicio" />}
 
       {/* Main (padding-top: 80px) */}
       <main className="inicio-main">

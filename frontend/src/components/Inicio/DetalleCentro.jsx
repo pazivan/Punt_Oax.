@@ -46,6 +46,7 @@ export default function DetalleCentro({
   onSalir,
   onVolverAlMapa,
   onAgendarCita,
+  sinEncabezado = false,
 }) {
   if (!clinica) return null;
 
@@ -73,15 +74,17 @@ export default function DetalleCentro({
   return (
     <div className="detalle-page">
       {/* Header (80px) */}
-      {sesion?.tipo === 'clinica' ? (
-        <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
-      ) : (
-        <EncabezadoUsuario
-          sesion={sesion}
-          onSalir={onSalir}
-          seccionActiva="mapa"
-          onClicMapa={onVolverAlMapa}
-        />
+      {!sinEncabezado && (
+        sesion?.tipo === 'clinica' ? (
+          <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
+        ) : (
+          <EncabezadoUsuario
+            sesion={sesion}
+            onSalir={onSalir}
+            seccionActiva="mapa"
+            onClicMapa={onVolverAlMapa}
+          />
+        )
       )}
 
       {/* Main (padding-top: 80px) */}

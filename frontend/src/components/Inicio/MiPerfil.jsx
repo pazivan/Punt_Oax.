@@ -50,7 +50,7 @@ function limpiarTelefonoDiezDigitos(valor) {
  * Muestra los detalles de su cuenta, resumen de citas, edición de datos personales
  * de contacto y módulo de cambio de contraseña con validaciones.
  */
-export default function MiPerfil({ sesion, perfil, onSalir }) {
+export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = false }) {
   const esClinica = sesion?.tipo === 'clinica' || perfil?.rol === 'clinica';
   const correoCuenta =
     sesion?.cuenta?.correo || perfil?.correo || '';
@@ -300,19 +300,21 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
   return (
     <div className="perfil-page">
       {/* Header (80px) */}
-      {esClinica ? (
-        <EncabezadoClinica
-          sesion={sesion}
-          onSalir={onSalir}
-          modoPostulacion={!enModoPanelAprobado}
-        />
-      ) : (
-        <EncabezadoUsuario
-          sesion={sesion}
-          onSalir={onSalir}
-          seccionActiva="perfil"
-          citasPreCargadas={citas}
-        />
+      {!sinEncabezado && (
+        esClinica ? (
+          <EncabezadoClinica
+            sesion={sesion}
+            onSalir={onSalir}
+            modoPostulacion={!enModoPanelAprobado}
+          />
+        ) : (
+          <EncabezadoUsuario
+            sesion={sesion}
+            onSalir={onSalir}
+            seccionActiva="perfil"
+            citasPreCargadas={citas}
+          />
+        )
       )}
 
       {/* Main Content */}

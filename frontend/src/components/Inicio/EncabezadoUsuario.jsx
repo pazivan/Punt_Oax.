@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, User, X } from 'lucide-react';
 import CampanaNotificaciones from './CampanaNotificaciones.jsx';
 
 /**
- * EncabezadoUsuario - Encabezado compartido para el área de usuario autenticado
+ * EncabezadoUsuario - Encabezado compartido y persistente para el área de usuario autenticado
  * (y vistas públicas/mixtas cuando no corresponde EncabezadoClinica).
  */
 export default function EncabezadoUsuario({
@@ -16,8 +16,11 @@ export default function EncabezadoUsuario({
 }) {
   const { pathname } = useLocation();
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
+  const [indicador, setIndicador] = useState({ left: 0, width: 0, visible: false });
   const botonMenuRef = useRef(null);
   const cajonRef = useRef(null);
+  const navRef = useRef(null);
+  const itemsRef = useRef(new Map());
 
   const esAdmin = sesion?.tipo === 'administrador';
   const rutaInicio = sesion ? (esAdmin ? '/admin' : '/inicio') : '/';
@@ -53,6 +56,29 @@ export default function EncabezadoUsuario({
         { id: 'conocenos', ruta: '/conocenos', texto: 'Conócenos' },
       ];
 
+  useLayoutEffect(() => {
+    const actualizarIndicador = () => {
+      const activoEl = itemsRef.current.get(activa);
+      if (!activoEl || !navRef.current || activoEl.offsetWidth === 0) {
+        setIndicador((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+        return;
+      }
+      const left = activoEl.offsetLeft;
+      const width = activoEl.offsetWidth;
+      setIndicador((prev) =>
+        prev.left === left && prev.width === width && prev.visible
+          ? prev
+          : { left, width, visible: true }
+      );
+    };
+
+    actualizarIndicador();
+    if (typeof ResizeObserver === 'undefined' || !navRef.current) return undefined;
+    const observador = new ResizeObserver(actualizarIndicador);
+    observador.observe(navRef.current);
+    return () => observador.disconnect();
+  }, [activa, enlaces.length]);
+
   useEffect(() => {
     if (!menuMovilAbierto) return undefined;
     const manejarTecla = (e) => {
@@ -67,12 +93,18 @@ export default function EncabezadoUsuario({
 
   const cerrarMenu = () => setMenuMovilAbierto(false);
 
+  const registrarRef = (id, el) => {
+    if (el) itemsRef.current.set(id, el);
+    else itemsRef.current.delete(id);
+  };
+
   const renderEnlaceNav = ({ id, ruta, texto }, enMovil = false) => {
     const esActiva = activa === id;
     if (id === 'mapa' && typeof onClicMapa === 'function') {
       return (
         <button
           key={id}
+          ref={enMovil ? undefined : (el) => registrarRef(id, el)}
           type="button"
           onClick={() => {
             cerrarMenu();
@@ -81,7 +113,7 @@ export default function EncabezadoUsuario({
           className={`${enMovil ? 'inicio-mobile-nav-link' : 'inicio-nav-link'} ${esActiva ? 'active' : ''}`}
           aria-current={esActiva ? 'page' : undefined}
         >
-          {esActiva && !enMovil ? <span className="inicio-nav-link-active-text">{texto}</span> : texto}
+          {texto}
         </button>
       );
     }
@@ -89,12 +121,13 @@ export default function EncabezadoUsuario({
     return (
       <Link
         key={id}
+        ref={enMovil ? undefined : (el) => registrarRef(id, el)}
         to={ruta}
         onClick={cerrarMenu}
         className={`${enMovil ? 'inicio-mobile-nav-link' : 'inicio-nav-link'} ${esActiva ? 'active' : ''}`}
         aria-current={esActiva ? 'page' : undefined}
       >
-        {esActiva && !enMovil ? <span className="inicio-nav-link-active-text">{texto}</span> : texto}
+        {texto}
       </Link>
     );
   };
@@ -110,7 +143,17 @@ export default function EncabezadoUsuario({
             </Link>
           </div>
 
-          <nav className="inicio-nav inicio-desktop-nav" aria-label="Navegación principal">
+          <nav ref={navRef} className="inicio-nav inicio-desktop-nav" aria-label="Navegación principal">
+            {indicador.visible && (
+              <span
+                className="inicio-nav-indicator"
+                aria-hidden="true"
+                style={{
+                  transform: `translateX(${indicador.left}px)`,
+                  width: `${indicador.width}px`,
+                }}
+              />
+            )}
             {enlaces.map((item) => renderEnlaceNav(item, false))}
           </nav>
         </div>

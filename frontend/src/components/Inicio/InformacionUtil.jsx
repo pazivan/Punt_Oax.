@@ -199,16 +199,18 @@ const FUENTES_OFICIALES = [
  * Conserva toda la información jurídica, sanitaria y de derechos original e incorpora
  * el detalle de métodos clínicos de aborto seguro y los tipos de estudios/enfermedades (ITS).
  */
-export default function InformacionUtil({ sesion, onSalir }) {
+export default function InformacionUtil({ sesion, onSalir, sinEncabezado = false }) {
   const [apartadoActivo, setApartadoActivo] = useState('panorama');
 
   return (
     <div className="info-util-page">
       {/* Header (80px) */}
-      {sesion?.tipo === 'clinica' ? (
-        <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
-      ) : (
-        <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="informacion" />
+      {!sinEncabezado && (
+        sesion?.tipo === 'clinica' ? (
+          <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
+        ) : (
+          <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="informacion" />
+        )
       )}
 
       {/* Main Content */}

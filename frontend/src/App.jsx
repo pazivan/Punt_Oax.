@@ -6,6 +6,7 @@ import Register from './components/Auth/Register.jsx'
 import CorreoCuenta from './components/Auth/CorreoCuenta.jsx'
 import Inicio from './components/Inicio/Inicio.jsx'
 import MiPerfil from './components/Inicio/MiPerfil.jsx'
+import EncabezadoUsuario from './components/Inicio/EncabezadoUsuario.jsx'
 import MapaCentros from './components/Inicio/MapaCentros.jsx'
 import InformacionUtil from './components/Inicio/InformacionUtil.jsx'
 import AgendarCitaDatos from './components/Inicio/AgendarCitaDatos.jsx'
@@ -187,7 +188,19 @@ function App() {
     />
   )
 
-  if (pathname === '/login') {
+  const esUsuarioOVisitanteConHeader =
+    (!sesion || sesion.tipo !== 'clinica') && (
+      pathname === '/inicio' ||
+      pathname === '/mapa' ||
+      pathname === '/agendar-cita' ||
+      pathname === '/mis-citas' ||
+      pathname === '/informacion-util' ||
+      pathname === '/mi-perfil' ||
+      (pathname === '/conocenos' && Boolean(sesion))
+    )
+
+  function renderRuta() {
+    if (pathname === '/login') {
     if (sesion) {
       if (verificandoPerfil) return <p role="status">Verificando tu sesión…</p>
       if (perfil) return <Navigate to={sesion.tipo === 'clinica' ? '/mi-clinica' : sesion.tipo === 'administrador' ? '/admin' : '/inicio'} replace />
@@ -247,7 +260,7 @@ function App() {
     }
     return (
       <>
-        <Conocenos sesion={sesion} perfil={perfil} onSalir={salir} />
+        <Conocenos sesion={sesion} onSalir={salir} sinEncabezado={esUsuarioOVisitanteConHeader} />
         {modalConfirmacionSalir}
       </>
     )
@@ -281,7 +294,13 @@ function App() {
               </div>
             </main>
           ) : (
-            <MapaCentros sesion={sesion} onSalir={salir} clinicas={clinicas} cargando={cargando} />
+            <MapaCentros
+              sesion={sesion}
+              onSalir={salir}
+              clinicas={clinicas}
+              cargando={cargando}
+              sinEncabezado={esUsuarioOVisitanteConHeader}
+            />
           )}
         </RutaPrivada>
         {modalConfirmacionSalir}
@@ -300,11 +319,15 @@ function App() {
           rolesPermitidos={['usuario']}
         >
           <AgendarCitaDatos
-            clinica={clinicas[0] || null}
+            clinica={estadoRuta?.clinica || null}
             clinicas={clinicas}
+            cargandoClinicas={cargando}
+            errorClinicas={error}
+            onReintentarClinicas={() => setReintentoCatalogo((valor) => valor + 1)}
             sesion={sesion}
             onSalir={salir}
             onVolverAlCentro={() => navigate('/mapa')}
+            sinEncabezado={esUsuarioOVisitanteConHeader}
           />
         </RutaPrivada>
         {modalConfirmacionSalir}
@@ -322,7 +345,7 @@ function App() {
           error={errorPerfil}
           rolesPermitidos={['usuario', 'clinica', 'administrador']}
         >
-          <InformacionUtil sesion={sesion} onSalir={salir} />
+          <InformacionUtil sesion={sesion} onSalir={salir} sinEncabezado={esUsuarioOVisitanteConHeader} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -339,7 +362,7 @@ function App() {
           error={errorPerfil}
           rolesPermitidos={['usuario']}
         >
-          <MisCitasUsuario sesion={sesion} onSalir={salir} />
+          <MisCitasUsuario sesion={sesion} onSalir={salir} sinEncabezado={esUsuarioOVisitanteConHeader} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -351,7 +374,7 @@ function App() {
       <>
         <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
           error={errorPerfil} rolesPermitidos={['usuario', 'clinica']}>
-          <MiPerfil sesion={sesion} perfil={perfil} onSalir={salir} />
+          <MiPerfil sesion={sesion} perfil={perfil} onSalir={salir} sinEncabezado={esUsuarioOVisitanteConHeader} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -433,7 +456,7 @@ function App() {
           error={errorPerfil}
           rolesPermitidos={['usuario']}
         >
-          <Inicio sesion={sesion} onSalir={salir} />
+          <Inicio sesion={sesion} onSalir={salir} sinEncabezado={esUsuarioOVisitanteConHeader} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -458,6 +481,16 @@ function App() {
   }
 
   return <Navigate to="/" replace />
+  }
+
+  return (
+    <>
+      {esUsuarioOVisitanteConHeader && (
+        <EncabezadoUsuario sesion={sesion} onSalir={salir} />
+      )}
+      {renderRuta()}
+    </>
+  )
 }
 
 export default App

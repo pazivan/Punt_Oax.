@@ -7,6 +7,16 @@
   font-family: var(--sans);
 }
 
+.conocenos-page.conocenos-con-encabezado-fijo {
+  padding-top: 80px;
+}
+
+@media (max-width: 1080px) {
+  .conocenos-page.conocenos-con-encabezado-fijo {
+    padding-top: 68px;
+  }
+}
+
 .conocenos-page *,
 .conocenos-page *::before,
 .conocenos-page *::after {

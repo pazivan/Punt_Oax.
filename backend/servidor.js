@@ -898,6 +898,20 @@ app.get("/api/clinicas", async (req, res) => {
         (c.ubicacion_geo IS NOT NULL
           AND c.situacion_ubicacion = 'fija'
           AND c.verificacion_datos = 'verificado') AS ubicacion_confirmada,
+        EXISTS (
+          SELECT 1
+          FROM espacios_disponibles ed
+          JOIN clinicas_servicios cs ON cs.id_clinica_servicio = ed.id_clinica_servicio
+          JOIN servicios s ON s.id_servicio = cs.id_servicio
+          WHERE cs.id_clinica = c.id_clinica
+            AND cs.activo = TRUE
+            AND s.activo = TRUE
+            AND ed.habilitado = TRUE
+            AND ed.fecha_hora_inicio > NOW()
+            AND NOT EXISTS (
+              SELECT 1 FROM citas ci WHERE ci.id_espacio = ed.id_espacio AND ci.estado <> 'cancelada'
+            )
+        ) AS acepta_citas,
         ST_Y(c.ubicacion_geo::geometry) AS latitud,
         ST_X(c.ubicacion_geo::geometry) AS longitud,
         COALESCE((
@@ -1001,6 +1015,20 @@ app.get("/api/clinicas/:id", async (req, res) => {
         (c.ubicacion_geo IS NOT NULL
           AND c.situacion_ubicacion = 'fija'
           AND c.verificacion_datos = 'verificado') AS ubicacion_confirmada,
+        EXISTS (
+          SELECT 1
+          FROM espacios_disponibles ed
+          JOIN clinicas_servicios cs ON cs.id_clinica_servicio = ed.id_clinica_servicio
+          JOIN servicios s ON s.id_servicio = cs.id_servicio
+          WHERE cs.id_clinica = c.id_clinica
+            AND cs.activo = TRUE
+            AND s.activo = TRUE
+            AND ed.habilitado = TRUE
+            AND ed.fecha_hora_inicio > NOW()
+            AND NOT EXISTS (
+              SELECT 1 FROM citas ci WHERE ci.id_espacio = ed.id_espacio AND ci.estado <> 'cancelada'
+            )
+        ) AS acepta_citas,
         COALESCE((
           SELECT string_agg(DISTINCT BTRIM(cs.requisitos), '; ')
           FROM clinicas_servicios cs

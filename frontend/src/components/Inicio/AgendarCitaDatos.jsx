@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
+  Ban,
   Building2,
   Calendar,
   Check,
   CheckCircle2,
   Clock,
   FileText,
+  Loader2,
   Lock,
   MapPin,
   ShieldCheck,
@@ -18,7 +20,8 @@ import {
 import ModalConfirmacion from './ModalConfirmacion.jsx';
 import EncabezadoUsuario from './EncabezadoUsuario.jsx';
 import PiePagina from './PiePagina.jsx';
-import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js';
+import FiltroDesplegable from './FiltroDesplegable.jsx';
+import { normalizarYUnificarClinicas } from '../../data/clinicasDemo.js';
 import { consultarEspaciosClinica, solicitarCita } from '../../api/auth.js';
 import { validarEmail, validarTelefono } from '../../utils/validaciones.js';
 import { leerPerfilLocal } from '../../utils/perfilLocal.js';
@@ -138,10 +141,14 @@ function categoriaDeServicio(clinica) {
 export default function AgendarCitaDatos({
   clinica = null,
   clinicas = [],
+  cargandoClinicas = false,
+  errorClinicas = '',
+  onReintentarClinicas = null,
   sesion,
   onSalir,
   onVolverAlCentro,
   onCitaConfirmada,
+  sinEncabezado = false,
 }) {
   const correoSesion = sesion?.cuenta?.correo || '';
   const datosPerfilGuardados = useMemo(
@@ -152,26 +159,30 @@ export default function AgendarCitaDatos({
   const apellidosSesion = sesion?.cuenta?.apellidos || datosPerfilGuardados.apellidos || '';
   const telefonoSesion = sesion?.cuenta?.telefono || datosPerfilGuardados.telefono || '';
 
-  // Catálogo completo de clínicas para que el usuario pueda elegir o cambiar el centro ahí mismo
+  // Catálogo de centros habilitados para agendar citas (no se preselecciona ninguno al entrar directo).
   const catalogoCentros = useMemo(() => {
-    const origen = Array.isArray(clinicas) && clinicas.length > 0 ? clinicas : CLINICAS_DEMO;
+    const origen = Array.isArray(clinicas) ? clinicas.filter((c) => c.acepta_citas !== false) : [];
     const unificadas = normalizarYUnificarClinicas(origen);
-    if (clinica && !unificadas.some((c) => c.id_clinica === clinica.id_clinica)) {
+    if (
+      clinica &&
+      clinica.acepta_citas !== false &&
+      !unificadas.some((c) => c.id_clinica === clinica.id_clinica)
+    ) {
       return [clinica, ...unificadas];
     }
     return unificadas;
   }, [clinicas, clinica]);
 
   const [idClinicaElegida, setIdClinicaElegida] = useState(
-    () => clinica?.id_clinica || catalogoCentros[0]?.id_clinica || 'coesdia 1'
+    () => clinica?.id_clinica || ''
   );
 
   const clinicaActiva = useMemo(
     () =>
-      catalogoCentros.find((c) => c.id_clinica === idClinicaElegida) ||
-      clinica ||
-      catalogoCentros[0] ||
-      null,
+      idClinicaElegida
+        ? catalogoCentros.find((c) => c.id_clinica === idClinicaElegida) ||
+          (clinica?.id_clinica === idClinicaElegida ? clinica : null)
+        : null,
     [catalogoCentros, idClinicaElegida, clinica]
   );
 
@@ -200,7 +211,7 @@ export default function AgendarCitaDatos({
     if (!idClinica) return undefined;
 
     let vigente = true;
-    consultarEspaciosClinica(idClinica, rangoDeConsulta())
+    consultarEspaciosClinica(idClinica, { ...rangoDeConsulta(), incluirEstado: true })
       .then((respuesta) => {
         if (!vigente) return;
         setEspaciosDisponibles(Array.isArray(respuesta.espacios) ? respuesta.espacios : []);
@@ -252,17 +263,17 @@ export default function AgendarCitaDatos({
     const hoyIso = isoHoyLocal();
     const fechas = new Set();
     for (const espacio of espaciosDisponibles) {
-      if (!esFechaHoraFutura(espacio.fecha_hora_inicio)) continue;
+      const esFuturo = espacio.es_futuro !== false && esFechaHoraFutura(espacio.fecha_hora_inicio);
+      const fechaIso = isoFechaLocal(espacio.fecha_hora_inicio);
+      if (fechaIso < hoyIso) continue;
+      if (fechaIso > hoyIso && !esFuturo) continue;
       if (
         servicioSeleccionadoObj &&
         espacio.id_clinica_servicio !== servicioSeleccionadoObj.id_clinica_servicio
       ) {
         continue;
       }
-      const fechaIso = isoFechaLocal(espacio.fecha_hora_inicio);
-      if (fechaIso >= hoyIso) {
-        fechas.add(fechaIso);
-      }
+      fechas.add(fechaIso);
     }
     return [...fechas].sort().map(describirFecha);
   }, [espaciosDisponibles, servicioSeleccionadoObj]);
@@ -277,41 +288,44 @@ export default function AgendarCitaDatos({
     return espaciosDisponibles
       .filter(
         (espacio) =>
-          esFechaHoraFutura(espacio.fecha_hora_inicio) &&
           espacio.id_clinica_servicio === servicioSeleccionadoObj.id_clinica_servicio &&
           isoFechaLocal(espacio.fecha_hora_inicio) === fechaSeleccionadaObj.isoFecha
       )
       .sort((a, b) => new Date(a.fecha_hora_inicio) - new Date(b.fecha_hora_inicio))
-      .map((espacio) => ({
-        id_espacio: espacio.id_espacio,
-        id_clinica_servicio: espacio.id_clinica_servicio,
-        etiqueta: `${etiquetaHora(espacio.fecha_hora_inicio)} h`,
-        fecha_hora_inicio: espacio.fecha_hora_inicio,
-        habilitado: true,
-      }));
+      .map((espacio) => {
+        const esPasado = espacio.es_futuro === false || !esFechaHoraFutura(espacio.fecha_hora_inicio);
+        const estaOcupado = !esPasado && (espacio.disponible === false || espacio.habilitado === false);
+        return {
+          id_espacio: espacio.id_espacio,
+          id_clinica_servicio: espacio.id_clinica_servicio,
+          etiqueta: `${etiquetaHora(espacio.fecha_hora_inicio)} h`,
+          fecha_hora_inicio: espacio.fecha_hora_inicio,
+          esPasado,
+          estaOcupado,
+          habilitado: !esPasado && !estaOcupado,
+        };
+      });
   }, [espaciosDisponibles, servicioSeleccionadoObj, fechaSeleccionadaObj]);
 
   // Datos del Paso 3 (`citas` + Modal de confirmación)
   const [mostrarModalConfirmarCita, setMostrarModalConfirmarCita] = useState(false);
   const [enviandoCita, setEnviandoCita] = useState(false);
+  const enviandoCitaRef = useRef(false);
   const [citaRegistrada, setCitaRegistrada] = useState(null);
   const [errorSolicitudCita, setErrorSolicitudCita] = useState('');
   const [errorFormulario, setErrorFormulario] = useState('');
 
-  const nombreCentro =
-    clinicaActiva?.nombre || 'Punto Fijo de Detección – Dirección de Sanidad';
-  const municipioCentro = clinicaActiva?.municipio || 'Oaxaca de Juárez';
-  const direccionCentro =
-    clinicaActiva?.direccion || 'Mártires de Tacubaya 315, Col. Centro, Oaxaca de Juárez';
+  const nombreCentro = clinicaActiva?.nombre || 'Selecciona un establecimiento';
+  const municipioCentro = clinicaActiva?.municipio || 'Oaxaca';
+  const direccionCentro = clinicaActiva?.direccion || 'Pendiente de seleccionar establecimiento';
 
   const espacioSeleccionadoObj =
-    espaciosDelDia.find((e) => e.id_espacio === idEspacioSeleccionado) ||
-    espaciosDelDia.find((e) => e.habilitado) ||
+    espaciosDelDia.find((e) => e.id_espacio === idEspacioSeleccionado && e.habilitado) ||
     null;
 
   const centroResumen = clinicaActiva?.nombre
     ? `${clinicaActiva.nombre.replace(/^Punto Fijo de Detección\s*[–-]\s*/i, '')} - ${municipioCentro}`
-    : 'Dirección de Sanidad - Oaxaca de Juárez';
+    : 'Sin establecimiento seleccionado';
 
   const requisitoResumen = obtenerRequisitosDeCentro(clinicaActiva, servicioSeleccionadoObj);
   const horarioResumen = formatearHorarioDeCentro(clinicaActiva);
@@ -414,6 +428,7 @@ export default function AgendarCitaDatos({
 
   // Confirmar cita: el registro solo existe si `POST /api/citas` responde correctamente.
   const confirmarRegistroCita = async () => {
+    if (enviandoCitaRef.current) return;
     setErrorSolicitudCita('');
     setErrorFormulario('');
 
@@ -423,7 +438,7 @@ export default function AgendarCitaDatos({
       !espacioSeleccionadoObj ||
       !nombres.trim() ||
       !apellidos.trim() ||
-      !validarEmail(correoContacto) ||
+      !validarEmail(correoFinal) ||
       !validarTelefono(telefono, { requerido: true })
     ) {
       setMostrarModalConfirmarCita(false);
@@ -434,6 +449,7 @@ export default function AgendarCitaDatos({
     }
 
     setMostrarModalConfirmarCita(false);
+    enviandoCitaRef.current = true;
     setEnviandoCita(true);
 
     try {
@@ -471,10 +487,17 @@ export default function AgendarCitaDatos({
       }
     } catch (error) {
       setCitaRegistrada(null);
-      setErrorSolicitudCita(
-        error.message || 'No se pudo registrar la cita. Inténtalo de nuevo.'
-      );
+      const mensajeError = error.message || 'No se pudo registrar la cita. Inténtalo de nuevo.';
+      if (/reservado|disponible|pas[oó]|existe/i.test(mensajeError)) {
+        setIdEspacioSeleccionado('');
+        setCargandoEspacios(true);
+        setRecargaEspacios((valor) => valor + 1);
+        setErrorSolicitudCita(`${mensajeError} Por favor selecciona otro horario disponible en el Paso 2.`);
+      } else {
+        setErrorSolicitudCita(mensajeError);
+      }
     } finally {
+      enviandoCitaRef.current = false;
       setEnviandoCita(false);
     }
   };
@@ -501,7 +524,7 @@ export default function AgendarCitaDatos({
   return (
     <div className="agendar-page">
       {/* Header (80px) con "Agendar cita" seleccionado */}
-      <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="agendar" />
+      {!sinEncabezado && <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="agendar" />}
 
       {/* Main (padding-top: 80px) */}
       <main className="agendar-main">
@@ -651,23 +674,37 @@ export default function AgendarCitaDatos({
                     </div>
 
                     <form className="agendar-form" onSubmit={manejarAvanzarPaso2} noValidate>
-                      {/* Selector de Centro de Salud (`clinicas`) para elegir o cambiar el centro ahí mismo */}
+                      {/* Selector de Centro de Salud (`clinicas`) */}
                       <div className="agendar-step2-section">
                         <label htmlFor="agendar-centro-select" className="agendar-label">
                           Centro o unidad de salud *
                         </label>
-                        <select
-                          id="agendar-centro-select"
-                          value={clinicaActiva?.id_clinica || ''}
-                          onChange={(e) => manejarCambioClinica(e.target.value)}
-                          className="agendar-select"
-                        >
-                          {catalogoCentros.map((sede) => (
-                            <option key={sede.id_clinica} value={sede.id_clinica}>
-                              {sede.nombre} — {sede.municipio || 'Oaxaca'}
-                            </option>
-                          ))}
-                        </select>
+                        {cargandoClinicas ? (
+                          <div className="agendar-skeleton-box" aria-label="Cargando establecimientos disponibles" role="status" />
+                        ) : errorClinicas ? (
+                          <div className="auth-error-alert" role="alert">
+                            {errorClinicas}{' '}
+                            {typeof onReintentarClinicas === 'function' && (
+                              <button type="button" className="agendar-back-link" onClick={onReintentarClinicas}>
+                                Reintentar
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <FiltroDesplegable
+                            value={idClinicaElegida}
+                            onChange={manejarCambioClinica}
+                            ariaLabel="Centro o unidad de salud"
+                            placeholder="Selecciona un establecimiento"
+                            searchable
+                            searchPlaceholder="Buscar por clínica o municipio…"
+                            emptyMessage="No hay establecimientos habilitados que coincidan."
+                            options={catalogoCentros.map((sede) => ({
+                              value: sede.id_clinica,
+                              label: `${sede.nombre} — ${sede.municipio || 'Oaxaca'}`,
+                            }))}
+                          />
+                        )}
                       </div>
 
                       {/* Fila 1: Nombre(s) * y Apellidos * */}
@@ -804,7 +841,11 @@ export default function AgendarCitaDatos({
                             </Link>
                           )}
 
-                          <button type="submit" className="agendar-submit-btn">
+                          <button
+                            type="submit"
+                            className="agendar-submit-btn"
+                            disabled={!clinicaActiva || cargandoClinicas}
+                          >
                             <span className="agendar-submit-btn-text">Elegir fecha y hora</span>
                             <ArrowRight size={13} color="#FFFFFF" aria-hidden="true" />
                           </button>
@@ -831,9 +872,20 @@ export default function AgendarCitaDatos({
 
                     <form className="agendar-form" onSubmit={manejarAvanzarPaso3} noValidate>
                       {esperandoEspacios && (
-                        <p className="agendar-form-subtitle" role="status">
-                          Consultando los horarios disponibles del centro…
-                        </p>
+                        <div className="agendar-loading-skeletons" role="status" aria-label="Consultando servicios, fechas y horarios disponibles">
+                          <div className="agendar-skeleton-box" />
+                          <div className="agendar-skeleton-row">
+                            <div className="agendar-skeleton-chip" />
+                            <div className="agendar-skeleton-chip" />
+                            <div className="agendar-skeleton-chip" />
+                          </div>
+                          <div className="agendar-skeleton-row">
+                            <div className="agendar-skeleton-slot" />
+                            <div className="agendar-skeleton-slot" />
+                            <div className="agendar-skeleton-slot" />
+                            <div className="agendar-skeleton-slot" />
+                          </div>
+                        </div>
                       )}
                       {errorEspacios && (
                         <div className="auth-error-alert" role="alert">
@@ -857,31 +909,28 @@ export default function AgendarCitaDatos({
                         </p>
                       )}
                       {/* 1. Servicio requerido (`clinicas_servicios` -> `id_clinica_servicio`) */}
+                      {!esperandoEspacios && (
                       <div className="agendar-step2-section">
-                        <label htmlFor="agendar-servicio-select" className="agendar-label">
+                        <span className="agendar-label">
                           Servicio solicitado en {nombreCentro} *
-                        </label>
-                        <select
-                          id="agendar-servicio-select"
+                        </span>
+                        <FiltroDesplegable
                           value={servicioSeleccionadoObj?.id_clinica_servicio || ''}
-                          onChange={(e) => {
-                            setIdClinicaServicioSeleccionado(e.target.value);
+                          onChange={(valor) => {
+                            setIdClinicaServicioSeleccionado(valor);
                             setFechaSeleccionadaIso('');
                             setIdEspacioSeleccionado('');
                           }}
-                          className="agendar-select"
-                          disabled={esperandoEspacios || Boolean(errorEspacios)}
-                        >
-                          {serviciosClinica.map((srv) => (
-                            <option
-                              key={srv.id_clinica_servicio}
-                              value={srv.id_clinica_servicio}
-                            >
-                              {srv.nombre} ({srv.categoria})
-                            </option>
-                          ))}
-                        </select>
+                          ariaLabel={`Servicio solicitado en ${nombreCentro}`}
+                          placeholder="Selecciona un servicio"
+                          disabled={esperandoEspacios || Boolean(errorEspacios) || serviciosClinica.length === 0}
+                          options={serviciosClinica.map((srv) => ({
+                            value: srv.id_clinica_servicio,
+                            label: `${srv.nombre} (${srv.categoria})`,
+                          }))}
+                        />
                       </div>
+                      )}
 
                       {/* 2. Selección de día (`horarios_atencion` / `fecha_hora_inicio`) */}
                       <div className="agendar-step2-section">
@@ -932,24 +981,25 @@ export default function AgendarCitaDatos({
                                 aria-checked={seleccionado}
                                 disabled={!esp.habilitado}
                                 onClick={() => setIdEspacioSeleccionado(esp.id_espacio)}
-                                className={`agendar-slot-btn ${seleccionado ? 'is-selected' : ''
-                                  } ${!esp.habilitado ? 'is-disabled' : ''}`}
+                                className={`agendar-slot-btn ${seleccionado ? 'is-selected' : ''} ${esp.esPasado ? 'is-elapsed' : !esp.habilitado ? 'is-disabled' : ''}`}
                               >
-                                <Clock
-                                  size={13}
-                                  color={
-                                    !esp.habilitado
-                                      ? '#9AA39F'
-                                      : seleccionado
-                                        ? '#FFFFFF'
-                                        : '#001D14'
-                                  }
-                                  aria-hidden="true"
-                                />
-                                <span>{esp.etiqueta}</span>
-                                {!esp.habilitado && (
-                                  <span className="agendar-slot-status">Ocupado</span>
+                                {esp.esPasado ? (
+                                  <Ban size={13} color="#7C8581" aria-hidden="true" />
+                                ) : esp.estaOcupado ? (
+                                  <Lock size={13} color="#9AA39F" aria-hidden="true" />
+                                ) : (
+                                  <Clock
+                                    size={13}
+                                    color={seleccionado ? '#FFFFFF' : '#001D14'}
+                                    aria-hidden="true"
+                                  />
                                 )}
+                                <span>{esp.etiqueta}</span>
+                                {esp.esPasado ? (
+                                  <span className="agendar-slot-status">Horario transcurrido</span>
+                                ) : esp.estaOcupado ? (
+                                  <span className="agendar-slot-status">Ocupado</span>
+                                ) : null}
                               </button>
                             );
                           })}
@@ -1045,9 +1095,9 @@ export default function AgendarCitaDatos({
                     {/* Estado de guardado: esperando la respuesta del servidor */}
                     {enviandoCita && !citaRegistrada && (
                       <div className="agendar-confirmed-banner" role="status">
-                        <Clock size={20} color="#001D14" aria-hidden="true" />
+                        <Loader2 size={20} color="#001D14" className="agendar-spin" aria-hidden="true" />
                         <div>
-                          <strong>Guardando tu cita…</strong>
+                          <strong>Agendando tu cita…</strong>
                           <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#414845' }}>
                             Estamos reservando el horario en el servidor. No cierres esta página.
                           </p>
@@ -1180,19 +1230,24 @@ export default function AgendarCitaDatos({
                               type="button"
                               onClick={() => setPasoActual(2)}
                               className="agendar-back-link"
+                              disabled={enviandoCita}
                             >
                               <ArrowLeft size={13} color="#414845" aria-hidden="true" />
-                              <span>Cambiar fecha u hora</span>
+                              <span>{errorSolicitudCita ? 'Elegir otro horario' : 'Cambiar fecha u hora'}</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => setMostrarModalConfirmarCita(true)}
                               className="agendar-submit-btn"
-                              disabled={enviandoCita}
+                              disabled={enviandoCita || !espacioSeleccionadoObj}
                             >
-                              <span className="agendar-submit-btn-text">Confirmar cita</span>
-                              <Check size={14} color="#FFFFFF" aria-hidden="true" />
+                              <span className="agendar-submit-btn-text">
+                                {enviandoCita ? 'Agendando tu cita…' : 'Confirmar cita'}
+                              </span>
+                              {enviandoCita
+                                ? <Loader2 size={14} color="#FFFFFF" className="agendar-spin" aria-hidden="true" />
+                                : <Check size={14} color="#FFFFFF" aria-hidden="true" />}
                             </button>
                           </>
                         ) : (
