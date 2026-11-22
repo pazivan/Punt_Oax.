@@ -1,23 +1,230 @@
-.conocenos-page { min-height: 100vh; background: #f9f9f8; color: #191c1c; font-family: var(--sans); }
-.conocenos-header { max-width: 1200px; margin: auto; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.conocenos-logo { display: inline-flex; align-items: center; gap: 10px; font: bold 24px Georgia, 'Times New Roman', serif; color: #001d14; text-decoration: none; }
-.conocenos-logo-img { width: 34px; height: 34px; border-radius: 8px; display: block; flex-shrink: 0; }
-.conocenos-logo span { color: #43a882; }
-.conocenos-header nav { display: flex; gap: 20px; align-items: center; }
-.conocenos-header a { color: #123b2d; }
-.conocenos-salir { background: transparent; border: 1px solid #103328; color: #001d14; padding: 10px 16px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
-.conocenos-register, .conocenos-cta { background: #103328; color: #fff !important; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; }
-.conocenos-hero { max-width: 1200px; margin: 20px auto 0; padding: 64px 48px; border-radius: 18px; background: #001d14; color: #fff; display: grid; grid-template-columns: 1.3fr 1fr; align-items: center; gap: 40px; }
-.conocenos-eyebrow { color: #b8f5dc; font-size: 12px; letter-spacing: .13em; font-weight: 700; }
-.conocenos-hero h1 { font: 600 clamp(32px, 4vw, 52px)/1.12 var(--serif); margin: 18px 0; color: #ffffff; }
-.conocenos-hero p { color: #e0f1e9; max-width: 570px; line-height: 1.65; margin-bottom: 34px; }
-.conocenos-cta { display: inline-flex; align-items: center; gap: 12px; background: #e0f1e9; color: #001d14 !important; }
-.conocenos-preview { min-height: 260px; border: 1px solid #6d9b86; border-radius: 14px; background: radial-gradient(circle at 60% 50%, #245c47, #103328); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #fff; font: 600 22px var(--serif); }
-.conocenos-details { max-width: 1200px; margin: 28px auto; padding: 0 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.conocenos-details article { background: #fff; border: 1px solid #d6e6e0; border-radius: 12px; padding: 26px; }
-.conocenos-details svg { color: #103328; }
-.conocenos-details h2 { font-size: 19px; margin: 12px 0; color: #001d14; }
-.conocenos-details p { color: #46534e; line-height: 1.6; }
-.conocenos-page a:focus-visible, .conocenos-page button:focus-visible { outline: 3px solid #2b8060; outline-offset: 3px; }
-@media (max-width: 800px) { .conocenos-hero { margin: 10px 16px; padding: 36px 24px; grid-template-columns: 1fr; } .conocenos-preview { min-height: 130px; } .conocenos-details { margin: 18px auto; grid-template-columns: 1fr; } }
-@media (max-width: 420px) { .conocenos-header { padding: 16px; } .conocenos-header nav { gap: 10px; font-size: 13px; } .conocenos-register { padding: 10px; } }
+.conocenos-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f9f9f8;
+  color: #191c1c;
+  font-family: var(--sans);
+}
+
+.conocenos-page *,
+.conocenos-page *::before,
+.conocenos-page *::after {
+  box-sizing: border-box;
+}
+
+.conocenos-header {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.conocenos-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: bold 24px Georgia, 'Times New Roman', serif;
+  color: #001d14;
+  text-decoration: none;
+}
+
+.conocenos-logo-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.conocenos-logo span {
+  color: #43a882;
+}
+
+.conocenos-header nav {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.conocenos-header a {
+  color: #123b2d;
+}
+
+.conocenos-salir {
+  background: transparent;
+  border: 1px solid #103328;
+  color: #001d14;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.conocenos-register,
+.conocenos-cta {
+  background: #103328;
+  color: #fff !important;
+  text-decoration: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.conocenos-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+}
+
+.conocenos-hero {
+  width: 100%;
+  padding: 36px 40px;
+  border-radius: 18px;
+  background: #001d14;
+  color: #fff;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  align-items: center;
+  gap: 32px;
+}
+
+.conocenos-eyebrow {
+  color: #b8f5dc;
+  font-size: 12px;
+  letter-spacing: .13em;
+  font-weight: 700;
+}
+
+.conocenos-hero h1 {
+  font: 600 clamp(28px, 3.4vw, 44px)/1.12 var(--serif);
+  margin: 14px 0;
+  color: #ffffff;
+}
+
+.conocenos-hero p {
+  color: #e0f1e9;
+  max-width: 570px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.conocenos-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: #e0f1e9;
+  color: #001d14 !important;
+}
+
+.conocenos-preview {
+  min-height: 214px;
+  padding: 14px;
+  border: 1px solid #6d9b86;
+  border-radius: 14px;
+  background: radial-gradient(circle at 60% 50%, #245c47, #103328);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #fff;
+  font: 600 20px var(--serif);
+}
+
+.conocenos-preview-img {
+  width: 100%;
+  height: 152px;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+
+.conocenos-details {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.conocenos-details article {
+  background: #fff;
+  border: 1px solid #d6e6e0;
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+
+.conocenos-details svg {
+  color: #103328;
+}
+
+.conocenos-details h2 {
+  font-size: 18px;
+  margin: 10px 0 8px;
+  color: #001d14;
+}
+
+.conocenos-details p {
+  color: #46534e;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.conocenos-page a:focus-visible,
+.conocenos-page button:focus-visible {
+  outline: 3px solid #2b8060;
+  outline-offset: 3px;
+}
+
+@media (max-width: 800px) {
+  .conocenos-main {
+    justify-content: flex-start;
+    padding: 4px 16px 24px;
+    gap: 16px;
+  }
+
+  .conocenos-hero {
+    padding: 28px 22px;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .conocenos-preview {
+    min-height: 160px;
+  }
+
+  .conocenos-preview-img {
+    height: 128px;
+  }
+
+  .conocenos-details {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .conocenos-header {
+    padding: 14px 16px;
+  }
+
+  .conocenos-header nav {
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .conocenos-register {
+    padding: 10px;
+  }
+}

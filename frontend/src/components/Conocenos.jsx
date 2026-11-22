@@ -25,7 +25,7 @@ export default function Conocenos({ sesion, perfil, onSalir }) {
         )}
       </nav>
     </header>
-    <main>
+    <main className="conocenos-main">
       <section className="conocenos-hero">
         <div>
           <span className="conocenos-eyebrow">CONÓCENOS · SALUD EN OAXACA</span>
@@ -37,7 +37,7 @@ export default function Conocenos({ sesion, perfil, onSalir }) {
           <img
             src="/img/oaxaca-panel-ilustracion.svg"
             alt=""
-            style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '10px' }}
+            className="conocenos-preview-img"
           />
           <span>PuntOax · Oaxaca</span>
         </div>
