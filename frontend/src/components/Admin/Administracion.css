@@ -360,3 +360,193 @@
     justify-content: space-between;
   }
 }
+
+/* Calendarios y cupos (Etapa 4) */
+.admin-calendario-horarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-calendario-horario-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: #f4f8f5;
+  border: 1px solid #e1eae4;
+  font-size: 12px;
+  color: #365440;
+}
+
+.admin-calendario-horario-pill strong {
+  color: #103328;
+}
+
+.admin-calendario-dias {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(126px, 1fr));
+  gap: 8px;
+}
+
+.admin-calendario-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e1eae4;
+  background: #fbfcfb;
+  text-align: left;
+  color: #1c3028;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+
+.admin-calendario-dia:hover {
+  border-color: #9ec2b2;
+  background: #f4f9f6;
+}
+
+.admin-calendario-dia.activo {
+  border-color: #103328;
+  background: #eaf4ed;
+  box-shadow: 0 2px 8px rgba(16, 51, 40, .1);
+}
+
+.admin-calendario-dia.bloqueado {
+  background: #fff8f7;
+  border-color: #f0d6d4;
+}
+
+.admin-calendario-dia-fecha {
+  font-size: 12px;
+  font-weight: 700;
+  color: #143626;
+  text-transform: capitalize;
+}
+
+.admin-calendario-dia-meta {
+  font-size: 11px;
+  color: #5b7064;
+}
+
+.admin-calendario-dia-etiqueta {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #e7f5eb;
+  color: #207c50;
+}
+
+.admin-calendario-dia-etiqueta.is-alerta {
+  background: #fce9e9;
+  color: #b64742;
+}
+
+.admin-calendario-dia-etiqueta.is-vacio {
+  background: #eff1ee;
+  color: #6b7d71;
+}
+
+.admin-calendario-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-calendario-nav-botones {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-calendario-desplegables {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-calendario-desplegable {
+  border: 1px solid #e4e9e5;
+  border-radius: 10px;
+  background: #fbfcfb;
+  padding: 12px 14px;
+}
+
+.admin-calendario-desplegable summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  color: #143626;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-calendario-desplegable summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-calendario-lista-compacta {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.admin-calendario-lista-compacta li {
+  font-size: 12px;
+  color: #425d53;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #ebefec;
+}
+
+@media (max-width: 760px) {
+  .admin-calendario-desplegables {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mapa integrado dentro de /admin/mapa */
+.admin-mapa-wrap .mapa-page {
+  min-height: auto;
+  background: transparent;
+}
+
+.admin-mapa-wrap .mapa-main {
+  padding-top: 0;
+}
+
+.admin-mapa-wrap .mapa-background-wrap {
+  padding-top: 0;
+  padding-bottom: 12px;
+}
+
+.admin-mapa-wrap .mapa-container {
+  padding-left: 0;
+  padding-right: 0;
+  max-width: 100%;
+}
+
+.admin-app.is-mapa-expandido .admin-aside {
+  display: none;
+}
+
+.admin-app.is-mapa-expandido .admin-cuerpo {
+  max-width: 100%;
+  padding: 18px 20px 28px;
+}

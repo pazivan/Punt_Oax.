@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle, ArrowLeft, ArrowRight, Building2, CalendarDays, Check,
-  CheckCircle2, ChevronRight, CircleHelp, ClipboardList, Clock3,
+  CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, ClipboardList, Clock3,
   Download, ExternalLink, Eye, EyeOff, FileText, Globe, LayoutDashboard, LoaderCircle,
-  LogOut, Mail, Map as MapIcon, MapPin, Phone, RefreshCw, Search, ShieldCheck,
+  LogOut, Mail, Map as MapIcon, MapPin, Maximize2, Minimize2, Phone, RefreshCw, Search, ShieldCheck,
   SlidersHorizontal, User, Users, X, XCircle,
 } from 'lucide-react'
 import {
@@ -15,6 +15,8 @@ import {
   resolverSolicitudAdmin,
 } from '../../api/admin.js'
 import Paginacion from './Paginacion.jsx'
+import MapaCentros from '../Inicio/MapaCentros.jsx'
+import '../Clinica/AgendaClinica.css'
 import { describirErrorConsulta } from '../../utils/erroresConsulta.js'
 import L from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
@@ -1252,98 +1254,292 @@ function ListaCitasAdmin({ onSalir }) {
   </>
 }
 
+function formatearDiaCortoMexico(fechaIso) {
+  if (!fechaIso) return ''
+  const d = new Date(`${fechaIso}T12:00:00Z`)
+  if (Number.isNaN(d.getTime())) return fechaIso
+  return new Intl.DateTimeFormat('es-MX', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  }).format(d)
+}
+
+function formatearHoraMexico(fechaIso) {
+  if (!fechaIso) return 'Sin hora'
+  const d = new Date(fechaIso)
+  if (Number.isNaN(d.getTime())) return 'Sin hora'
+  return new Intl.DateTimeFormat('es-MX', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'America/Mexico_City',
+  }).format(d)
+}
+
 function SupervisionCalendariosAdmin({ onSalir }) {
   const [idClinica, setIdClinica] = useState('')
+  const [fechaSeleccionada, setFechaSeleccionada] = useState('')
+  const [pagina, setPagina] = useState(1)
+  const [limite, setLimite] = useState(10)
   const [datos, setDatos] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [recarga, setRecarga] = useState(0)
 
+  const fechaConsulta = fechaSeleccionada || undefined
+
   useEffect(() => {
     let activo = true
-    consultarCalendarioAdmin(idClinica)
-      .then((res) => { if (activo) { setDatos(res); setError('') } })
+    consultarCalendarioAdmin(idClinica, { fecha: fechaConsulta, page: pagina, limit: limite })
+      .then((res) => {
+        if (!activo) return
+        setDatos(res)
+        if (!fechaSeleccionada && Array.isArray(res?.dias) && res.dias.length > 0) {
+          const primerConCupo = res.dias.find((d) => d.total > 0) || res.dias[0]
+          if (primerConCupo?.fecha) {
+            setFechaSeleccionada(primerConCupo.fecha)
+          }
+        }
+        setError('')
+      })
       .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
-  }, [idClinica, recarga])
+  }, [idClinica, fechaConsulta, pagina, limite, recarga, fechaSeleccionada])
 
   const clinicas = Array.isArray(datos?.clinicas) ? datos.clinicas : []
   const clinica = datos?.clinica
   const horarios = Array.isArray(datos?.horarios) ? datos.horarios : []
+  const dias = Array.isArray(datos?.dias) ? datos.dias : []
   const espacios = Array.isArray(datos?.espacios) ? datos.espacios : []
   const bloqueados = Array.isArray(datos?.bloqueados) ? datos.bloqueados : []
   const festivos = Array.isArray(datos?.festivos) ? datos.festivos : []
+  const total = Number.isInteger(datos?.total) ? datos.total : espacios.length
+  const totalPaginas = Number.isInteger(datos?.total_paginas) ? datos.total_paginas : 1
+
+  const fechaActiva = fechaSeleccionada || dias[0]?.fecha || ''
+  const indiceDia = dias.findIndex((d) => d.fecha === fechaActiva)
+  const infoDiaActivo = indiceDia >= 0 ? dias[indiceDia] : null
+
+  function cambiarClinica(nuevoId) {
+    setCargando(true)
+    setIdClinica(nuevoId)
+    setFechaSeleccionada('')
+    setPagina(1)
+  }
+
+  function seleccionarDia(nuevaFecha) {
+    setCargando(true)
+    setFechaSeleccionada(nuevaFecha)
+    setPagina(1)
+  }
 
   function recargar() { setCargando(true); setRecarga((v) => v + 1) }
 
   return <>
-    <Encabezado titulo="Calendarios y disponibilidad" descripcion="Supervisión de horarios de atención, cupos próximos y días bloqueados por clínica." onSalir={onSalir}
+    <Encabezado titulo="Calendarios y cupos" descripcion="Consulta de horarios, disponibilidad por día y cupos de los próximos 15 días (solo lectura)." onSalir={onSalir}
       acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>} />
     <div className="admin-cuerpo">
       {error && <ErrorCarga error={error} reintentar={recargar} recurso="los calendarios" />}
       {!error && (
-        <section className="admin-panel admin-detalle-bloque" aria-label="Selector de clínica">
-          <div className="admin-herramientas" style={{ padding: 0, marginBottom: '16px' }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 280px' }}>
-              <strong style={{ fontSize: '12px', color: '#365440' }}>Seleccionar clínica</strong>
-              <select
-                value={idClinica || clinica?.id_clinica || ''}
-                onChange={(e) => { setCargando(true); setIdClinica(e.target.value) }}
-                style={{ padding: '10px 12px', borderRadius: '9px', border: '1px solid #d9e2dc', background: '#fff', color: '#143626', font: 'inherit' }}
-              >
-                {clinicas.map((c) => (
-                  <option key={c.id_clinica} value={c.id_clinica}>
-                    {c.nombre} ({c.municipio || 'Oaxaca'}) · {etiquetaEstado(c.estado_publicacion)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {clinica && (
-              <Link to={`/admin/clinicas/${clinica.id_clinica}`} className="admin-btn admin-btn--outline">
-                Ver ficha de clínica <ChevronRight size={16} />
-              </Link>
-            )}
-          </div>
-          {cargando ? <Cargando mensaje="Consultando calendario y cupos…" /> : !clinica ? (
-            <div className="admin-sin-datos"><CalendarDays size={30} /><strong>No hay clínicas disponibles</strong><p>Aún no hay clínicas aprobadas o suspendidas para consultar su agenda.</p></div>
-          ) : (
-            <div className="admin-detalle-grid">
-              <div className="admin-detalle-contenido">
-                <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><Clock3 size={19} /><h2>Horarios de atención semanales</h2></div>
-                  {horarios.length ? <div className="admin-horarios">{horarios.map((h, i) => <div className="admin-horario" key={i}><span>{DIAS[Number(h.dia_semana)] || 'Día'}</span><strong>{h.es_24_horas ? '24 horas' : `${texto(h.apertura)} – ${texto(h.cierre)}${h.cruza_medianoche ? ' (nocturno)' : ''}`}</strong></div>)}</div> : <p className="admin-vacio-pequeno">Sin horarios configurados.</p>}
-                </section>
-                <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><CalendarDays size={19} /><h2>Cupos próximos (15 días) <span className="admin-contador">{espacios.length}</span></h2></div>
-                  {espacios.length ? <div className="admin-tabla-wrap"><table className="admin-tabla"><thead><tr><th>Fecha y hora</th><th>Servicio</th><th>Estado</th></tr></thead><tbody>
-                    {espacios.map((e) => <tr key={e.id_espacio}>
-                      <td data-label="Fecha y hora">{fechaHoraMexico(e.fecha_hora_inicio)}</td>
-                      <td data-label="Servicio">{texto(e.nombre_servicio)}</td>
-                      <td data-label="Estado">
-                        <span className={`admin-estado admin-estado--${e.ocupado ? 'pendiente' : e.habilitado ? 'aprobada' : 'suspendida'}`}>
-                          <span aria-hidden="true" className="admin-estado-punto" />
-                          {e.ocupado ? 'Reservado' : e.habilitado ? 'Disponible' : 'Deshabilitado'}
-                        </span>
-                      </td>
-                    </tr>)}</tbody></table></div> : <p className="admin-vacio-pequeno">No hay cupos publicados para los próximos 15 días.</p>}
-                </section>
-              </div>
-              <aside className="admin-detalle-lateral">
-                <section className="admin-panel admin-detalle-bloque"><div className="admin-seccion-titulo"><EyeOff size={19} /><h2>Días bloqueados</h2></div>
-                  {bloqueados.length ? <div className="admin-items">{bloqueados.map((b) => <div className="admin-item" key={b.fecha}><strong>{b.fecha}</strong><p>{b.motivo || 'Sin motivo especificado'}</p></div>)}</div> : <p className="admin-vacio-pequeno">Sin días bloqueados en los próximos 15 días.</p>}
-                </section>
-                <section className="admin-panel admin-detalle-bloque" style={{ marginTop: '17px' }}><div className="admin-seccion-titulo"><CalendarDays size={19} /><h2>Días festivos oficiales</h2></div>
-                  {festivos.length ? <div className="admin-items">{festivos.map((f) => <div className="admin-item" key={f.fecha}><strong>{f.fecha}</strong><p>{f.nombre}</p></div>)}</div> : <p className="admin-vacio-pequeno">Sin días festivos en los próximos 15 días.</p>}
-                </section>
-              </aside>
+        <div className="admin-detalle-contenido">
+          <section className="admin-panel admin-detalle-bloque" aria-label="Selector de clínica y horarios">
+            <div className="admin-herramientas" style={{ padding: 0, marginBottom: '14px' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 280px' }}>
+                <strong style={{ fontSize: '12px', color: '#365440' }}>Seleccionar clínica</strong>
+                <select
+                  value={idClinica || clinica?.id_clinica || ''}
+                  onChange={(e) => cambiarClinica(e.target.value)}
+                  style={{ padding: '10px 12px', borderRadius: '9px', border: '1px solid #d9e2dc', background: '#fff', color: '#143626', font: 'inherit' }}
+                >
+                  {clinicas.map((c) => (
+                    <option key={c.id_clinica} value={c.id_clinica}>
+                      {c.nombre} ({c.municipio || 'Oaxaca'}) · {etiquetaEstado(c.estado_publicacion)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {clinica && (
+                <Link to={`/admin/clinicas/${clinica.id_clinica}`} className="admin-btn admin-btn--outline">
+                  Ver ficha de clínica <ChevronRight size={16} />
+                </Link>
+              )}
             </div>
-          )}
-        </section>
+
+            {clinica && (
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#5b7064', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '8px' }}>
+                  Horarios semanales de atención
+                </div>
+                {horarios.length ? (
+                  <div className="admin-calendario-horarios">
+                    {horarios.map((h, i) => (
+                      <span className="admin-calendario-horario-pill" key={i}>
+                        <strong>{DIAS[Number(h.dia_semana)] || 'Día'}</strong>
+                        <span>{h.es_24_horas ? '24 h' : `${texto(h.apertura)}–${texto(h.cierre)}${h.cruza_medianoche ? ' (noc.)' : ''}`}</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : <p className="admin-vacio-pequeno">Sin horarios semanales configurados.</p>}
+              </div>
+            )}
+          </section>
+
+          {cargando && !datos ? <Cargando mensaje="Consultando calendario y cupos…" /> : !clinica ? (
+            <div className="admin-sin-datos"><CalendarDays size={30} /><strong>No hay clínicas disponibles</strong><p>Aún no hay clínicas aprobadas o suspendidas para consultar su agenda.</p></div>
+          ) : <>
+            <section className="admin-panel admin-detalle-bloque" aria-label="Calendario de próximos 15 días">
+              <div className="admin-calendario-nav" style={{ marginBottom: '14px' }}>
+                <div className="admin-seccion-titulo" style={{ borderBottom: 0, paddingBottom: 0, marginBottom: 0 }}>
+                  <CalendarDays size={19} />
+                  <h2>Próximos 15 días (hora de Oaxaca)</h2>
+                </div>
+                {dias.length > 0 && (
+                  <div className="admin-calendario-nav-botones">
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--outline"
+                      disabled={indiceDia <= 0}
+                      onClick={() => indiceDia > 0 && seleccionarDia(dias[indiceDia - 1].fecha)}
+                    >
+                      <ChevronLeft size={16} aria-hidden="true" /> Día anterior
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--outline"
+                      disabled={indiceDia < 0 || indiceDia >= dias.length - 1}
+                      onClick={() => indiceDia >= 0 && indiceDia < dias.length - 1 && seleccionarDia(dias[indiceDia + 1].fecha)}
+                    >
+                      Día siguiente <ChevronRight size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="admin-calendario-dias" role="listbox" aria-label="Seleccionar fecha">
+                {dias.map((d) => {
+                  const activo = d.fecha === fechaActiva
+                  return (
+                    <button
+                      key={d.fecha}
+                      type="button"
+                      role="option"
+                      aria-selected={activo}
+                      className={`admin-calendario-dia ${activo ? 'activo' : ''} ${d.bloqueado || d.festivo ? 'bloqueado' : ''}`}
+                      onClick={() => seleccionarDia(d.fecha)}
+                    >
+                      <span className="admin-calendario-dia-fecha">{formatearDiaCortoMexico(d.fecha)}</span>
+                      <span className="admin-calendario-dia-meta">{d.fecha}</span>
+                      {d.bloqueado ? (
+                        <span className="admin-calendario-dia-etiqueta is-alerta">Bloqueado</span>
+                      ) : d.festivo ? (
+                        <span className="admin-calendario-dia-etiqueta is-alerta">Festivo</span>
+                      ) : d.total > 0 ? (
+                        <span className="admin-calendario-dia-etiqueta">{d.disponibles} disp. · {d.total} total</span>
+                      ) : (
+                        <span className="admin-calendario-dia-etiqueta is-vacio">Sin cupos</span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="admin-panel" aria-label="Cupos del día seleccionado">
+              <div className="admin-panel-header">
+                <div>
+                  <span className="admin-eyebrow">DISPONIBILIDAD DEL DÍA</span>
+                  <h2>
+                    Cupos para {fechaActiva ? `${formatearDiaCortoMexico(fechaActiva)} (${fechaActiva})` : 'la fecha seleccionada'}{' '}
+                    <span className="admin-contador">{total}</span>
+                  </h2>
+                  {infoDiaActivo && (
+                    <p>
+                      {infoDiaActivo.bloqueado
+                        ? `Día bloqueado${infoDiaActivo.motivo_bloqueo ? `: ${infoDiaActivo.motivo_bloqueo}` : '.'}`
+                        : infoDiaActivo.festivo
+                          ? `Día festivo oficial: ${infoDiaActivo.festivo}.`
+                          : `${infoDiaActivo.disponibles} disponibles, ${infoDiaActivo.reservados} reservados, ${infoDiaActivo.deshabilitados} deshabilitados.`}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {cargando ? <Cargando mensaje="Cargando cupos del día…" /> : espacios.length ? <>
+                <div className="admin-tabla-wrap">
+                  <table className="admin-tabla">
+                    <thead><tr><th>Hora (Oaxaca)</th><th>Servicio</th><th>Estado</th></tr></thead>
+                    <tbody>
+                      {espacios.map((e) => (
+                        <tr key={e.id_espacio}>
+                          <td data-label="Hora"><span className="admin-celda-icon"><Clock3 size={15} />{formatearHoraMexico(e.fecha_hora_inicio)} h</span></td>
+                          <td data-label="Servicio"><strong>{texto(e.nombre_servicio)}</strong></td>
+                          <td data-label="Estado">
+                            <span className={`agenda-estado ${e.ocupado ? 'is-ocupado' : e.habilitado ? 'is-disponible' : 'is-deshabilitado'}`}>
+                              {e.ocupado ? 'Reservado' : e.habilitado ? 'Disponible' : 'Deshabilitado'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {total > 10 && (
+                  <Paginacion
+                    paginaActual={pagina}
+                    totalPaginas={totalPaginas}
+                    totalRegistros={total}
+                    limite={limite}
+                    mostrando={espacios.length}
+                    onCambiarPagina={setPagina}
+                    onCambiarLimite={(nuevoLimite) => { setLimite(nuevoLimite); setPagina(1) }}
+                    etiquetaRegistros="cupos"
+                  />
+                )}
+              </> : (
+                <div className="admin-sin-datos">
+                  <CalendarDays size={28} />
+                  <strong>No hay cupos para esta fecha</strong>
+                  <p>Selecciona otro día del calendario de 15 días o cambia de clínica para consultar su disponibilidad.</p>
+                </div>
+              )}
+            </section>
+
+            <div className="admin-calendario-desplegables">
+              <details className="admin-calendario-desplegable" open={bloqueados.length > 0 && bloqueados.length <= 4}>
+                <summary>
+                  <span>Días bloqueados ({bloqueados.length})</span>
+                  <ChevronRight size={16} aria-hidden="true" />
+                </summary>
+                {bloqueados.length ? (
+                  <ul className="admin-calendario-lista-compacta">
+                    {bloqueados.map((b) => <li key={b.fecha}><strong>{b.fecha}</strong> · {b.motivo || 'Sin motivo especificado'}</li>)}
+                  </ul>
+                ) : <p className="admin-vacio-pequeno" style={{ marginTop: '8px' }}>Sin días bloqueados en los próximos 15 días.</p>}
+              </details>
+
+              <details className="admin-calendario-desplegable" open={festivos.length > 0 && festivos.length <= 4}>
+                <summary>
+                  <span>Días festivos oficiales ({festivos.length})</span>
+                  <ChevronRight size={16} aria-hidden="true" />
+                </summary>
+                {festivos.length ? (
+                  <ul className="admin-calendario-lista-compacta">
+                    {festivos.map((f) => <li key={f.fecha}><strong>{f.fecha}</strong> · {f.nombre}</li>)}
+                  </ul>
+                ) : <p className="admin-vacio-pequeno" style={{ marginTop: '8px' }}>Sin días festivos en los próximos 15 días.</p>}
+              </details>
+            </div>
+          </>}
+        </div>
       )}
     </div>
   </>
 }
 
-function MapaCentrosAdmin({ onSalir }) {
+function MapaCentrosAdmin({ sesion, onSalir, mapaExpandido, onAlternarExpandido }) {
   const [clinicas, setClinicas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -1371,47 +1567,51 @@ function MapaCentrosAdmin({ onSalir }) {
     return () => { activo = false }
   }, [recarga])
 
-  const conCoordenadas = clinicas.filter((c) => Number.isFinite(Number(c.latitud)) && Number.isFinite(Number(c.longitud)))
-  const centroOaxaca = conCoordenadas[0]
-    ? [Number(conCoordenadas[0].latitud), Number(conCoordenadas[0].longitud)]
-    : [17.0654, -96.7236]
+  useEffect(() => {
+    if (!mapaExpandido) return undefined
+    const manejarEscape = (e) => {
+      if (e.key === 'Escape') onAlternarExpandido(false)
+    }
+    window.addEventListener('keydown', manejarEscape)
+    return () => window.removeEventListener('keydown', manejarEscape)
+  }, [mapaExpandido, onAlternarExpandido])
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'))
+    }, 120)
+    return () => clearTimeout(id)
+  }, [mapaExpandido])
 
   function recargar() { setCargando(true); setRecarga((v) => v + 1) }
 
   return <>
-    <Encabezado titulo="Mapa de centros" descripcion="Supervisión geográfica de clínicas publicadas en el directorio de Oaxaca." onSalir={onSalir}
+    <Encabezado titulo="Mapa de centros" descripcion="Supervisión geográfica con filtros por servicio, municipio, horario, nivel de atención y modos de vista." onSalir={onSalir}
       acciones={<>
-        <Link to="/mapa" className="admin-btn admin-btn--outline">Abrir mapa completo <ExternalLink size={15} /></Link>
+        <button
+          type="button"
+          className="admin-btn admin-btn--outline"
+          onClick={() => onAlternarExpandido(!mapaExpandido)}
+        >
+          {mapaExpandido ? <Minimize2 size={16} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}
+          {mapaExpandido ? 'Restaurar panel' : 'Expandir mapa'}
+        </button>
         <button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>
       </>} />
     <div className="admin-cuerpo">
-      {error && <ErrorCarga error={error} reintentar={recargar} recurso="el mapa" />}
-      {cargando ? <Cargando mensaje="Cargando ubicaciones en el mapa…" /> : !error && (
-        <section className="admin-panel admin-detalle-bloque">
-          <div className="admin-panel-header" style={{ padding: '0 0 16px' }}>
-            <div>
-              <span className="admin-eyebrow">GEOLOCALIZACIÓN</span>
-              <h2>Centros visibles en el directorio <span className="admin-contador">{conCoordenadas.length}</span></h2>
-              <p>Se muestran {conCoordenadas.length} clínicas con coordenadas confirmadas de {clinicas.length} publicadas.</p>
-            </div>
-          </div>
-          {conCoordenadas.length ? (
-            <div style={{ height: '480px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #d9e2dc' }}>
-              <MapContainer center={centroOaxaca} zoom={12} style={{ width: '100%', height: '100%' }}>
-                <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                {conCoordenadas.map((c) => (
-                  <Marker key={c.id_clinica} position={[Number(c.latitud), Number(c.longitud)]} icon={crearPinAdmin('#103328')}>
-                    <Popup>
-                      <strong>{texto(c.nombre)}</strong><br />
-                      <span>{texto(c.municipio)}</span><br />
-                      <Link to={`/admin/clinicas/${c.id_clinica}`}>Ver ficha administrativa</Link>
-                    </Popup>
-                  </Marker>
-                ))}
-              </MapContainer>
-            </div>
-          ) : <div className="admin-sin-datos"><MapPin size={30} /><strong>No hay centros con ubicación confirmada</strong><p>Las clínicas aprobadas con coordenadas aparecerán aquí.</p></div>}
-        </section>
+      {error ? (
+        <ErrorCarga error={error} reintentar={recargar} recurso="el mapa" />
+      ) : (
+        <div className="admin-mapa-wrap">
+          <MapaCentros
+            sesion={sesion}
+            onSalir={onSalir}
+            clinicas={clinicas}
+            cargando={cargando}
+            sinEncabezado={true}
+            sinPie={true}
+          />
+        </div>
       )}
     </div>
   </>
@@ -1427,14 +1627,16 @@ export default function Administracion({
   listaClinicas = false,
   vistaAdmin = null,
 }) {
+  const [mapaExpandido, setMapaExpandido] = useState(false)
   const enDetalle = Boolean(idSolicitud || idClinica || idUsuario)
-  return <div className="admin-app"><Lateral perfil={sesion} onSalir={onSalir} detalle={enDetalle} />
+  const expandir = vistaAdmin === 'mapa' && mapaExpandido
+  return <div className={`admin-app ${expandir ? 'is-mapa-expandido' : ''}`}><Lateral perfil={sesion} onSalir={onSalir} detalle={enDetalle} />
     <div className="admin-contenedor"><main className="admin-main">
       {listaUsuarios ? <ListaUsuarios onSalir={onSalir} />
         : listaClinicas ? <ListaClinicasAdmin onSalir={onSalir} />
         : vistaAdmin === 'citas' ? <ListaCitasAdmin onSalir={onSalir} />
         : vistaAdmin === 'calendarios' ? <SupervisionCalendariosAdmin onSalir={onSalir} />
-        : vistaAdmin === 'mapa' ? <MapaCentrosAdmin onSalir={onSalir} />
+        : vistaAdmin === 'mapa' ? <MapaCentrosAdmin sesion={sesion} onSalir={onSalir} mapaExpandido={mapaExpandido} onAlternarExpandido={setMapaExpandido} />
         : idUsuario ? <DetalleUsuarioAdmin key={idUsuario} idUsuario={idUsuario} onSalir={onSalir} />
         : idClinica ? <DetalleClinicaAdmin key={idClinica} idClinica={idClinica} onSalir={onSalir} />
         : idSolicitud ? <DetalleSolicitud key={idSolicitud} idSolicitud={idSolicitud} onSalir={onSalir} />

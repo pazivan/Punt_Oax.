@@ -51,6 +51,7 @@ export default function MapaCentros({
   cargando = false,
   ComponenteMapa = MapaLeaflet,
   sinEncabezado = false,
+  sinPie = false,
 }) {
   const navigate = useNavigate();
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
@@ -722,7 +723,7 @@ export default function MapaCentros({
         </div>
       </main>
 
-      <PiePagina />
+      {!sinPie && <PiePagina />}
     </div>
   );
 }

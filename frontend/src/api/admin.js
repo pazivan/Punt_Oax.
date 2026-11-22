@@ -60,9 +60,12 @@ export function consultarCitasAdmin({ estado = 'todas', idClinica = '', q = '', 
   return enviarConSesion(`/api/admin/citas?${params.toString()}`)
 }
 
-export function consultarCalendarioAdmin(idClinica = '') {
+export function consultarCalendarioAdmin(idClinica = '', { fecha, page, limit } = {}) {
   const params = new URLSearchParams()
   if (idClinica) params.set('id_clinica', idClinica)
+  if (fecha) params.set('fecha', fecha)
+  if (page !== undefined) params.set('page', String(page))
+  if (limit !== undefined) params.set('limit', String(limit))
   const query = params.toString()
   return enviarConSesion(`/api/admin/calendarios${query ? `?${query}` : ''}`)
 }
@@ -94,19 +97,14 @@ export async function descargarDocumentoAdmin(idDocumento) {
       headers: { Authorization: `Bearer ${token}` },
     })
   } catch {
-    const error = new Error('No se pudo conectar con el servidor de documentos.')
-    error.codigo = 'ERROR_CONEXION'
-    throw error
+    throw new Error('No se pudo conectar con el servidor de documentos.')
   }
   if (!respuesta.ok) {
+    if ((respuesta.status === 401 || respuesta.status === 403) && leerSesion()?.token === token) {
+      cerrarSesion()
+    }
     const datos = await respuesta.json().catch(() => null)
-    if ((respuesta.status === 401 || (respuesta.status === 403 &&
-        ['TOKEN_EXPIRADO', 'TOKEN_INVALIDO', 'SESION_INVALIDA'].includes(datos?.codigo))) &&
-        leerSesion()?.token === token) cerrarSesion()
-    const error = new Error(datos?.error || `No se pudo descargar el documento (${respuesta.status}).`)
-    error.status = respuesta.status
-    error.codigo = datos?.codigo
-    throw error
+    throw new Error(datos?.error || `No se pudo descargar el documento (${respuesta.status}).`)
   }
   return respuesta.blob()
 }
