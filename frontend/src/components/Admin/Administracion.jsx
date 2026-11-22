@@ -4,7 +4,7 @@ import {
   AlertCircle, ArrowLeft, ArrowRight, Building2, CalendarDays, Check,
   CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, ClipboardList, Clock3,
   Download, ExternalLink, Eye, EyeOff, FileText, Globe, LayoutDashboard, LoaderCircle,
-  LogOut, Mail, Map as MapIcon, MapPin, Maximize2, Minimize2, Phone, RefreshCw, Search, ShieldCheck,
+  LogOut, Mail, Map as MapIcon, MapPin, Phone, Plus, RefreshCw, Search, ShieldCheck,
   SlidersHorizontal, User, Users, X, XCircle,
 } from 'lucide-react'
 import {
@@ -16,7 +16,11 @@ import {
 } from '../../api/admin.js'
 import Paginacion from './Paginacion.jsx'
 import MapaCentros from '../Inicio/MapaCentros.jsx'
+import EditorHorarios from '../Clinica/EditorHorarios.jsx'
+import SelectorUbicacionMapa from '../Clinica/SelectorUbicacionMapa.jsx'
+import { validarFichaCompleta, validarFormatoFicha } from '../../utils/validacionFicha.js'
 import '../Clinica/AgendaClinica.css'
+import '../Clinica/FichaClinica.css'
 import { describirErrorConsulta } from '../../utils/erroresConsulta.js'
 import L from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
@@ -781,7 +785,10 @@ function ListaClinicasAdmin({ onSalir }) {
 
   return <>
     <Encabezado titulo="Clínicas registradas" descripcion="Consulta todas las clínicas almacenadas en la plataforma y gestiona su visibilidad." onSalir={onSalir}
-      acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>} />
+      acciones={<>
+        <Link to="/admin/clinicas/nueva" className="admin-btn admin-btn--primario"><Plus size={17} />Registrar clínica</Link>
+        <button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>
+      </>} />
     <div className="admin-cuerpo">
       {error && <ErrorCarga error={error} reintentar={recargar} recurso="las clínicas registradas" />}
       {!error && <>
@@ -1278,6 +1285,53 @@ function formatearHoraMexico(fechaIso) {
   }).format(d)
 }
 
+function claveFechaOaxaca(valor) {
+  if (!valor) return ''
+  const d = new Date(valor)
+  if (Number.isNaN(d.getTime())) return ''
+  const partes = new Intl.DateTimeFormat('es-MX', {
+    timeZone: 'America/Mexico_City',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d)
+  const obtener = (tipo) => partes.find((p) => p.type === tipo)?.value || ''
+  return `${obtener('year')}-${obtener('month')}-${obtener('day')}`
+}
+
+function construirCalendario15Dias(hoyStr, espacios, bloqueados, festivos) {
+  const baseStr = hoyStr || claveFechaOaxaca(new Date().toISOString())
+  if (!baseStr) return []
+  const bloqueadosMap = new Map((bloqueados || []).map((b) => [b.fecha, b.motivo || null]))
+  const festivosMap = new Map((festivos || []).map((f) => [f.fecha, f.nombre]))
+  const conteoPorDia = new Map()
+
+  for (const esp of espacios || []) {
+    const f = claveFechaOaxaca(esp.fecha_hora_inicio)
+    if (!f) continue
+    const actual = conteoPorDia.get(f) || { total: 0, disponibles: 0, reservados: 0, deshabilitados: 0 }
+    actual.total += 1
+    if (esp.ocupado) actual.reservados += 1
+    else if (esp.habilitado) actual.disponibles += 1
+    else actual.deshabilitados += 1
+    conteoPorDia.set(f, actual)
+  }
+
+  return Array.from({ length: 15 }, (_, i) => {
+    const d = new Date(`${baseStr}T12:00:00Z`)
+    d.setUTCDate(d.getUTCDate() + i)
+    const f = d.toISOString().slice(0, 10)
+    const conteo = conteoPorDia.get(f) || { total: 0, disponibles: 0, reservados: 0, deshabilitados: 0 }
+    return {
+      fecha: f,
+      ...conteo,
+      bloqueado: bloqueadosMap.has(f),
+      motivo_bloqueo: bloqueadosMap.get(f) || null,
+      festivo: festivosMap.get(f) || null,
+    }
+  })
+}
+
 function SupervisionCalendariosAdmin({ onSalir }) {
   const [idClinica, setIdClinica] = useState('')
   const [fechaSeleccionada, setFechaSeleccionada] = useState('')
@@ -1288,40 +1342,49 @@ function SupervisionCalendariosAdmin({ onSalir }) {
   const [error, setError] = useState('')
   const [recarga, setRecarga] = useState(0)
 
-  const fechaConsulta = fechaSeleccionada || undefined
-
   useEffect(() => {
     let activo = true
-    consultarCalendarioAdmin(idClinica, { fecha: fechaConsulta, page: pagina, limit: limite })
+    consultarCalendarioAdmin(idClinica)
       .then((res) => {
         if (!activo) return
         setDatos(res)
-        if (!fechaSeleccionada && Array.isArray(res?.dias) && res.dias.length > 0) {
-          const primerConCupo = res.dias.find((d) => d.total > 0) || res.dias[0]
-          if (primerConCupo?.fecha) {
-            setFechaSeleccionada(primerConCupo.fecha)
-          }
-        }
         setError('')
       })
       .catch((err) => { if (activo) setError(err) })
       .finally(() => { if (activo) setCargando(false) })
     return () => { activo = false }
-  }, [idClinica, fechaConsulta, pagina, limite, recarga, fechaSeleccionada])
+  }, [idClinica, recarga])
 
   const clinicas = Array.isArray(datos?.clinicas) ? datos.clinicas : []
   const clinica = datos?.clinica
   const horarios = Array.isArray(datos?.horarios) ? datos.horarios : []
-  const dias = Array.isArray(datos?.dias) ? datos.dias : []
-  const espacios = Array.isArray(datos?.espacios) ? datos.espacios : []
+  const todosEspacios = Array.isArray(datos?.espacios) ? datos.espacios : []
   const bloqueados = Array.isArray(datos?.bloqueados) ? datos.bloqueados : []
   const festivos = Array.isArray(datos?.festivos) ? datos.festivos : []
-  const total = Number.isInteger(datos?.total) ? datos.total : espacios.length
-  const totalPaginas = Number.isInteger(datos?.total_paginas) ? datos.total_paginas : 1
 
-  const fechaActiva = fechaSeleccionada || dias[0]?.fecha || ''
+  const dias = Array.isArray(datos?.dias) && datos.dias.length > 0
+    ? datos.dias
+    : (datos ? construirCalendario15Dias(datos.hoy, todosEspacios, bloqueados, festivos) : [])
+
+  const fechaPorDefecto = (dias.find((d) => d.total > 0) || dias[0])?.fecha || ''
+  const fechaActiva = dias.some((d) => d.fecha === fechaSeleccionada) ? fechaSeleccionada : fechaPorDefecto
   const indiceDia = dias.findIndex((d) => d.fecha === fechaActiva)
   const infoDiaActivo = indiceDia >= 0 ? dias[indiceDia] : null
+
+  const vistos = new Set()
+  const espaciosDelDia = todosEspacios
+    .filter((esp) => {
+      if (!fechaActiva || claveFechaOaxaca(esp.fecha_hora_inicio) !== fechaActiva) return false
+      if (esp.id_espacio && vistos.has(esp.id_espacio)) return false
+      if (esp.id_espacio) vistos.add(esp.id_espacio)
+      return true
+    })
+    .sort((a, b) => new Date(a.fecha_hora_inicio) - new Date(b.fecha_hora_inicio))
+
+  const total = espaciosDelDia.length
+  const totalPaginas = Math.max(1, Math.ceil(total / limite))
+  const paginaSegura = Math.min(Math.max(1, pagina), totalPaginas)
+  const espaciosPaginados = espaciosDelDia.slice((paginaSegura - 1) * limite, paginaSegura * limite)
 
   function cambiarClinica(nuevoId) {
     setCargando(true)
@@ -1331,7 +1394,6 @@ function SupervisionCalendariosAdmin({ onSalir }) {
   }
 
   function seleccionarDia(nuevaFecha) {
-    setCargando(true)
     setFechaSeleccionada(nuevaFecha)
     setPagina(1)
   }
@@ -1352,6 +1414,7 @@ function SupervisionCalendariosAdmin({ onSalir }) {
                 <select
                   value={idClinica || clinica?.id_clinica || ''}
                   onChange={(e) => cambiarClinica(e.target.value)}
+                  disabled={cargando}
                   style={{ padding: '10px 12px', borderRadius: '9px', border: '1px solid #d9e2dc', background: '#fff', color: '#143626', font: 'inherit' }}
                 >
                   {clinicas.map((c) => (
@@ -1387,7 +1450,7 @@ function SupervisionCalendariosAdmin({ onSalir }) {
             )}
           </section>
 
-          {cargando && !datos ? <Cargando mensaje="Consultando calendario y cupos…" /> : !clinica ? (
+          {cargando ? <Cargando mensaje="Consultando calendario y cupos…" /> : !clinica ? (
             <div className="admin-sin-datos"><CalendarDays size={30} /><strong>No hay clínicas disponibles</strong><p>Aún no hay clínicas aprobadas o suspendidas para consultar su agenda.</p></div>
           ) : <>
             <section className="admin-panel admin-detalle-bloque" aria-label="Calendario de próximos 15 días">
@@ -1467,12 +1530,12 @@ function SupervisionCalendariosAdmin({ onSalir }) {
                 </div>
               </div>
 
-              {cargando ? <Cargando mensaje="Cargando cupos del día…" /> : espacios.length ? <>
+              {espaciosPaginados.length ? <>
                 <div className="admin-tabla-wrap">
                   <table className="admin-tabla">
                     <thead><tr><th>Hora (Oaxaca)</th><th>Servicio</th><th>Estado</th></tr></thead>
                     <tbody>
-                      {espacios.map((e) => (
+                      {espaciosPaginados.map((e) => (
                         <tr key={e.id_espacio}>
                           <td data-label="Hora"><span className="admin-celda-icon"><Clock3 size={15} />{formatearHoraMexico(e.fecha_hora_inicio)} h</span></td>
                           <td data-label="Servicio"><strong>{texto(e.nombre_servicio)}</strong></td>
@@ -1486,18 +1549,16 @@ function SupervisionCalendariosAdmin({ onSalir }) {
                     </tbody>
                   </table>
                 </div>
-                {total > 10 && (
-                  <Paginacion
-                    paginaActual={pagina}
-                    totalPaginas={totalPaginas}
-                    totalRegistros={total}
-                    limite={limite}
-                    mostrando={espacios.length}
-                    onCambiarPagina={setPagina}
-                    onCambiarLimite={(nuevoLimite) => { setLimite(nuevoLimite); setPagina(1) }}
-                    etiquetaRegistros="cupos"
-                  />
-                )}
+                <Paginacion
+                  paginaActual={paginaSegura}
+                  totalPaginas={totalPaginas}
+                  totalRegistros={total}
+                  limite={limite}
+                  mostrando={espaciosPaginados.length}
+                  onCambiarPagina={(p) => setPagina(Math.min(Math.max(1, p), totalPaginas))}
+                  onCambiarLimite={(nuevoLimite) => { setLimite(nuevoLimite); setPagina(1) }}
+                  etiquetaRegistros="cupos"
+                />
               </> : (
                 <div className="admin-sin-datos">
                   <CalendarDays size={28} />
@@ -1539,7 +1600,7 @@ function SupervisionCalendariosAdmin({ onSalir }) {
   </>
 }
 
-function MapaCentrosAdmin({ sesion, onSalir, mapaExpandido, onAlternarExpandido }) {
+function MapaCentrosAdmin({ sesion, onSalir }) {
   const [clinicas, setClinicas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -1567,37 +1628,11 @@ function MapaCentrosAdmin({ sesion, onSalir, mapaExpandido, onAlternarExpandido 
     return () => { activo = false }
   }, [recarga])
 
-  useEffect(() => {
-    if (!mapaExpandido) return undefined
-    const manejarEscape = (e) => {
-      if (e.key === 'Escape') onAlternarExpandido(false)
-    }
-    window.addEventListener('keydown', manejarEscape)
-    return () => window.removeEventListener('keydown', manejarEscape)
-  }, [mapaExpandido, onAlternarExpandido])
-
-  useEffect(() => {
-    const id = setTimeout(() => {
-      window.dispatchEvent(new Event('resize'))
-    }, 120)
-    return () => clearTimeout(id)
-  }, [mapaExpandido])
-
   function recargar() { setCargando(true); setRecarga((v) => v + 1) }
 
   return <>
     <Encabezado titulo="Mapa de centros" descripcion="Supervisión geográfica con filtros por servicio, municipio, horario, nivel de atención y modos de vista." onSalir={onSalir}
-      acciones={<>
-        <button
-          type="button"
-          className="admin-btn admin-btn--outline"
-          onClick={() => onAlternarExpandido(!mapaExpandido)}
-        >
-          {mapaExpandido ? <Minimize2 size={16} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}
-          {mapaExpandido ? 'Restaurar panel' : 'Expandir mapa'}
-        </button>
-        <button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>
-      </>} />
+      acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>} />
     <div className="admin-cuerpo">
       {error ? (
         <ErrorCarga error={error} reintentar={recargar} recurso="el mapa" />
@@ -1617,6 +1652,217 @@ function MapaCentrosAdmin({ sesion, onSalir, mapaExpandido, onAlternarExpandido 
   </>
 }
 
+const AREAS_CLINICA_ADMIN = [
+  { categoria: 'its', nombre: 'Detección de ITS', ayuda: 'Ej. pruebas de VIH, sífilis, orientación y seguimiento.' },
+  { categoria: 'ile', nombre: 'Interrupción Legal del Embarazo (ILE)', ayuda: 'Ej. orientación, valoración y acompañamiento.' },
+]
+
+function RegistroClinicaAdmin({ onSalir }) {
+  const navigate = useNavigate()
+  const [form, setForm] = useState({
+    nombre: '',
+    tipo_institucion: '',
+    descripcion: '',
+    telefono: '',
+    correo_contacto: '',
+    sitio_web: '',
+    municipio: '',
+    localidad: '',
+    direccion: '',
+    codigo_postal: '',
+    ubicacion_maps_url: '',
+    ubicacion: { latitud: null, longitud: null, confirmada: false },
+    servicios: {
+      its: { seleccionado: false, detalle: '' },
+      ile: { seleccionado: false, detalle: '' },
+    },
+    horarios: [],
+  })
+  const [errores, setErrores] = useState({})
+  const [avisoValidacion, setAvisoValidacion] = useState('')
+
+  function actualizarCampo(campo, valor) {
+    setForm((prev) => ({ ...prev, [campo]: valor }))
+    if (errores[campo]) setErrores((prev) => { const next = { ...prev }; delete next[campo]; return next })
+  }
+
+  function validarParaRevision(completo = false) {
+    const errs = completo ? validarFichaCompleta(form, 1) : validarFormatoFicha(form)
+    setErrores(errs)
+    if (Object.keys(errs).length > 0) {
+      setAvisoValidacion('Revisa los campos marcados antes de continuar.')
+      return false
+    }
+    setAvisoValidacion(
+      'Validación institucional correcta. El alta directa y publicación desde administración queda pendiente de aprobar la migración de auditoría (administrador responsable) y el flujo seguro de activación para la cuenta de la clínica.'
+    )
+    return true
+  }
+
+  return <>
+    <Encabezado titulo="Registrar clínica" descripcion="Captura institucional asistida desde administración reutilizando las validaciones y componentes oficiales." onSalir={onSalir}
+      acciones={<button type="button" className="admin-btn admin-btn--outline" onClick={() => navigate('/admin/clinicas')}><ArrowLeft size={16} />Cancelar</button>} />
+    <div className="admin-cuerpo">
+      <div className="admin-aviso admin-aviso--info" role="note">
+        <AlertCircle size={19} aria-hidden="true" />
+        <div>
+          <strong>Vinculación de cuenta responsable y auditoría pendientes de aprobación</strong>
+          <p>Por seguridad, no se crean cuentas con contraseñas predeterminadas ni se marcan correos como verificados sin control real. Puedes capturar y validar los datos institucionales mientras se aprueba el mecanismo de invitación/activación.</p>
+        </div>
+      </div>
+
+      {avisoValidacion && (
+        <div className={`admin-aviso ${Object.keys(errores).length ? 'admin-aviso--error' : 'admin-aviso--exito'}`} role="status">
+          {Object.keys(errores).length ? <AlertCircle size={19} /> : <CheckCircle2 size={19} />}
+          <p>{avisoValidacion}</p>
+        </div>
+      )}
+
+      <form className="admin-detalle-contenido" onSubmit={(e) => { e.preventDefault(); validarParaRevision(true) }} noValidate>
+        <section className="admin-panel admin-detalle-bloque">
+          <div className="admin-seccion-titulo"><Building2 size={19} /><h2>Información institucional</h2></div>
+          <div className="ficha-grid">
+            <label className="ficha-field">
+              <span>Nombre institucional *</span>
+              <input type="text" value={form.nombre} onChange={(e) => actualizarCampo('nombre', e.target.value)} maxLength={255} />
+              {errores.nombre && <small className="ficha-error">{errores.nombre}</small>}
+            </label>
+            <label className="ficha-field">
+              <span>Tipo de institución *</span>
+              <select value={form.tipo_institucion} onChange={(e) => actualizarCampo('tipo_institucion', e.target.value)}>
+                <option value="">Selecciona una opción</option>
+                <option value="publica">Pública</option>
+                <option value="privada">Privada</option>
+                <option value="ong">Organización civil</option>
+                <option value="otra">Otra</option>
+              </select>
+              {errores.tipo_institucion && <small className="ficha-error">{errores.tipo_institucion}</small>}
+            </label>
+            <label className="ficha-field">
+              <span>Teléfono *</span>
+              <input type="tel" value={form.telefono} onChange={(e) => actualizarCampo('telefono', e.target.value)} maxLength={20} />
+              {errores.telefono && <small className="ficha-error">{errores.telefono}</small>}
+            </label>
+            <label className="ficha-field">
+              <span>Correo de contacto *</span>
+              <input type="email" value={form.correo_contacto} onChange={(e) => actualizarCampo('correo_contacto', e.target.value)} maxLength={255} />
+              {errores.correo_contacto && <small className="ficha-error">{errores.correo_contacto}</small>}
+            </label>
+            <label className="ficha-field">
+              <span>Sitio web (opcional)</span>
+              <input type="url" value={form.sitio_web} onChange={(e) => actualizarCampo('sitio_web', e.target.value)} placeholder="https://..." />
+              {errores.sitio_web && <small className="ficha-error">{errores.sitio_web}</small>}
+            </label>
+            <label className="ficha-field">
+              <span>Municipio *</span>
+              <input type="text" value={form.municipio} onChange={(e) => actualizarCampo('municipio', e.target.value)} maxLength={100} />
+              {errores.municipio && <small className="ficha-error">{errores.municipio}</small>}
+            </label>
+            <label className="ficha-field">
+              <span>Localidad (opcional)</span>
+              <input type="text" value={form.localidad} onChange={(e) => actualizarCampo('localidad', e.target.value)} maxLength={100} />
+            </label>
+            <label className="ficha-field">
+              <span>Código postal *</span>
+              <input type="text" value={form.codigo_postal} onChange={(e) => actualizarCampo('codigo_postal', e.target.value)} maxLength={5} />
+              {errores.codigo_postal && <small className="ficha-error">{errores.codigo_postal}</small>}
+            </label>
+            <label className="ficha-field ficha-field--full">
+              <span>Dirección *</span>
+              <input type="text" value={form.direccion} onChange={(e) => actualizarCampo('direccion', e.target.value)} maxLength={500} />
+              {errores.direccion && <small className="ficha-error">{errores.direccion}</small>}
+            </label>
+            <label className="ficha-field ficha-field--full">
+              <span>Descripción institucional *</span>
+              <textarea rows={3} value={form.descripcion} onChange={(e) => actualizarCampo('descripcion', e.target.value)} maxLength={2000} />
+              {errores.descripcion && <small className="ficha-error">{errores.descripcion}</small>}
+            </label>
+          </div>
+        </section>
+
+        <section className="admin-panel admin-detalle-bloque">
+          <div className="admin-seccion-titulo"><CheckCircle2 size={19} /><h2>Servicios ofrecidos</h2></div>
+          {errores.servicios && <p className="ficha-error">{errores.servicios}</p>}
+          <div className="ficha-areas">
+            {AREAS_CLINICA_ADMIN.map((area) => {
+              const actual = form.servicios[area.categoria]
+              return (
+                <div className="ficha-area" key={area.categoria}>
+                  <label className="ficha-check">
+                    <input
+                      type="checkbox"
+                      checked={actual.seleccionado}
+                      onChange={(e) => setForm((prev) => ({
+                        ...prev,
+                        servicios: {
+                          ...prev.servicios,
+                          [area.categoria]: { ...prev.servicios[area.categoria], seleccionado: e.target.checked },
+                        },
+                      }))}
+                    />
+                    <strong>{area.nombre}</strong>
+                  </label>
+                  <small>{area.ayuda}</small>
+                  {actual.seleccionado && (
+                    <textarea
+                      rows={2}
+                      placeholder="Describe los servicios específicos…"
+                      value={actual.detalle}
+                      onChange={(e) => setForm((prev) => ({
+                        ...prev,
+                        servicios: {
+                          ...prev.servicios,
+                          [area.categoria]: { ...prev.servicios[area.categoria], detalle: e.target.value },
+                        },
+                      }))}
+                    />
+                  )}
+                  {errores[`servicio_${area.categoria}`] && <small className="ficha-error">{errores[`servicio_${area.categoria}`]}</small>}
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="admin-panel admin-detalle-bloque">
+          <div className="admin-seccion-titulo"><Clock3 size={19} /><h2>Horarios de atención</h2></div>
+          {errores.horarios && <p className="ficha-error">{errores.horarios}</p>}
+          <EditorHorarios
+            horarios={form.horarios}
+            onChange={(horarios) => actualizarCampo('horarios', horarios)}
+            errores={errores}
+            idPrefijo="admin-registro"
+          />
+        </section>
+
+        <section className="admin-panel admin-detalle-bloque">
+          <div className="admin-seccion-titulo"><MapPin size={19} /><h2>Ubicación geográfica</h2></div>
+          <SelectorUbicacionMapa
+            latitud={form.ubicacion.latitud}
+            longitud={form.ubicacion.longitud}
+            confirmada={form.ubicacion.confirmada}
+            error={errores.ubicacion}
+            onConfirmar={({ latitud, longitud }) => actualizarCampo('ubicacion', { latitud, longitud, confirmada: true })}
+            onCorregir={() => actualizarCampo('ubicacion', { ...form.ubicacion, confirmada: false })}
+          />
+        </section>
+
+        <div className="admin-modal-acciones" style={{ justifyContent: 'flex-start' }}>
+          <button type="button" className="admin-btn admin-btn--outline" onClick={() => validarParaRevision(false)}>
+            Validar formato
+          </button>
+          <button type="submit" className="admin-btn admin-btn--primario">
+            Validar ficha completa
+          </button>
+          <button type="button" className="admin-btn admin-btn--outline" onClick={() => navigate('/admin/clinicas')}>
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </>
+}
+
 export default function Administracion({
   sesion,
   onSalir,
@@ -1627,16 +1873,15 @@ export default function Administracion({
   listaClinicas = false,
   vistaAdmin = null,
 }) {
-  const [mapaExpandido, setMapaExpandido] = useState(false)
-  const enDetalle = Boolean(idSolicitud || idClinica || idUsuario)
-  const expandir = vistaAdmin === 'mapa' && mapaExpandido
-  return <div className={`admin-app ${expandir ? 'is-mapa-expandido' : ''}`}><Lateral perfil={sesion} onSalir={onSalir} detalle={enDetalle} />
+  const enDetalle = Boolean(idSolicitud || idClinica || idUsuario || vistaAdmin === 'nueva-clinica')
+  return <div className="admin-app"><Lateral perfil={sesion} onSalir={onSalir} detalle={enDetalle} />
     <div className="admin-contenedor"><main className="admin-main">
       {listaUsuarios ? <ListaUsuarios onSalir={onSalir} />
         : listaClinicas ? <ListaClinicasAdmin onSalir={onSalir} />
+        : vistaAdmin === 'nueva-clinica' ? <RegistroClinicaAdmin onSalir={onSalir} />
         : vistaAdmin === 'citas' ? <ListaCitasAdmin onSalir={onSalir} />
         : vistaAdmin === 'calendarios' ? <SupervisionCalendariosAdmin onSalir={onSalir} />
-        : vistaAdmin === 'mapa' ? <MapaCentrosAdmin sesion={sesion} onSalir={onSalir} mapaExpandido={mapaExpandido} onAlternarExpandido={setMapaExpandido} />
+        : vistaAdmin === 'mapa' ? <MapaCentrosAdmin sesion={sesion} onSalir={onSalir} />
         : idUsuario ? <DetalleUsuarioAdmin key={idUsuario} idUsuario={idUsuario} onSalir={onSalir} />
         : idClinica ? <DetalleClinicaAdmin key={idClinica} idClinica={idClinica} onSalir={onSalir} />
         : idSolicitud ? <DetalleSolicitud key={idSolicitud} idSolicitud={idSolicitud} onSalir={onSalir} />

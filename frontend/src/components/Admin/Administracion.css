@@ -542,11 +542,37 @@
   max-width: 100%;
 }
 
-.admin-app.is-mapa-expandido .admin-aside {
-  display: none;
+.admin-mapa-wrap .mapa-workspace-grid.mode-combinada {
+  grid-template-columns: minmax(290px, 35%) minmax(0, 65%);
+  justify-content: stretch;
+  align-items: start;
+  gap: 20px;
+  min-height: 680px;
 }
 
-.admin-app.is-mapa-expandido .admin-cuerpo {
-  max-width: 100%;
-  padding: 18px 20px 28px;
+.admin-mapa-wrap .mapa-listado-column {
+  max-height: 680px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.admin-mapa-wrap .mapa-right-column,
+.admin-mapa-wrap .mapa-canvas-card {
+  height: 680px;
+}
+
+@media (max-width: 1080px) {
+  .admin-mapa-wrap .mapa-workspace-grid.mode-combinada {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: auto;
+  }
+
+  .admin-mapa-wrap .mapa-listado-column {
+    max-height: 420px;
+  }
+
+  .admin-mapa-wrap .mapa-right-column,
+  .admin-mapa-wrap .mapa-canvas-card {
+    height: 460px;
+  }
 }
