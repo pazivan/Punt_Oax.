@@ -27,6 +27,7 @@ export default function EspacioMapa({
   filtroServicio = '',
   filtroMunicipio = '',
   terminoBusqueda = '',
+  modoVista = 'combinada',
   ComponenteMapa = null,
   children,
 }) {
@@ -42,6 +43,7 @@ export default function EspacioMapa({
             filtroServicio={filtroServicio}
             filtroMunicipio={filtroMunicipio}
             terminoBusqueda={terminoBusqueda}
+            modoVista={modoVista}
           />
         </div>
       </div>

@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   User,
 } from 'lucide-react';
-import CampanaNotificaciones from './CampanaNotificaciones.jsx';
+import EncabezadoUsuario from './EncabezadoUsuario.jsx';
+import PiePagina from './PiePagina.jsx';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
 import { consultarCitasUsuario, consultarMiFicha } from '../../api/auth.js';
 import {
@@ -306,66 +307,12 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
           modoPostulacion={!enModoPanelAprobado}
         />
       ) : (
-        <header className="inicio-header">
-          <div className="inicio-header-container">
-            <div className="inicio-header-left">
-              <div className="inicio-brand-wrap">
-                <Link to="/inicio" className="inicio-brand" style={{ textDecoration: 'none' }}>
-                  <img
-                    src="/logo-puntoax.svg"
-                    alt=""
-                    className="inicio-brand-logo"
-                    aria-hidden="true"
-                  />
-                  <span>PuntOax</span>
-                </Link>
-              </div>
-
-              <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-                <Link to="/inicio" className="inicio-nav-link">
-                  Inicio
-                </Link>
-                <Link to="/mapa" className="inicio-nav-link">
-                  Mapa de centros
-                </Link>
-                <Link to="/agendar-cita" className="inicio-nav-link">
-                  Agendar cita
-                </Link>
-                <Link to="/mis-citas" className="inicio-nav-link">
-                  Mis citas
-                </Link>
-                <Link to="/informacion-util" className="inicio-nav-link">
-                  Información útil
-                </Link>
-              </nav>
-            </div>
-
-            <div className="inicio-header-right">
-              <CampanaNotificaciones sesion={sesion} citasPreCargadas={citas} />
-
-              <Link
-                to="/mi-perfil"
-                className="inicio-header-profile-link is-active"
-                title={correoCuenta || 'Mi perfil'}
-                aria-label="Mi perfil"
-                aria-current="page"
-              >
-                <span className="inicio-avatar-circle" aria-hidden="true">
-                  <User size={14} color="#FFFFFF" />
-                </span>
-                <span>Mi perfil</span>
-              </Link>
-
-              <button
-                type="button"
-                onClick={onSalir}
-                className="inicio-header-logout-btn"
-              >
-                Salir
-              </button>
-            </div>
-          </div>
-        </header>
+        <EncabezadoUsuario
+          sesion={sesion}
+          onSalir={onSalir}
+          seccionActiva="perfil"
+          citasPreCargadas={citas}
+        />
       )}
 
       {/* Main Content */}
@@ -813,14 +760,7 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
         </div>
       </main>
 
-      {/* Footer (112px) */}
-      <footer className="inicio-footer">
-        <div className="inicio-footer-container">
-          <p className="inicio-footer-text">
-            © 2026 PuntOax · Salud, bienestar y orientación en Oaxaca.
-          </p>
-        </div>
-      </footer>
+      <PiePagina />
     </div>
   );
 }

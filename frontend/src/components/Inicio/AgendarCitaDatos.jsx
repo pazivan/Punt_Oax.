@@ -16,7 +16,8 @@ import {
   User,
 } from 'lucide-react';
 import ModalConfirmacion from './ModalConfirmacion.jsx';
-import CampanaNotificaciones from './CampanaNotificaciones.jsx';
+import EncabezadoUsuario from './EncabezadoUsuario.jsx';
+import PiePagina from './PiePagina.jsx';
 import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js';
 import { consultarEspaciosClinica, solicitarCita } from '../../api/auth.js';
 import { validarEmail, validarTelefono } from '../../utils/validaciones.js';
@@ -297,7 +298,6 @@ export default function AgendarCitaDatos({
   const [errorSolicitudCita, setErrorSolicitudCita] = useState('');
   const [errorFormulario, setErrorFormulario] = useState('');
 
-  const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
   const nombreCentro =
     clinicaActiva?.nombre || 'Punto Fijo de Detección – Dirección de Sanidad';
   const municipioCentro = clinicaActiva?.municipio || 'Oaxaca de Juárez';
@@ -501,65 +501,7 @@ export default function AgendarCitaDatos({
   return (
     <div className="agendar-page">
       {/* Header (80px) con "Agendar cita" seleccionado */}
-      <header className="inicio-header">
-        <div className="inicio-header-container">
-          <div className="inicio-header-left">
-            <div className="inicio-brand-wrap">
-              <Link to="/inicio" className="inicio-brand" style={{ textDecoration: 'none' }}>
-                <img
-                  src="/logo-puntoax.svg"
-                  alt=""
-                  className="inicio-brand-logo"
-                  aria-hidden="true"
-                />
-                <span>PuntOax</span>
-              </Link>
-            </div>
-
-            <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-              <Link to="/inicio" className="inicio-nav-link">
-                Inicio
-              </Link>
-              <Link to="/mapa" className="inicio-nav-link">
-                Mapa de centros
-              </Link>
-              <Link to="/agendar-cita" className="inicio-nav-link active">
-                <span className="inicio-nav-link-active-text">Agendar cita</span>
-              </Link>
-              <Link to="/mis-citas" className="inicio-nav-link">
-                Mis citas
-              </Link>
-              <Link to="/informacion-util" className="inicio-nav-link">
-                Información útil
-              </Link>
-            </nav>
-          </div>
-
-          <div className="inicio-header-right">
-            <CampanaNotificaciones sesion={sesion} />
-
-            <Link
-              to="/mi-perfil"
-              className="inicio-header-profile-link"
-              title={nombreOCorreo}
-              aria-label="Mi perfil"
-            >
-              <span className="inicio-avatar-circle" aria-hidden="true">
-                <User size={14} color="#FFFFFF" />
-              </span>
-              <span>Mi perfil</span>
-            </Link>
-
-            <button
-              type="button"
-              onClick={onSalir}
-              className="inicio-header-logout-btn"
-            >
-              Salir
-            </button>
-          </div>
-        </div>
-      </header>
+      <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="agendar" />
 
       {/* Main (padding-top: 80px) */}
       <main className="agendar-main">
@@ -1316,14 +1258,7 @@ export default function AgendarCitaDatos({
         onConfirmar={confirmarRegistroCita}
       />
 
-      {/* Footer (112px) */}
-      <footer className="inicio-footer">
-        <div className="inicio-footer-container">
-          <p className="inicio-footer-text">
-            © 2026 PuntOax · Salud, bienestar y orientación en Oaxaca.
-          </p>
-        </div>
-      </footer>
+      <PiePagina />
     </div>
   );
 }

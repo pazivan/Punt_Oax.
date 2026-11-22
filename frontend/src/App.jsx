@@ -339,7 +339,7 @@ function App() {
           error={errorPerfil}
           rolesPermitidos={['usuario']}
         >
-          <MisCitasUsuario onSalir={salir} />
+          <MisCitasUsuario sesion={sesion} onSalir={salir} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>

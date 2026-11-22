@@ -1,44 +1,185 @@
-import { useEffect } from 'react'
-import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import L from 'leaflet'
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
+import { Maximize2, Minimize2 } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
-import { OAXACA, coordenadas, ubicacionConfirmada } from '../../utils/centros.js'
+import {
+  OAXACA,
+  clasificarServicioCentro,
+  coordenadas,
+  ubicacionConfirmada,
+} from '../../utils/centros.js'
 import { ResumenMarcador } from '../FichaCentroMapa.jsx'
+
+const ICONOS_MARCADOR_SVG = {
+  its: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg>',
+  ile: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>',
+  ambos: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>',
+}
+
+function crearIconoMarcador(tipo, seleccionada) {
+  const size = seleccionada ? 42 : 34
+  return L.divIcon({
+    className: 'mapa-custom-div-icon',
+    html: `<span class="mapa-marker-pin-badge tipo-${tipo} ${seleccionada ? 'is-selected' : ''}">${ICONOS_MARCADOR_SVG[tipo] || ICONOS_MARCADOR_SVG.its}</span>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -(size / 2)],
+  })
+}
 
 function EnfocarCentro({ clinica }) {
   const mapa = useMap()
   useEffect(() => {
     if (!ubicacionConfirmada(clinica)) return
-    mapa.flyTo(coordenadas(clinica), Math.max(mapa.getZoom(), 13))
+    mapa.flyTo(coordenadas(clinica), Math.max(mapa.getZoom(), 14), { duration: 0.5 })
   }, [clinica, mapa])
   return null
 }
 
-// Sustituye únicamente el espacio reservado para el mapa, sin alterar los filtros de Yareli.
-export default function MapaLeaflet({ clinicas, clinicaSeleccionada, onSeleccionarClinica, onVerDetallesClinica }) {
-  const ubicadas = clinicas.filter((clinica) => ubicacionConfirmada(clinica))
+function AjustarTamanoMapa({ modoVista, pantallaCompleta }) {
+  const mapa = useMap()
+  useEffect(() => {
+    const id = setTimeout(() => {
+      mapa.invalidateSize({ animate: false })
+    }, 120)
+    return () => clearTimeout(id)
+  }, [mapa, modoVista, pantallaCompleta])
+
+  useEffect(() => {
+    const contenedor = mapa.getContainer()
+    if (!contenedor || typeof ResizeObserver === 'undefined') return undefined
+    const observador = new ResizeObserver(() => {
+      mapa.invalidateSize({ animate: false })
+    })
+    observador.observe(contenedor)
+    return () => observador.disconnect()
+  }, [mapa])
+
+  return null
+}
+
+export default function MapaLeaflet({
+  clinicas,
+  clinicaSeleccionada,
+  onSeleccionarClinica,
+  onVerDetallesClinica,
+  modoVista = 'combinada',
+}) {
+  const ubicadas = useMemo(
+    () => clinicas.filter((clinica) => ubicacionConfirmada(clinica)),
+    [clinicas]
+  )
+  const contenedorRef = useRef(null)
+  const [pantallaCompleta, setPantallaCompleta] = useState(false)
+
+  useEffect(() => {
+    const manejarFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setPantallaCompleta(false)
+      }
+    }
+    const manejarEscape = (e) => {
+      if (e.key === 'Escape' && pantallaCompleta) {
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.().catch(() => {})
+        }
+        setPantallaCompleta(false)
+      }
+    }
+    document.addEventListener('fullscreenchange', manejarFullscreenChange)
+    window.addEventListener('keydown', manejarEscape)
+    return () => {
+      document.removeEventListener('fullscreenchange', manejarFullscreenChange)
+      window.removeEventListener('keydown', manejarEscape)
+    }
+  }, [pantallaCompleta])
+
+  const alternarPantallaCompleta = async () => {
+    const siguiente = !pantallaCompleta
+    setPantallaCompleta(siguiente)
+    const el = contenedorRef.current
+    if (!el) return
+    try {
+      if (siguiente && el.requestFullscreen && !document.fullscreenElement) {
+        await el.requestFullscreen()
+      } else if (!siguiente && document.fullscreenElement) {
+        await document.exitFullscreen()
+      }
+    } catch {
+      // Mantiene el modo pantalla completa por CSS si la API nativa no está disponible.
+    }
+  }
 
   return (
-    <>
+    <div
+      ref={contenedorRef}
+      className={`mapa-leaflet-wrapper ${pantallaCompleta ? 'is-fullscreen' : ''}`}
+    >
+      <button
+        type="button"
+        className="mapa-fullscreen-btn"
+        onClick={alternarPantallaCompleta}
+        aria-label={pantallaCompleta ? 'Salir de pantalla completa' : 'Ver mapa en pantalla completa'}
+        aria-pressed={pantallaCompleta}
+      >
+        {pantallaCompleta ? <Minimize2 size={16} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}
+        <span>{pantallaCompleta ? 'Salir' : 'Pantalla completa'}</span>
+      </button>
+
       <MapContainer center={OAXACA} zoom={11} className="mapa-leaflet" aria-label="Mapa OpenStreetMap de clínicas aprobadas">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <AjustarTamanoMapa modoVista={modoVista} pantallaCompleta={pantallaCompleta} />
         <EnfocarCentro clinica={clinicaSeleccionada} />
-        {ubicadas.map((clinica) => (
-          <CircleMarker key={clinica.id_clinica} center={coordenadas(clinica)} radius={11}
-            pathOptions={{ color: '#fff', weight: 3, fillColor: '#153b2f', fillOpacity: 1 }}
-            eventHandlers={{ click: () => onSeleccionarClinica(clinica) }}>
-            <Popup>
-              <ResumenMarcador centro={clinica}
-                onVerFicha={() => onVerDetallesClinica?.(clinica)} />
-            </Popup>
-          </CircleMarker>
-        ))}
+        {ubicadas.map((clinica) => {
+          const tipo = clasificarServicioCentro(clinica)
+          const seleccionada = clinicaSeleccionada?.id_clinica === clinica.id_clinica
+          return (
+            <Marker
+              key={`${clinica.id_clinica}-${tipo}-${seleccionada ? 'sel' : 'base'}`}
+              position={coordenadas(clinica)}
+              icon={crearIconoMarcador(tipo, seleccionada)}
+              zIndexOffset={seleccionada ? 1000 : 0}
+              eventHandlers={{ click: () => onSeleccionarClinica(clinica) }}
+            >
+              <Popup>
+                <ResumenMarcador
+                  centro={clinica}
+                  onVerFicha={() => onVerDetallesClinica?.(clinica)}
+                />
+              </Popup>
+            </Marker>
+          )
+        })}
       </MapContainer>
+
+      <div className="mapa-leyenda" aria-label="Leyenda de marcadores">
+        <span className="mapa-leyenda-item">
+          <span className="mapa-marker-pin-badge tipo-its is-legend" aria-hidden="true">
+            <span dangerouslySetInnerHTML={{ __html: ICONOS_MARCADOR_SVG.its }} />
+          </span>
+          <span>Detección de ITS</span>
+        </span>
+        <span className="mapa-leyenda-item">
+          <span className="mapa-marker-pin-badge tipo-ile is-legend" aria-hidden="true">
+            <span dangerouslySetInnerHTML={{ __html: ICONOS_MARCADOR_SVG.ile }} />
+          </span>
+          <span>Aborto seguro (ILE)</span>
+        </span>
+        <span className="mapa-leyenda-item">
+          <span className="mapa-marker-pin-badge tipo-ambos is-legend" aria-hidden="true">
+            <span dangerouslySetInnerHTML={{ __html: ICONOS_MARCADOR_SVG.ambos }} />
+          </span>
+          <span>Ambos servicios</span>
+        </span>
+      </div>
+
       {ubicadas.length === 0 && (
         <p className="mapa-leaflet-vacio" role="status">No hay centros con coordenadas para los filtros seleccionados.</p>
       )}
-    </>
+    </div>
   )
 }
