@@ -20,6 +20,7 @@ async function leerRespuesta(respuesta) {
       : mensajeError(respuesta.status))
     if (contenido && typeof contenido === 'object') {
       error.campos = contenido.campos
+      error.codigo = contenido.codigo
       error.requiere_verificacion = contenido.requiere_verificacion
       error.faltantes = contenido.faltantes
     }
@@ -179,10 +180,16 @@ export async function enviarConSesion(ruta, opciones = {}) {
     throw new Error('No se pudo conectar con el servidor.')
   }
 
-  if ((respuesta.status === 401 || respuesta.status === 403) && leerSesion()?.token === token) {
-    cerrarSesion()
+  try {
+    return await leerRespuesta(respuesta)
+  } catch (error) {
+    // Un 403 por estado de clínica no revoca el JWT: la ficha y el perfil
+    // continúan disponibles. Los 403 de sesión inválida sí se cierran.
+    if ((respuesta.status === 401 ||
+        (respuesta.status === 403 && error.codigo !== 'CLINICA_NO_APROBADA')) &&
+        leerSesion()?.token === token) cerrarSesion()
+    throw error
   }
-  return leerRespuesta(respuesta)
 }
 
 export async function consultarPerfil() {

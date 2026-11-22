@@ -135,14 +135,11 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
   }, [esClinica]);
 
   const enModoPanelAprobado =
-    esClinica &&
-    (fichaClinica?.clinica?.estado_publicacion === 'aprobada' ||
-      sesion?.cuenta?.estado_publicacion === 'aprobada' ||
-      sessionStorage.getItem('puntoax_panel_aprobado') === '1');
+    esClinica && fichaClinica?.clinica?.estado_publicacion === 'aprobada';
 
   const estadoSolicitudClinica = useMemo(() => {
     if (!esClinica) return '';
-    const pub = fichaClinica?.clinica?.estado_publicacion || sesion?.cuenta?.estado_publicacion;
+    const pub = fichaClinica?.clinica?.estado_publicacion;
     const fichaEst = fichaClinica?.clinica?.estado_ficha;
     const postEst = fichaClinica?.postulacion?.estado;
 
@@ -154,7 +151,7 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
       return 'Requiere correcciones';
     }
     return 'Aún no registrada (en borrador)';
-  }, [esClinica, fichaClinica, sesion]);
+  }, [esClinica, fichaClinica]);
 
   const nombreCompletoVista =
     [nombre.trim(), apellidos.trim()].filter(Boolean).join(' ') ||

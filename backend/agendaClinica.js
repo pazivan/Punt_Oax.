@@ -1,4 +1,5 @@
 const { esUuid } = require('./validacionesCitas');
+const { consultarEstadoClinica, esEstadoOperativo, respuestaNoAprobada } = require('./clinicasEstado');
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -28,7 +29,12 @@ const responder = (res, status, body) => res.status(status).json(body);
 function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }) {
   const soloClinica = [autenticarToken, requerirRol(['clinica'])];
   const envolver = (accion) => async (req, res) => {
-    try { await accion(req, res); }
+    try {
+      const estado = await consultarEstadoClinica(pool, req.usuario.id);
+      if (!estado) return responder(res, 404, { error: 'No se encontró tu clínica.' });
+      if (!esEstadoOperativo(estado)) return responder(res, 403, respuestaNoAprobada(estado));
+      await accion(req, res);
+    }
     catch (error) {
       console.error('Error en agenda clínica:', error);
       responder(res, 500, { error: 'No se pudo actualizar la agenda.' });

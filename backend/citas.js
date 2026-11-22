@@ -25,6 +25,7 @@ const {
   validarTransicionEstadoCita,
 } = require("./validacionesCitas");
 const { festivoNacional } = require("./agendaClinica");
+const { esEstadoOperativo, respuestaNoAprobada } = require("./clinicasEstado");
 
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ESTADOS = Array.from(ESTADOS_VALIDOS);
@@ -296,6 +297,14 @@ async function actualizarEstadoCitaClinica(pool, idClinica, idCita, cuerpo) {
     return respuesta(400, { error: `Estado no válido. Usa: ${ESTADOS_CLINICA.join(", ")}.` });
   }
   return enTransaccion(pool, async (db) => {
+    const { rows: clinica } = await db.query(
+      "SELECT estado_publicacion FROM clinicas WHERE id_clinica = $1",
+      [idClinica]
+    );
+    if (!clinica[0]) return respuesta(404, { error: "No se encontró tu clínica." });
+    if (!esEstadoOperativo(clinica[0].estado_publicacion)) {
+      return respuesta(403, respuestaNoAprobada(clinica[0].estado_publicacion));
+    }
     const { rows } = await db.query(
       `SELECT ci.estado, ed.fecha_hora_inicio > NOW() AS es_futura
        FROM citas ci

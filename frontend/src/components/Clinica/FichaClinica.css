@@ -86,7 +86,9 @@
   margin: 0 auto;
   padding: 36px 24px 72px;
   box-sizing: border-box;
+  scroll-margin-top: 80px;
 }
+.ficha-pending { scroll-margin-top: 96px; }
 
 .ficha-publicada {
   max-width: 900px;
@@ -205,6 +207,7 @@
 
 .ficha-alert p { margin: 3px 0 0; }
 .ficha-alert-error { background: #FEE2E2; border: 1px solid #FCA5A5; color: #991B1B; }
+.ficha-alert-warning { background: #FFF6E5; border: 1px solid #E8C27A; color: #7A4A16; }
 .ficha-alert-success { background: #E7F4ED; border: 1px solid #A7D3BE; color: #14523B; }
 .ficha-alert-list { margin: 8px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.6; }
 
@@ -229,6 +232,7 @@
   padding: 24px;
   box-shadow: 0 6px 18px rgba(16, 51, 40, 0.035);
 }
+.ficha-section.has-error { border-color: #D45B52; }
 
 .ficha-section-heading {
   display: flex;
@@ -292,6 +296,36 @@
   font-size: 11px;
   line-height: 1.45;
 }
+
+/* Errores por campo: el mensaje vive junto al dato y el borde lo identifica. */
+.ficha-field-error {
+  margin: 2px 0 0;
+  color: #B42318;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.ficha-field.has-error label { color: #8F1D14; }
+
+.ficha-input.is-invalid {
+  border-color: #D45B52;
+  background: #FFF8F7;
+}
+
+.ficha-input.is-invalid:focus {
+  border-color: #B42318;
+  box-shadow: 0 0 0 2px rgba(180, 35, 24, 0.12);
+}
+
+.ficha-area-card.has-error,
+.ficha-upload.is-invalid {
+  border-color: #D45B52;
+  background: #FFF8F7;
+}
+
+.ficha-time-row-wrap { margin-top: 12px; }
+.ficha-time-row-wrap .ficha-time-row { margin-top: 0; }
 
 .ficha-input {
   width: 100%;
@@ -517,6 +551,120 @@
 .ficha-doc-list small { color: #7A847F; font-size: 11px; }
 .ficha-doc-icon { color: #417B66; flex-shrink: 0; }
 .ficha-empty-docs { margin: 14px 0 0; color: #7A847F; font-size: 12px; }
+
+/* Selector de ubicación: el marcador permanece fijo al centro del mapa. */
+.ficha-mapa-bloque {
+  padding: 14px;
+  border: 1px solid #D5DDD8;
+  border-radius: 12px;
+  background: #FCFDFC;
+}
+
+.ficha-mapa-bloque.is-invalid {
+  border-color: #D45B52;
+  background: #FFF8F7;
+}
+
+.ficha-mapa-encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ficha-mapa-encabezado strong {
+  display: block;
+  color: #103328;
+  font-size: 14px;
+}
+
+.ficha-mapa-encabezado p {
+  margin: 4px 0 0;
+  color: #6B7671;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ficha-mapa-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border: 1px solid #E0D7D7;
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: #8A5A20;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ficha-mapa-estado.is-confirmada {
+  border-color: #A7D3BE;
+  background: #E7F4ED;
+  color: #14523B;
+}
+
+.ficha-mapa-lienzo {
+  position: relative;
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid #DDE6E1;
+  border-radius: 10px;
+  background: #E8EFEA;
+}
+
+.ficha-mapa {
+  width: 100%;
+  height: 320px;
+}
+
+.ficha-mapa-marcador {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 500;
+  display: inline-flex;
+  transform: translate(-50%, -100%);
+  color: #B4232A;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.28));
+  pointer-events: none;
+}
+
+.ficha-mapa-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 10px;
+  color: #596763;
+  font-size: 12px;
+}
+
+.ficha-mapa-datos strong {
+  color: #103328;
+  font-variant-numeric: tabular-nums;
+}
+
+.ficha-mapa-acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ficha-mapa-acciones small {
+  flex: 1 1 220px;
+  color: #7A847F;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.ficha-summary .ficha-btn-primary,
+.ficha-summary .ficha-btn-secondary {
+  width: 100%;
+  box-sizing: border-box;
+}
 
 .ficha-form-actions {
   display: flex;
@@ -813,6 +961,10 @@
   .ficha-grid { grid-template-columns: minmax(0, 1fr); }
   .ficha-time-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ficha-time-row .ficha-icon-button { grid-column: 1 / -1; width: 100%; }
+  .ficha-mapa { height: 260px; }
+  .ficha-mapa-encabezado { flex-direction: column; }
+  .ficha-mapa-acciones .ficha-btn-primary,
+  .ficha-mapa-acciones .ficha-btn-secondary { width: 100%; }
   .ficha-form-actions { flex-direction: column-reverse; align-items: stretch; }
   .ficha-btn-save { margin-right: 0; }
   .ficha-form-actions .ficha-btn-primary,
@@ -1946,4 +2098,3 @@
     width: 100%;
   }
 }
-

@@ -14,6 +14,12 @@ const { registrarRutasAdminClinicas } = require("./adminClinicas");
 const { registrarRutasAdminUsuarios } = require("./adminUsuarios");
 const { registrarRutasAgendaClinica } = require("./agendaClinica");
 const { registrarRutasDatosClinica } = require("./datosClinica");
+const { validarCoordenadas } = require("./ubicacion");
+const {
+  consultarEstadoClinica,
+  esEstadoOperativo,
+  respuestaNoAprobada,
+} = require("./clinicasEstado");
 const { registrarRutasCorreo, permitido } = require("./correo");
 const {
   MENSAJE_TELEFONO,
@@ -211,6 +217,19 @@ function validarEntradaFicha(body) {
     }
   }, "El enlace de Google Maps debe iniciar con http:// o https://.");
 
+  // La ubicación se guarda como punto PostGIS solo cuando el usuario la
+  // confirmó en el mapa. Se exige el par completo para no almacenar puntos
+  // incompletos ni coordenadas iniciales del mapa.
+  if (tiene("latitud") || tiene("longitud")) {
+    if (!tiene("latitud") || !tiene("longitud")) {
+      errores.ubicacion = "Confirma la latitud y la longitud juntas.";
+    } else {
+      const coordenadas = validarCoordenadas(body.latitud, body.longitud);
+      if (coordenadas.error) errores.ubicacion = coordenadas.error;
+      else cambios.ubicacion = coordenadas;
+    }
+  }
+
   if (tiene("servicios")) {
     const resultado = validarServicios(body.servicios, { permitirVacio: true });
     if (resultado.error) errores.servicios = resultado.error;
@@ -234,6 +253,9 @@ function evaluarFaltantes(clinica, servicios, horarios, documentos) {
   if (!clinica.correo_contacto) faltantes.push("Correo de contacto");
   if (!clinica.municipio) faltantes.push("Municipio");
   if (!clinica.direccion) faltantes.push("Dirección");
+  if (clinica.latitud == null || clinica.longitud == null) {
+    faltantes.push("Confirma la ubicación de la clínica en el mapa");
+  }
   if (servicios.length === 0) faltantes.push("Al menos un área de atención (ITS o ILE)");
   else if (servicios.some((servicio) => !servicio.detalle_servicio)) {
     faltantes.push("La descripción de cada servicio seleccionado");
@@ -248,7 +270,9 @@ async function cargarFicha(idClinica, db = pool) {
     `SELECT c.id_clinica, c.nombre, c.correo_acceso, c.descripcion, c.tipo_institucion,
        c.telefono, c.correo_contacto, c.sitio_web, c.municipio, c.localidad, c.direccion,
        c.codigo_postal, c.ubicacion_maps_url, c.enlaces_informacion,
-       c.estado_publicacion, c.fecha_registro
+       c.estado_publicacion, c.fecha_registro,
+       ST_Y(c.ubicacion_geo::geometry) AS latitud,
+       ST_X(c.ubicacion_geo::geometry) AS longitud
      FROM clinicas c
      WHERE c.id_clinica = $1`,
     [idClinica]
@@ -290,6 +314,11 @@ async function cargarFicha(idClinica, db = pool) {
   ]);
 
   const clinica = clinicaResultado.rows[0];
+  const latitud = clinica.latitud == null ? null : Number(clinica.latitud);
+  const longitud = clinica.longitud == null ? null : Number(clinica.longitud);
+  clinica.latitud = latitud;
+  clinica.longitud = longitud;
+  clinica.ubicacion_confirmada = latitud !== null && longitud !== null;
   const postulacion = solicitudResultado.rows[0] || null;
   const pendiente = postulacion?.estado === "pendiente";
   const faltantes = evaluarFaltantes(
@@ -436,6 +465,13 @@ app.get(
   requerirRol(["clinica"]),
   async (req, res) => {
     try {
+      const estado = await consultarEstadoClinica(pool, req.usuario.id);
+      if (!estado) {
+        return res.status(404).json({ error: "No se encontró tu clínica." });
+      }
+      if (!esEstadoOperativo(estado)) {
+        return res.status(403).json(respuestaNoAprobada(estado));
+      }
       const citas = await listarCitasClinica(pool, req.usuario.id);
       return res.json({ citas });
     } catch (error) {
@@ -545,7 +581,7 @@ app.put(
       }
 
       const columnas = Object.keys(cambios).filter(
-        (campo) => campo !== "servicios" && campo !== "horarios"
+        (campo) => !["servicios", "horarios", "ubicacion"].includes(campo)
       );
       if (columnas.length) {
         const asignaciones = columnas.map((campo, indice) => `${campo} = $${indice + 1}`);
@@ -554,6 +590,15 @@ app.put(
         await client.query(
           `UPDATE clinicas SET ${asignaciones.join(", ")} WHERE id_clinica = $${valores.length}`,
           valores
+        );
+      }
+      if (cambios.ubicacion) {
+        // PostGIS recibe longitud primero y latitud después.
+        await client.query(
+          `UPDATE clinicas
+           SET ubicacion_geo = ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+           WHERE id_clinica = $3`,
+          [cambios.ubicacion.longitud, cambios.ubicacion.latitud, req.usuario.id]
         );
       }
       if (cambios.servicios !== undefined) {
