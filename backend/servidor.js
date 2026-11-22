@@ -1564,7 +1564,7 @@ app.post("/api/auth/login-usuario", async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      "SELECT id_usuario, correo, password_hash, nombre, apellidos, correo_verificado_en, version_sesion FROM usuarios WHERE correo = LOWER(TRIM($1))",
+      "SELECT id_usuario, correo, password_hash, nombre, apellidos, correo_verificado_en, version_sesion, activo FROM usuarios WHERE correo = LOWER(TRIM($1))",
       [correo]
     );
 
@@ -1578,6 +1578,9 @@ app.post("/api/auth/login-usuario", async (req, res) => {
 
     if (!passwordValido) {
       return res.status(401).json({ error: "Credenciales inválidas." });
+    }
+    if (usuario.activo === false) {
+      return res.status(403).json({ error: "Tu cuenta está desactivada. Contacta al administrador.", codigo: "CUENTA_DESACTIVADA" });
     }
     if (!usuario.correo_verificado_en) return res.status(403).json({ error: "Verifica tu correo antes de iniciar sesión.", requiere_verificacion: true });
 

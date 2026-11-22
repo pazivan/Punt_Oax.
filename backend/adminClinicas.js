@@ -37,6 +37,7 @@ const NOMBRES_SERVICIOS = {
 };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ESTADOS_SOLICITUD = ["pendiente", "aprobada", "rechazada", "suspendida"];
+const ESTADOS_CLINICA = ["borrador", "pendiente", "aprobada", "rechazada", "suspendida"];
 const MIN_OBSERVACIONES_RECHAZO = 10;
 const MAX_OBSERVACIONES = 1000;
 
@@ -414,6 +415,135 @@ async function obtenerDocumento(db, idDocumento, prepararCarpetaDocumentos) {
 }
 
 // ------------------------------------------------------------------
+// 6. Listado y detalle directo de clínicas registradas
+// ------------------------------------------------------------------
+async function listarClinicas(db, { estado, page, limit, q } = {}) {
+  const filtro = estado === undefined ? "todas" : estado;
+  if (filtro !== "todas" && !ESTADOS_CLINICA.includes(filtro)) {
+    return respuesta(400, { error: `Estado no válido. Usa: ${[...ESTADOS_CLINICA, "todas"].join(", ")}.` });
+  }
+
+  const tope = [10, 20, 50].includes(Number(limit)) ? Number(limit) : 10;
+  const paginaActual = Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+  const offset = (paginaActual - 1) * tope;
+  const busqueda = typeof q === "string" ? q.trim() : "";
+
+  const condiciones = [];
+  const params = [];
+  if (filtro !== "todas") {
+    params.push(filtro);
+    condiciones.push(`c.estado_publicacion = $${params.length}::text`);
+  }
+  if (busqueda) {
+    params.push(`%${busqueda}%`);
+    condiciones.push(
+      `(COALESCE(c.nombre, '') ILIKE $${params.length} OR COALESCE(c.municipio, '') ILIKE $${params.length} OR COALESCE(c.tipo_institucion, '') ILIKE $${params.length} OR COALESCE(c.correo_contacto, '') ILIKE $${params.length})`
+    );
+  }
+  const where = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+
+  const paramsListado = [...params, tope, offset];
+  const { rows } = await db.query(
+    `SELECT c.id_clinica, c.nombre, c.tipo_institucion, c.municipio, c.estado_publicacion,
+            c.telefono, c.correo_contacto, c.fecha_registro,
+            (c.ubicacion_geo IS NOT NULL) AS tiene_ubicacion
+     FROM clinicas c
+     ${where}
+     ORDER BY (c.estado_publicacion = 'aprobada') DESC, c.fecha_registro DESC, c.nombre ASC, c.id_clinica ASC
+     LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+    paramsListado
+  );
+
+  const [conteoRes, resumenRes] = await Promise.all([
+    db.query(`SELECT COUNT(*)::int AS total FROM clinicas c ${where}`, params),
+    db.query(
+      `SELECT COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE estado_publicacion = 'aprobada')::int AS aprobadas,
+              COUNT(*) FILTER (WHERE estado_publicacion = 'suspendida')::int AS suspendidas,
+              COUNT(*) FILTER (WHERE estado_publicacion = 'pendiente')::int AS pendientes,
+              COUNT(*) FILTER (WHERE estado_publicacion = 'borrador')::int AS borrador,
+              COUNT(*) FILTER (WHERE estado_publicacion = 'rechazada')::int AS rechazadas
+       FROM clinicas`
+    ),
+  ]);
+
+  const total = conteoRes.rows[0]?.total ?? rows.length;
+  return respuesta(200, {
+    clinicas: rows,
+    total,
+    page: paginaActual,
+    limit: tope,
+    total_paginas: Math.max(1, Math.ceil(total / tope)),
+    resumen: resumenRes.rows[0] || { total, aprobadas: 0, suspendidas: 0, pendientes: 0, borrador: 0, rechazadas: 0 },
+  });
+}
+
+async function consultarClinica(db, idClinica) {
+  if (!esUuid(idClinica)) return respuesta(400, { error: "Identificador de clínica no válido." });
+
+  const { rows } = await db.query(
+    `SELECT c.id_clinica, c.nombre, c.tipo_institucion, c.estado_publicacion,
+            c.descripcion, c.telefono, c.correo_contacto, c.correo_acceso,
+            c.sitio_web, c.municipio, c.localidad, c.direccion, c.codigo_postal,
+            c.ubicacion_maps_url, c.enlaces_informacion, c.fecha_registro,
+            c.correo_verificado_en IS NOT NULL AS correo_verificado,
+            ST_Y(c.ubicacion_geo::geometry) AS latitud,
+            ST_X(c.ubicacion_geo::geometry) AS longitud
+     FROM clinicas c
+     WHERE c.id_clinica = $1`,
+    [idClinica]
+  );
+  const clinica = rows[0];
+  if (!clinica) return respuesta(404, { error: "Clínica no encontrada." });
+
+  const [serviciosRes, horariosRes, documentosRes, solicitudRes] = await Promise.all([
+    db.query(
+      `SELECT s.id_servicio, s.nombre, s.categoria,
+              cs.detalle_servicio, cs.costo, cs.costo_texto, cs.requisitos, cs.requiere_cita
+       FROM clinicas_servicios cs
+       INNER JOIN servicios s ON s.id_servicio = cs.id_servicio
+       WHERE cs.id_clinica = $1 AND cs.activo = TRUE AND s.activo = TRUE
+       ORDER BY s.nombre`,
+      [idClinica]
+    ),
+    db.query(
+      `SELECT dia_semana, to_char(hora_apertura, 'HH24:MI') AS apertura,
+              to_char(hora_cierre, 'HH24:MI') AS cierre, es_24_horas, cruza_medianoche
+       FROM horarios_atencion
+       WHERE id_clinica = $1
+       ORDER BY dia_semana, hora_apertura`,
+      [idClinica]
+    ),
+    db.query(
+      `SELECT id_documento, nombre_original, mime, tamano_bytes, fecha_carga
+       FROM clinicas_documentos
+       WHERE id_clinica = $1
+       ORDER BY fecha_carga`,
+      [idClinica]
+    ),
+    db.query(
+      `SELECT id_solicitud, estado, tipo_solicitud, fecha_solicitud, fecha_resolucion
+       FROM solicitudes_clinicas
+       WHERE id_clinica = $1
+       ORDER BY fecha_solicitud DESC
+       LIMIT 1`,
+      [idClinica]
+    ),
+  ]);
+
+  return respuesta(200, {
+    clinica: {
+      ...clinica,
+      enlaces_informacion: Array.isArray(clinica.enlaces_informacion) ? clinica.enlaces_informacion : [],
+    },
+    servicios: serviciosRes.rows.map((s) => ({ ...s, costo: s.costo === null ? null : Number(s.costo) })),
+    horarios: horariosRes.rows,
+    documentos: documentosRes.rows,
+    ultima_solicitud: solicitudRes.rows[0] || null,
+  });
+}
+
+// ------------------------------------------------------------------
 // Registro de rutas en Express
 // ------------------------------------------------------------------
 function registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, prepararCarpetaDocumentos }) {
@@ -453,6 +583,17 @@ function registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, 
   app.patch("/api/admin/clinicas/:id/visibilidad", ...soloAdmin,
     manejar("cambiar la visibilidad de la clínica", (req) => cambiarVisibilidad(pool, req.params.id, req.body)));
 
+  app.get("/api/admin/clinicas", ...soloAdmin,
+    manejar("consultar las clínicas", (req) => listarClinicas(pool, {
+      estado: req.query.estado,
+      page: req.query.page,
+      limit: req.query.limit,
+      q: req.query.q,
+    })));
+
+  app.get("/api/admin/clinicas/:id", ...soloAdmin,
+    manejar("consultar la clínica", (req) => consultarClinica(pool, req.params.id)));
+
   app.get("/api/admin/documentos/:id", ...soloAdmin,
     manejar("descargar el documento", (req) =>
       obtenerDocumento(pool, req.params.id, prepararCarpetaDocumentos)));
@@ -462,6 +603,8 @@ function registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, 
 const RUTAS_ADMIN_ACORDADAS = [
   "GET /api/admin/solicitudes",
   "GET /api/admin/solicitudes/:id",
+  "GET /api/admin/clinicas",
+  "GET /api/admin/clinicas/:id",
   "GET /api/admin/documentos/:id",
   "PATCH /api/admin/solicitudes/:id",
   "PATCH /api/admin/clinicas/:id/visibilidad",
@@ -475,4 +618,6 @@ module.exports = {
   resolverSolicitud,
   cambiarVisibilidad,
   obtenerDocumento,
+  listarClinicas,
+  consultarClinica,
 };

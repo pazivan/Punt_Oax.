@@ -104,10 +104,13 @@ function autenticarToken(req, res, next) {
         ? ''
         : usuarioDecodificado.rol === 'clinica'
           ? ', correo_verificado_en, estado_publicacion'
-          : ', correo_verificado_en';
+          : ', correo_verificado_en, activo';
       const { rows } = await pool.query(`SELECT version_sesion${columnasExtra} FROM ${tipo[0]} WHERE ${tipo[1]}=$1`, [usuarioDecodificado.id]);
       if (!rows[0] || rows[0].version_sesion !== (usuarioDecodificado.version_sesion ?? 0)) {
         return res.status(403).json({ error: "Sesión inválida. Inicia sesión nuevamente.", codigo: "SESION_INVALIDA" });
+      }
+      if (usuarioDecodificado.rol === 'usuario' && rows[0].activo === false) {
+        return res.status(403).json({ error: "Tu cuenta está desactivada. Contacta al administrador.", codigo: "CUENTA_DESACTIVADA" });
       }
       if (usuarioDecodificado.rol !== 'administrador' && !rows[0].correo_verificado_en) {
         return res.status(403).json({ error: "Verifica tu correo antes de continuar.", codigo: "CORREO_NO_VERIFICADO" });
