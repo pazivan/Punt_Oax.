@@ -496,7 +496,7 @@ export default function InformacionUtil({ sesion, onSalir, sinEncabezado = false
                     <span>2. Cédula Profesional verificable en la SEP</span>
                   </h3>
                   <p className="info-util-box-text">
-                    El personal médico que brinde la atención debe proporcionar su nombre completo y número de <strong>Cédula Profesional</strong> en la receta o nota médica. Su validez puede comprobarse en el portal oficial del <strong>Registro Nacional de Profesionistas</strong> (<code>cedulaprofesional.sep.gob.mx</code>) (SEP, 2024).
+                    El personal médico que brinde la atención debe proporcionar su nombre completo y número de <strong>Cédula Profesional</strong> en la receta o nota médica. Su validez puede comprobarse en el portal oficial del <strong>Registro Nacional de Profesionistas</strong> (<a href="https://cedulaprofesional.sep.gob.mx" target="_blank" rel="noreferrer" style={{ color: '#103328', textDecoration: 'underline' }}>cedulaprofesional.sep.gob.mx</a>) (SEP, 2024).
                   </p>
                 </article>
 

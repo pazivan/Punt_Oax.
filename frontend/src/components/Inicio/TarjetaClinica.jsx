@@ -1,4 +1,5 @@
-import { ArrowRight, Clock, Heart, MapPin } from 'lucide-react';
+import { ArrowRight, Clock, Heart, MapPin, Navigation } from 'lucide-react';
+import { formatearDistanciaKm } from '../../utils/cercania.js';
 
 /**
  * TarjetaClinica - Tarjeta resumida de sede según diseño de Figma (ventana Mapa)
@@ -23,6 +24,8 @@ import { ArrowRight, Clock, Heart, MapPin } from 'lucide-react';
 export default function TarjetaClinica({
   clinica,
   seleccionada = false,
+  esFavorita = false,
+  onAlternarFavorito,
   onSeleccionar,
   onVerDetalles,
 }) {
@@ -35,6 +38,7 @@ export default function TarjetaClinica({
   const textoNivel = clinica.nivel_atencion
     ? `Nivel: ${clinica.nivel_atencion}`
     : 'Nivel no especificado';
+  const etiquetaDistancia = formatearDistanciaKm(clinica.distancia_km);
 
   const manejarSeleccion = () => {
     if (typeof onSeleccionar === 'function') {
@@ -51,21 +55,46 @@ export default function TarjetaClinica({
     }
   };
 
+  const manejarFavorito = (e) => {
+    e.stopPropagation();
+    if (typeof onAlternarFavorito === 'function') {
+      onAlternarFavorito(clinica);
+    }
+  };
+
   return (
     <article
       className={`mapa-card ${seleccionada ? 'is-selected' : ''}`}
       onClick={manejarSeleccion}
       aria-label={clinica.nombre}
     >
-      {/* Fila superior: Badge de municipio/zona + ícono en tarjeta seleccionada */}
+      {/* Fila superior: Badge de municipio/zona + distancia (si aplica) + botón de favorito */}
       <div className="mapa-card-top-row">
-        <span className="mapa-card-pill-badge">{etiquetaSuperior}</span>
+        <div className="mapa-card-badges-left">
+          <span className="mapa-card-pill-badge">{etiquetaSuperior}</span>
+          {etiquetaDistancia && (
+            <span className="mapa-card-distance-badge">
+              <Navigation size={11} aria-hidden="true" />
+              {etiquetaDistancia}
+            </span>
+          )}
+        </div>
 
-        {seleccionada && (
-          <span className="mapa-card-fav-icon" aria-hidden="true">
-            <Heart size={17} color="#001D14" fill="#001D14" />
-          </span>
-        )}
+        <button
+          type="button"
+          className={`mapa-card-fav-btn ${esFavorita ? 'is-favorite' : ''}`}
+          onClick={manejarFavorito}
+          aria-pressed={esFavorita}
+          aria-label={esFavorita ? `Quitar ${clinica.nombre} de favoritos` : `Agregar ${clinica.nombre} a favoritos`}
+          title={esFavorita ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+        >
+          <Heart
+            size={17}
+            color={esFavorita ? '#C0262D' : '#596763'}
+            fill={esFavorita ? '#C0262D' : 'none'}
+            aria-hidden="true"
+          />
+        </button>
       </div>
 
       {/* Heading 3 -> Nombre del centro */}

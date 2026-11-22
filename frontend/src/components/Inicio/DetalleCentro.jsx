@@ -5,15 +5,19 @@ import {
   Building2,
   Clock,
   ExternalLink,
+  Heart,
   Mail,
   MapPin,
   Phone,
 } from 'lucide-react';
 import EncabezadoUsuario from './EncabezadoUsuario.jsx';
 import PiePagina from './PiePagina.jsx';
+import MapaLeaflet from './MapaLeaflet.jsx';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
 import '../../styles/Inicio.css';
 import { normalizarUrlExterna, urlEnTexto } from '../../utils/enlaces.js';
+import { coordenadas } from '../../utils/centros.js';
+import { formatearDistanciaKm } from '../../utils/cercania.js';
 
 /**
  * DetalleCentro - Ventana "Detalle de centro - PuntoOax" según diseño oficial de Figma (1280x1218),
@@ -47,6 +51,8 @@ export default function DetalleCentro({
   onVolverAlMapa,
   onAgendarCita,
   sinEncabezado = false,
+  esFavorita = false,
+  onAlternarFavorito,
 }) {
   if (!clinica) return null;
 
@@ -70,6 +76,7 @@ export default function DetalleCentro({
     ? clinica.correo_contacto.trim()
     : '';
   const tieneUrlMaps = Boolean(mapaUrl);
+  const etiquetaDistancia = formatearDistanciaKm(clinica.distancia_km);
 
   return (
     <div className="detalle-page">
@@ -109,9 +116,27 @@ export default function DetalleCentro({
           {/* Header Title & Subtitle:margin */}
           <div className="detalle-header-margin">
             <div className="detalle-header-block">
-              <h1 className="detalle-heading-title">{clinica.nombre}</h1>
+              <div className="detalle-header-top-row">
+                <h1 className="detalle-heading-title">{clinica.nombre}</h1>
+                {typeof onAlternarFavorito === 'function' && (
+                  <button
+                    type="button"
+                    className={`detalle-fav-btn ${esFavorita ? 'is-favorite' : ''}`}
+                    aria-pressed={esFavorita}
+                    onClick={() => onAlternarFavorito(clinica)}
+                  >
+                    <Heart
+                      size={15}
+                      color={esFavorita ? '#FFFFFF' : '#C0262D'}
+                      fill={esFavorita ? '#FFFFFF' : 'none'}
+                      aria-hidden="true"
+                    />
+                    <span>{esFavorita ? 'En favoritos' : 'Agregar a favoritos'}</span>
+                  </button>
+                )}
+              </div>
               <p className="detalle-heading-subtitle">
-                {`${clinica.municipio || 'No especificado'} · ${clinica.entidad_federativa || 'Oaxaca'}`}
+                {`${clinica.municipio || 'No especificado'} · ${clinica.entidad_federativa || 'Oaxaca'}${etiquetaDistancia ? ` · ${etiquetaDistancia}` : ''}`}
               </p>
             </div>
           </div>
@@ -289,11 +314,16 @@ export default function DetalleCentro({
                 </p>
               </div>
 
-              {/* Map View (389.33px x 288px) */}
+              {/* Mapa real centrado en la clínica */}
               <div className="detalle-map-view">
-                <div className="detalle-map-floating-pin" aria-hidden="true">
-                  <MapPin size={15} color="#FFFFFF" />
-                </div>
+                {coordenadas(clinica) ? (
+                  <MapaLeaflet
+                    clinicas={[{ ...clinica, ubicacion_confirmada: true }]}
+                    clinicaSeleccionada={{ ...clinica, ubicacion_confirmada: true }}
+                  />
+                ) : (
+                  <MapaLeaflet clinicas={[]} clinicaSeleccionada={null} />
+                )}
               </div>
 
               {/* Ubicacion maps (columna Ubicacion maps del archivo CSV) */}

@@ -28,6 +28,9 @@ export default function EspacioMapa({
   filtroMunicipio = '',
   terminoBusqueda = '',
   modoVista = 'combinada',
+  ubicacionUsuario = null,
+  radioKm = 10,
+  seleccionVersion = 0,
   ComponenteMapa = null,
   children,
 }) {
@@ -44,6 +47,9 @@ export default function EspacioMapa({
             filtroMunicipio={filtroMunicipio}
             terminoBusqueda={terminoBusqueda}
             modoVista={modoVista}
+            ubicacionUsuario={ubicacionUsuario}
+            radioKm={radioKm}
+            seleccionVersion={seleccionVersion}
           />
         </div>
       </div>

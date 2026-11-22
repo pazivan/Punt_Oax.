@@ -1,5 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Columns2, List, Map as MapIcon, Search } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AlertCircle,
+  Columns2,
+  Heart,
+  List,
+  LocateFixed,
+  Map as MapIcon,
+  RefreshCw,
+  Search,
+  X,
+} from 'lucide-react';
 import ListadoClinicas from './ListadoClinicas.jsx';
 import EspacioMapa from './EspacioMapa.jsx';
 import DetalleCentro from './DetalleCentro.jsx';
@@ -10,7 +20,26 @@ import PiePagina from './PiePagina.jsx';
 import FiltroDesplegable from './FiltroDesplegable.jsx';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
 import { claveMunicipioNormalizada } from '../../utils/centros.js';
+import {
+  consultarClinicasCercanas,
+  obtenerMensajeErrorGeolocalizacion,
+} from '../../utils/cercania.js';
 import '../../styles/Inicio.css';
+
+function claveFavoritosUsuario(sesion) {
+  const correo = sesion?.cuenta?.correo?.trim().toLowerCase();
+  return correo ? `puntoax_favoritos_${correo}` : 'puntoax_favoritos_invitado';
+}
+
+function leerFavoritosLocal(clave) {
+  try {
+    const raw = localStorage.getItem(clave);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 /**
  * MapaCentros - Ventana de Mapa / Directorio de centros según diseño oficial de Figma (1280x1294).
@@ -39,10 +68,133 @@ export default function MapaCentros({
   const [filtroMunicipio, setFiltroMunicipio] = useState('todos');
   const [filtroHorario, setFiltroHorario] = useState('todos');
   const [filtroNivel, setFiltroNivel] = useState('todos');
+  const [soloFavoritos, setSoloFavoritos] = useState(false);
   const [modoVista, setModoVista] = useState('combinada');
+
+  // Estado de geolocalización del usuario y búsqueda de centros cercanos
+  const [estadoUbicacion, setEstadoUbicacion] = useState('inactivo'); // inactivo | pidiendo | concedida | error
+  const [ubicacionUsuario, setUbicacionUsuario] = useState(null);
+  const [mensajeUbicacion, setMensajeUbicacion] = useState('');
+  const [radioKm, setRadioKm] = useState(10);
+  const [modoCercanas, setModoCercanas] = useState(false);
+  const [estadoCercanas, setEstadoCercanas] = useState('inactivo'); // inactivo | cargando | listo | vacio | error
+  const [errorCercanas, setErrorCercanas] = useState('');
+  const [clinicasCercanas, setClinicasCercanas] = useState([]);
+  const abortCercanasRef = useRef(null);
+
+  useEffect(() => () => {
+    abortCercanasRef.current?.abort();
+  }, []);
+
+  const buscarCentrosCercanos = async (lat, lng, radio = radioKm) => {
+    abortCercanasRef.current?.abort();
+    const controlador = new AbortController();
+    abortCercanasRef.current = controlador;
+
+    setModoCercanas(true);
+    setEstadoCercanas('cargando');
+    setErrorCercanas('');
+
+    try {
+      const { centros } = await consultarClinicasCercanas({
+        lat,
+        lng,
+        radioKm: radio,
+        signal: controlador.signal,
+        token: sesion?.token,
+        clinicasRespaldo: clinicas,
+      });
+
+      if (controlador.signal.aborted) return;
+      setClinicasCercanas(centros);
+      setEstadoCercanas(centros.length === 0 ? 'vacio' : 'listo');
+    } catch (err) {
+      if (controlador.signal.aborted) return;
+      setClinicasCercanas([]);
+      setEstadoCercanas('error');
+      setErrorCercanas(
+        err?.message || 'No se pudo conectar con el servicio de centros cercanos.'
+      );
+    }
+  };
+
+  const solicitarUbicacion = () => {
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      setEstadoUbicacion('error');
+      setMensajeUbicacion(obtenerMensajeErrorGeolocalizacion({}));
+      return;
+    }
+
+    setEstadoUbicacion('pidiendo');
+    setMensajeUbicacion('');
+
+    navigator.geolocation.getCurrentPosition(
+      (posicion) => {
+        const lat = posicion.coords.latitude;
+        const lng = posicion.coords.longitude;
+        setUbicacionUsuario({
+          lat,
+          lng,
+          precision: posicion.coords.accuracy,
+        });
+        setEstadoUbicacion('concedida');
+        setMensajeUbicacion(
+          `Ubicación actual: ${lat.toFixed(5)}, ${lng.toFixed(5)}`
+        );
+        buscarCentrosCercanos(lat, lng, radioKm);
+      },
+      (err) => {
+        setEstadoUbicacion('error');
+        setMensajeUbicacion(obtenerMensajeErrorGeolocalizacion(err));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    );
+  };
+
+  const desactivarModoCercanas = () => {
+    abortCercanasRef.current?.abort();
+    setModoCercanas(false);
+    setEstadoCercanas('inactivo');
+    setErrorCercanas('');
+  };
+
+  const clinicasCatalogo = useMemo(() => {
+    if (modoCercanas) return clinicasCercanas;
+    return Array.isArray(clinicas) ? clinicas : [];
+  }, [modoCercanas, clinicasCercanas, clinicas]);
+
+  const claveFavoritos = claveFavoritosUsuario(sesion);
+  const [favoritosIds, setFavoritosIds] = useState(() => leerFavoritosLocal(claveFavoritos));
+
+  const favoritosDisponiblesCount = useMemo(() => {
+    if (clinicasCatalogo.length === 0) return 0;
+    const idsCatalogo = new Set(clinicasCatalogo.map((c) => c.id_clinica));
+    return favoritosIds.filter((id) => idsCatalogo.has(id)).length;
+  }, [clinicasCatalogo, favoritosIds]);
+
+  const alternarFavorito = (clinica) => {
+    const id = clinica?.id_clinica;
+    if (!id) return;
+    setFavoritosIds((actual) => {
+      const existe = actual.includes(id);
+      const siguiente = existe ? actual.filter((item) => item !== id) : [...actual, id];
+      try {
+        localStorage.setItem(claveFavoritos, JSON.stringify(siguiente));
+      } catch {
+        // Ignorar errores de almacenamiento local
+      }
+      return siguiente;
+    });
+  };
+
   const [clinicaSeleccionadaId, setClinicaSeleccionadaId] = useState(
-    () => clinicas[0]?.id_clinica ?? null
+    () => clinicasCatalogo[0]?.id_clinica ?? null
   );
+  const [seleccionVersion, setSeleccionVersion] = useState(0);
   const [clinicaEnDetalle, setClinicaEnDetalle] = useState(null);
   const [clinicaEnAgendar, setClinicaEnAgendar] = useState(null);
 
@@ -53,7 +205,7 @@ export default function MapaCentros({
 
   const municipiosDisponibles = useMemo(() => {
     const mapa = new Map();
-    for (const c of clinicas) {
+    for (const c of clinicasCatalogo) {
       if (typeof c.municipio !== 'string' || !c.municipio.trim()) continue;
       const etiqueta = c.municipio.trim().replace(/\s+/g, ' ');
       const clave = claveMunicipioNormalizada(etiqueta);
@@ -64,12 +216,15 @@ export default function MapaCentros({
       }
     }
     return Array.from(mapa.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
-  }, [clinicas]);
+  }, [clinicasCatalogo]);
 
   const clinicasFiltradas = useMemo(() => {
     const busqueda = terminoBusqueda.trim().toLowerCase();
 
-    return clinicas.filter((c) => {
+    return clinicasCatalogo.filter((c) => {
+      if (soloFavoritos && !favoritosIds.includes(c.id_clinica)) {
+        return false;
+      }
       if (filtroServicio !== 'todos') {
         const categorias = Array.isArray(c.categorias) ? c.categorias : [];
         const servicios = Array.isArray(c.servicios) ? c.servicios : [];
@@ -129,7 +284,16 @@ export default function MapaCentros({
         enServicios
       );
     });
-  }, [clinicas, terminoBusqueda, filtroServicio, filtroMunicipio, filtroHorario, filtroNivel]);
+  }, [
+    clinicasCatalogo,
+    terminoBusqueda,
+    filtroServicio,
+    filtroMunicipio,
+    filtroHorario,
+    filtroNivel,
+    soloFavoritos,
+    favoritosIds,
+  ]);
 
   const clinicaActiva = useMemo(
     () =>
@@ -145,6 +309,7 @@ export default function MapaCentros({
     setFiltroMunicipio('todos');
     setFiltroHorario('todos');
     setFiltroNivel('todos');
+    setSoloFavoritos(false);
   };
 
   // Si el usuario pulsó "Agendar cita" desde DetalleCentro, mostramos la ventana Agendar cita (Datos) - PuntoOax
@@ -152,7 +317,7 @@ export default function MapaCentros({
     return (
       <AgendarCitaDatos
         clinica={clinicaEnAgendar}
-        clinicas={clinicas}
+        clinicas={clinicasCatalogo}
         sesion={sesion}
         onSalir={onSalir}
         onVolverAlCentro={() => setClinicaEnAgendar(null)}
@@ -171,6 +336,8 @@ export default function MapaCentros({
         onVolverAlMapa={() => setClinicaEnDetalle(null)}
         onAgendarCita={(sede) => setClinicaEnAgendar(sede)}
         sinEncabezado={sinEncabezado}
+        esFavorita={favoritosIds.includes(clinicaEnDetalle.id_clinica)}
+        onAlternarFavorito={alternarFavorito}
       />
     );
   }
@@ -292,8 +459,77 @@ export default function MapaCentros({
               </div>
             </section>
 
-            {/* Selector de modo de visualización */}
+            {/* Selector de modo de visualización, ubicación cercana y favoritos */}
             <div className="mapa-view-toolbar">
+              <div className="mapa-toolbar-left-actions">
+                <button
+                  type="button"
+                  className={`mapa-geo-btn ${modoCercanas ? 'is-active' : ''}`}
+                  onClick={solicitarUbicacion}
+                  disabled={estadoUbicacion === 'pidiendo'}
+                >
+                  <LocateFixed
+                    size={15}
+                    color={modoCercanas ? '#FFFFFF' : '#103328'}
+                    aria-hidden="true"
+                  />
+                  <span>
+                    {estadoUbicacion === 'pidiendo'
+                      ? 'Obteniendo ubicación…'
+                      : 'Usar mi ubicación'}
+                  </span>
+                </button>
+
+                {ubicacionUsuario && (
+                  <label className="mapa-radio-label">
+                    <span>Radio:</span>
+                    <select
+                      value={radioKm}
+                      onChange={(e) => {
+                        const nuevoRadio = Number(e.target.value);
+                        setRadioKm(nuevoRadio);
+                        buscarCentrosCercanos(
+                          ubicacionUsuario.lat,
+                          ubicacionUsuario.lng,
+                          nuevoRadio
+                        );
+                      }}
+                      aria-label="Radio de búsqueda en kilómetros"
+                    >
+                      <option value={5}>5 km</option>
+                      <option value={10}>10 km</option>
+                      <option value={25}>25 km</option>
+                    </select>
+                  </label>
+                )}
+
+                {modoCercanas && (
+                  <button
+                    type="button"
+                    className="mapa-fav-filter-btn"
+                    onClick={desactivarModoCercanas}
+                  >
+                    <X size={14} aria-hidden="true" />
+                    <span>Ver todos los centros</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className={`mapa-fav-filter-btn ${soloFavoritos ? 'is-active' : ''}`}
+                  aria-pressed={soloFavoritos}
+                  onClick={() => setSoloFavoritos((v) => !v)}
+                >
+                  <Heart
+                    size={15}
+                    color={soloFavoritos ? '#FFFFFF' : '#C0262D'}
+                    fill={soloFavoritos ? '#FFFFFF' : favoritosDisponiblesCount > 0 ? '#C0262D' : 'none'}
+                    aria-hidden="true"
+                  />
+                  <span>Favoritos ({favoritosDisponiblesCount})</span>
+                </button>
+              </div>
+
               <div className="mapa-view-mode-group" role="group" aria-label="Modo de visualización">
                 <button
                   type="button"
@@ -325,21 +561,126 @@ export default function MapaCentros({
               </div>
             </div>
 
+            {/* Avisos de geolocalización y resultados de cercanía */}
+            {estadoUbicacion === 'concedida' && mensajeUbicacion && (
+              <div className="mapa-geo-banner is-ok" role="status">
+                <LocateFixed size={15} aria-hidden="true" />
+                <span>
+                  <strong>{mensajeUbicacion}</strong>
+                  {estadoCercanas === 'cargando' && ` · Buscando centros a menos de ${radioKm} km…`}
+                  {estadoCercanas === 'listo' &&
+                    ` · ${clinicasCercanas.length} centro${clinicasCercanas.length === 1 ? '' : 's'} dentro de ${radioKm} km (ordenados por distancia).`}
+                </span>
+              </div>
+            )}
+
+            {estadoUbicacion === 'error' && mensajeUbicacion && (
+              <div className="mapa-geo-banner is-error" role="alert">
+                <AlertCircle size={16} aria-hidden="true" />
+                <span>{mensajeUbicacion}</span>
+                <button
+                  type="button"
+                  className="mapa-geo-banner-btn"
+                  onClick={solicitarUbicacion}
+                >
+                  Reintentar ubicación
+                </button>
+              </div>
+            )}
+
+            {modoCercanas && estadoCercanas === 'error' && errorCercanas && (
+              <div className="mapa-geo-banner is-error" role="alert">
+                <AlertCircle size={16} aria-hidden="true" />
+                <span>{errorCercanas}</span>
+                <div className="mapa-geo-banner-actions">
+                  {ubicacionUsuario && (
+                    <button
+                      type="button"
+                      className="mapa-geo-banner-btn"
+                      onClick={() =>
+                        buscarCentrosCercanos(
+                          ubicacionUsuario.lat,
+                          ubicacionUsuario.lng,
+                          radioKm
+                        )
+                      }
+                    >
+                      <RefreshCw size={13} aria-hidden="true" />
+                      Reintentar
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="mapa-geo-banner-btn"
+                    onClick={desactivarModoCercanas}
+                  >
+                    Usar búsqueda manual
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {modoCercanas && estadoCercanas === 'vacio' && (
+              <div className="mapa-geo-banner is-empty" role="status">
+                <AlertCircle size={16} aria-hidden="true" />
+                <span>
+                  No se encontraron centros a menos de {radioKm} km de tu ubicación actual.
+                </span>
+                <div className="mapa-geo-banner-actions">
+                  {radioKm < 25 && ubicacionUsuario && (
+                    <button
+                      type="button"
+                      className="mapa-geo-banner-btn"
+                      onClick={() => {
+                        setRadioKm(25);
+                        buscarCentrosCercanos(
+                          ubicacionUsuario.lat,
+                          ubicacionUsuario.lng,
+                          25
+                        );
+                      }}
+                    >
+                      Ampliar a 25 km
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="mapa-geo-banner-btn"
+                    onClick={desactivarModoCercanas}
+                  >
+                    Ver todos los centros
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Zona de convivencia: Listado y/o Mapa */}
             <section className={`mapa-workspace-grid mode-${modoVista}`} aria-label="Listado de centros y mapa">
               {modoVista !== 'mapa' && (
                 <ListadoClinicas
                   clinicas={clinicasFiltradas}
-                  vacioTexto={clinicas.length === 0
-                    ? 'No hay clínicas aprobadas para mostrar.'
-                    : 'Ningún centro coincide con los filtros seleccionados.'}
+                  vacioTexto={soloFavoritos
+                    ? 'Aún no tienes centros agregados a favoritos.'
+                    : modoCercanas && estadoCercanas === 'error'
+                      ? 'No se pudieron consultar los centros cercanos. Usa "Ver todos los centros" o la búsqueda manual.'
+                      : modoCercanas && estadoCercanas === 'vacio'
+                        ? `No hay centros dentro de ${radioKm} km de tu ubicación.`
+                        : clinicasCatalogo.length === 0
+                          ? 'No hay clínicas aprobadas para mostrar.'
+                          : 'Ningún centro coincide con los filtros seleccionados.'}
                   clinicaSeleccionadaId={clinicaActiva?.id_clinica ?? null}
-                  onSeleccionarClinica={(clinica) => setClinicaSeleccionadaId(clinica.id_clinica)}
+                  favoritosIds={favoritosIds}
+                  onAlternarFavorito={alternarFavorito}
+                  onSeleccionarClinica={(clinica) => {
+                    setClinicaSeleccionadaId(clinica.id_clinica);
+                    setSeleccionVersion((v) => v + 1);
+                  }}
                   onVerDetallesClinica={(clinica) => {
                     setClinicaSeleccionadaId(clinica.id_clinica);
+                    setSeleccionVersion((v) => v + 1);
                     setClinicaEnDetalle(clinica);
                   }}
-                  cargando={cargando}
+                  cargando={cargando || (modoCercanas && estadoCercanas === 'cargando')}
                 />
               )}
 
@@ -347,15 +688,22 @@ export default function MapaCentros({
                 <EspacioMapa
                   clinicas={clinicasFiltradas}
                   clinicaSeleccionada={clinicaActiva}
-                  onSeleccionarClinica={(clinica) => setClinicaSeleccionadaId(clinica.id_clinica)}
+                  onSeleccionarClinica={(clinica) => {
+                    setClinicaSeleccionadaId(clinica.id_clinica);
+                    setSeleccionVersion((v) => v + 1);
+                  }}
                   onVerDetallesClinica={(clinica) => {
                     setClinicaSeleccionadaId(clinica.id_clinica);
+                    setSeleccionVersion((v) => v + 1);
                     setClinicaEnDetalle(clinica);
                   }}
                   filtroServicio={filtroServicio}
                   filtroMunicipio={filtroMunicipio}
                   terminoBusqueda={terminoBusqueda}
                   modoVista={modoVista}
+                  ubicacionUsuario={ubicacionUsuario}
+                  radioKm={radioKm}
+                  seleccionVersion={seleccionVersion}
                   ComponenteMapa={ComponenteMapa}
                 />
               )}

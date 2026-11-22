@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import { Maximize2, Minimize2 } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 import {
@@ -28,12 +28,29 @@ function crearIconoMarcador(tipo, seleccionada) {
   })
 }
 
-function EnfocarCentro({ clinica }) {
+function crearIconoUsuario() {
+  return L.divIcon({
+    className: 'mapa-custom-div-icon',
+    html: '<span class="mapa-user-location-dot" aria-hidden="true"></span>',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -12],
+  })
+}
+
+function EnfocarCentro({ clinica, ubicacionUsuario, seleccionVersion }) {
   const mapa = useMap()
   useEffect(() => {
-    if (!ubicacionConfirmada(clinica)) return
-    mapa.flyTo(coordenadas(clinica), Math.max(mapa.getZoom(), 14), { duration: 0.5 })
-  }, [clinica, mapa])
+    if (ubicacionUsuario && Number.isFinite(ubicacionUsuario.lat) && Number.isFinite(ubicacionUsuario.lng)) {
+      mapa.flyTo([ubicacionUsuario.lat, ubicacionUsuario.lng], Math.max(mapa.getZoom(), 13), { duration: 0.5 })
+    }
+  }, [ubicacionUsuario, mapa])
+
+  useEffect(() => {
+    const punto = coordenadas(clinica)
+    if (!punto) return
+    mapa.setView([punto[0], punto[1]], Math.max(mapa.getZoom(), 15), { animate: false })
+  }, [clinica, seleccionVersion, mapa])
   return null
 }
 
@@ -65,6 +82,9 @@ export default function MapaLeaflet({
   onSeleccionarClinica,
   onVerDetallesClinica,
   modoVista = 'combinada',
+  ubicacionUsuario = null,
+  radioKm = 10,
+  seleccionVersion = 0,
 }) {
   const ubicadas = useMemo(
     () => clinicas.filter((clinica) => ubicacionConfirmada(clinica)),
@@ -133,7 +153,39 @@ export default function MapaLeaflet({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <AjustarTamanoMapa modoVista={modoVista} pantallaCompleta={pantallaCompleta} />
-        <EnfocarCentro clinica={clinicaSeleccionada} />
+        <EnfocarCentro
+          clinica={clinicaSeleccionada}
+          ubicacionUsuario={ubicacionUsuario}
+          seleccionVersion={seleccionVersion}
+        />
+        {ubicacionUsuario && Number.isFinite(ubicacionUsuario.lat) && Number.isFinite(ubicacionUsuario.lng) && (
+          <>
+            <Circle
+              center={[ubicacionUsuario.lat, ubicacionUsuario.lng]}
+              radius={Math.max(1, Number(radioKm) || 10) * 1000}
+              pathOptions={{
+                color: '#103328',
+                fillColor: '#43A882',
+                fillOpacity: 0.1,
+                weight: 1.5,
+                dashArray: '5 5',
+              }}
+            />
+            <Marker
+              position={[ubicacionUsuario.lat, ubicacionUsuario.lng]}
+              icon={crearIconoUsuario()}
+              zIndexOffset={1500}
+            >
+              <Popup>
+                <strong>Tu ubicación actual</strong>
+                <br />
+                <span>
+                  {ubicacionUsuario.lat.toFixed(5)}, {ubicacionUsuario.lng.toFixed(5)}
+                </span>
+              </Popup>
+            </Marker>
+          </>
+        )}
         {ubicadas.map((clinica) => {
           const tipo = clasificarServicioCentro(clinica)
           const seleccionada = clinicaSeleccionada?.id_clinica === clinica.id_clinica
@@ -177,9 +229,13 @@ export default function MapaLeaflet({
         </span>
       </div>
 
-      {ubicadas.length === 0 && (
+      {ubicadas.length === 0 ? (
         <p className="mapa-leaflet-vacio" role="status">No hay centros con coordenadas para los filtros seleccionados.</p>
-      )}
+      ) : clinicaSeleccionada && !ubicacionConfirmada(clinicaSeleccionada) ? (
+        <p className="mapa-leaflet-vacio" role="status">
+          <strong>{clinicaSeleccionada.nombre}</strong> no tiene coordenadas exactas registradas en el mapa; consulta su ubicación en «Ver detalles».
+        </p>
+      ) : null}
     </div>
   )
 }

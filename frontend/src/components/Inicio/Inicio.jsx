@@ -156,7 +156,7 @@ export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
 
                 <div className="inicio-feature-desc-wrap">
                   <p className="inicio-feature-desc">
-                    Consulta horarios, tipos de pruebas disponibles y requisitos de atención.
+                    Consulta guías claras sobre detección de ITS, interrupción legal del embarazo y prevención en salud sexual.
                   </p>
                 </div>
               </div>
