@@ -8,16 +8,22 @@ const requerirRol = (roles) => Object.assign(function rol() {}, { roles });
 function appFalsa() {
   const rutas = {};
   const agregar = (metodo) => (ruta, ...manejadores) => { rutas[`${metodo} ${ruta}`] = manejadores; };
-  return { rutas, get: agregar("GET") };
+  return { rutas, get: agregar("GET"), patch: agregar("PATCH") };
 }
 
-test("el listado de usuarios exige sesión y rol administrador", () => {
+test("todas las rutas de usuarios exigen sesión y rol administrador", () => {
   const app = appFalsa();
   registrarRutasAdminUsuarios(app, { pool: {}, autenticarToken, requerirRol });
-  const manejadores = app.rutas["GET /api/admin/usuarios"];
-  assert.ok(manejadores, "debe registrar GET /api/admin/usuarios");
-  assert.equal(manejadores[0], autenticarToken);
-  assert.deepEqual(manejadores[1].roles, ["administrador"]);
+  for (const ruta of [
+    "GET /api/admin/usuarios",
+    "GET /api/admin/usuarios/:id",
+    "PATCH /api/admin/usuarios/:id/estado",
+  ]) {
+    const manejadores = app.rutas[ruta];
+    assert.ok(manejadores, `debe registrar ${ruta}`);
+    assert.equal(manejadores[0], autenticarToken);
+    assert.deepEqual(manejadores[1].roles, ["administrador"]);
+  }
 });
 
 test("la consulta devuelve datos públicos y nunca el hash ni google_sub", async () => {
