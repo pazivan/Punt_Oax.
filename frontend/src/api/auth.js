@@ -212,6 +212,26 @@ export async function consultarPerfil() {
   return enviarConSesion('/api/auth/perfil')
 }
 
+export async function actualizarPerfilUsuario({ nombre, apellidos, telefono } = {}) {
+  const respuesta = await enviarConSesion('/api/auth/perfil', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, apellidos, telefono }),
+  })
+  if (respuesta?.usuario) {
+    try {
+      const sesion = leerSesion()
+      if (sesion?.tipo === 'usuario') {
+        localStorage.setItem(CLAVE_SESION, JSON.stringify({
+          ...sesion,
+          cuenta: { ...sesion.cuenta, ...respuesta.usuario },
+        }))
+      }
+    } catch { /* ignorar error de almacenamiento local */ }
+  }
+  return respuesta
+}
+
 // Las citas se filtran en el servidor con el id de la clínica autenticada.
 export function consultarCitasClinica() {
   return enviarConSesion('/api/clinicas/mi-citas')
@@ -284,11 +304,21 @@ export function consultarEspaciosClinica(idClinica, { desde, hasta, incluirEstad
   )
 }
 
-export async function solicitarCita(idEspacio) {
+export async function solicitarCita(idEspacio, datosContacto = {}) {
+  const cuerpo = { id_espacio: idEspacio }
+  if (typeof datosContacto?.telefono === 'string' && datosContacto.telefono.trim()) {
+    cuerpo.telefono = datosContacto.telefono.trim()
+  }
+  if (typeof datosContacto?.nombre === 'string' && datosContacto.nombre.trim()) {
+    cuerpo.nombre = datosContacto.nombre.trim()
+  }
+  if (typeof datosContacto?.apellidos === 'string' && datosContacto.apellidos.trim()) {
+    cuerpo.apellidos = datosContacto.apellidos.trim()
+  }
   const respuesta = await enviarConSesion('/api/citas', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id_espacio: idEspacio }),
+    body: JSON.stringify(cuerpo),
   })
   invalidarCacheCitas()
   return respuesta

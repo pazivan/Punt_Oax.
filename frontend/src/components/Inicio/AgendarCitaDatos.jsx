@@ -24,7 +24,7 @@ import FiltroDesplegable from './FiltroDesplegable.jsx';
 import { normalizarYUnificarClinicas } from '../../data/clinicasDemo.js';
 import { consultarEspaciosClinica, solicitarCita } from '../../api/auth.js';
 import { validarEmail, validarTelefono } from '../../utils/validaciones.js';
-import { leerPerfilLocal } from '../../utils/perfilLocal.js';
+import { leerPerfilLocal, guardarPerfilLocal } from '../../utils/perfilLocal.js';
 import '../../styles/Inicio.css';
 
 const NOMBRE_MIN = 2;
@@ -453,14 +453,26 @@ export default function AgendarCitaDatos({
     setEnviandoCita(true);
 
     try {
-      const respuesta = await solicitarCita(espacioSeleccionadoObj.id_espacio);
+      const telefonoEnviado = telefono.trim();
+      const nombreEnviado = nombres.trim();
+      const apellidosEnviados = apellidos.trim();
+      const respuesta = await solicitarCita(espacioSeleccionadoObj.id_espacio, {
+        telefono: telefonoEnviado,
+        nombre: nombreEnviado,
+        apellidos: apellidosEnviados,
+      });
+      guardarPerfilLocal(sesion?.cuenta?.id, {
+        nombre: nombreEnviado,
+        apellidos: apellidosEnviados,
+        telefono: telefonoEnviado,
+      });
       setCitaRegistrada({
         ...respuesta.cita,
         mensaje_servidor: respuesta.mensaje,
         usuario: {
-          nombre: nombres.trim(),
-          apellidos: apellidos.trim(),
-          telefono: telefono.trim() || 'No especificado',
+          nombre: nombreEnviado,
+          apellidos: apellidosEnviados,
+          telefono: respuesta.cita?.paciente_telefono || telefonoEnviado || 'No especificado',
           correo: correoFinal.trim(),
         },
         clinica_servicio: {
