@@ -26,6 +26,7 @@ const {
 } = require("./validacionesCitas");
 const { festivoNacional } = require("./agendaClinica");
 const { esEstadoOperativo, respuestaNoAprobada } = require("./clinicasEstado");
+const { validarTelefono } = require("./validacionesRegistro");
 
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ESTADOS = Array.from(ESTADOS_VALIDOS);
@@ -53,7 +54,8 @@ const COLUMNAS_CITA = `
     AND cl.situacion_ubicacion = 'fija'
     AND cl.verificacion_datos = 'verificado') AS ubicacion_confirmada_clinica,
   ST_Y(cl.ubicacion_geo::geometry) AS latitud_clinica,
-  ST_X(cl.ubicacion_geo::geometry) AS longitud_clinica
+  ST_X(cl.ubicacion_geo::geometry) AS longitud_clinica,
+  u.telefono AS paciente_telefono
 `;
 
 const JOINS_CITA = `
@@ -62,6 +64,7 @@ const JOINS_CITA = `
   INNER JOIN clinicas_servicios cs ON cs.id_clinica_servicio = ed.id_clinica_servicio
   INNER JOIN servicios s ON s.id_servicio = cs.id_servicio
   INNER JOIN clinicas cl ON cl.id_clinica = cs.id_clinica
+  INNER JOIN usuarios u ON u.id_usuario = ci.id_usuario
 `;
 
 async function obtenerCitaDeUsuario(db, idUsuario, idCita) {
@@ -159,6 +162,14 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
   const idEspacio = cuerpo?.id_espacio;
   if (!esUuid(idEspacio)) return respuesta(400, { error: "Envía un 'id_espacio' válido." });
 
+  const telefonoLimpio = typeof cuerpo?.telefono === "string" ? cuerpo.telefono.trim() : "";
+  if (cuerpo?.telefono !== undefined && cuerpo?.telefono !== null && telefonoLimpio) {
+    const errorTelefono = validarTelefono(telefonoLimpio, { requerido: true });
+    if (errorTelefono) return respuesta(400, { error: errorTelefono });
+  }
+  const nombreLimpio = typeof cuerpo?.nombre === "string" ? cuerpo.nombre.trim().slice(0, 100) : "";
+  const apellidosLimpios = typeof cuerpo?.apellidos === "string" ? cuerpo.apellidos.trim().slice(0, 150) : "";
+
   try {
     return await enTransaccion(pool, async (db) => {
       // Bloquea el horario para que dos personas no lo reserven al mismo tiempo.
@@ -212,6 +223,22 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
             error: "El horario seleccionado no coincide con los días y horas de atención de la clínica.",
           });
         }
+      }
+
+      if (telefonoLimpio || nombreLimpio || apellidosLimpios) {
+        await db.query(
+          `UPDATE usuarios
+           SET telefono = COALESCE($2, telefono),
+               nombre = COALESCE($3, nombre),
+               apellidos = COALESCE($4, apellidos)
+           WHERE id_usuario = $1`,
+          [
+            idUsuario,
+            telefonoLimpio || null,
+            nombreLimpio || null,
+            apellidosLimpios || null,
+          ]
+        );
       }
 
       const creada = await db.query(

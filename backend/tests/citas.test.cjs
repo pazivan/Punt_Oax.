@@ -76,3 +76,46 @@ test("un error de base de datos responde 500 sin mostrar detalles internos", asy
   assert.equal(res.codigo, 500);
   assert.doesNotMatch(JSON.stringify(res.cuerpo), /relation/);
 });
+
+test("solicitarCita valida el teléfono cuando se envía y lo guarda en el perfil del paciente", async () => {
+  const poolSinConectar = { connect: async () => { throw new Error("no debería conectarse"); } };
+  const invalido = await solicitarCita(poolSinConectar, "22222222-2222-4222-8222-222222222222", {
+    id_espacio: "33333333-3333-4333-8333-333333333333",
+    telefono: "12345",
+  });
+  assert.equal(invalido.status, 400);
+
+  let actualizacionUsuario = null;
+  const cliente = {
+    async query(sql, params = []) {
+      if (/FOR UPDATE OF ed/.test(sql)) {
+        return { rows: [{ fecha_hora_inicio: new Date(Date.now() + 86400000), reservable: true, es_futuro: true }] };
+      }
+      if (/UPDATE usuarios/.test(sql)) {
+        actualizacionUsuario = params;
+        return { rowCount: 1, rows: [] };
+      }
+      if (/RETURNING id_cita/.test(sql)) return { rows: [{ id_cita: "c1" }] };
+      if (/WHERE ci\.id_cita = \$1 AND ci\.id_usuario = \$2/.test(sql)) {
+        return { rows: [{ id_cita: "c1", estado: "confirmada", paciente_telefono: "9511234567" }] };
+      }
+      return { rows: [] };
+    },
+    release() {},
+  };
+  const pool = { connect: async () => cliente };
+  const res = await solicitarCita(pool, "22222222-2222-4222-8222-222222222222", {
+    id_espacio: "33333333-3333-4333-8333-333333333333",
+    telefono: "9511234567",
+    nombre: "Kelly",
+    apellidos: "López",
+  });
+  assert.equal(res.status, 201);
+  assert.deepEqual(actualizacionUsuario, [
+    "22222222-2222-4222-8222-222222222222",
+    "9511234567",
+    "Kelly",
+    "López",
+  ]);
+  assert.equal(res.body.cita.paciente_telefono, "9511234567");
+});

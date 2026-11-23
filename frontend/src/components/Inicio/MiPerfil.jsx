@@ -18,7 +18,7 @@ import {
 import EncabezadoUsuario from './EncabezadoUsuario.jsx';
 import PiePagina from './PiePagina.jsx';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
-import { consultarCitasUsuario, consultarMiFicha } from '../../api/auth.js';
+import { actualizarPerfilUsuario, consultarCitasUsuario, consultarMiFicha } from '../../api/auth.js';
 import {
   PASSWORD_MAX_BYTES,
   PASSWORD_MIN,
@@ -73,7 +73,7 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
     return {
       nombre: guardados.nombre || sesion?.cuenta?.nombre || '',
       apellidos: guardados.apellidos || sesion?.cuenta?.apellidos || '',
-      telefono: guardados.telefono || '',
+      telefono: guardados.telefono || sesion?.cuenta?.telefono || '',
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idCuenta]);
@@ -169,7 +169,7 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
   const coincideConfirmacion =
     Boolean(passwordNueva) && passwordNueva === passwordConfirmacion;
 
-  function manejarGuardarDatos(e) {
+  async function manejarGuardarDatos(e) {
     e.preventDefault();
     setMensajeDatos('');
     setErrorDatos('');
@@ -218,17 +218,27 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
       return;
     }
 
+    const esUsuario = sesion?.tipo === 'usuario';
     try {
+      if (esUsuario) {
+        await actualizarPerfilUsuario({
+          nombre: nombreLimpio,
+          apellidos: apellidosLimpios,
+          telefono: telefonoLimpio,
+        });
+      }
       guardarPerfilLocal(idCuenta, {
         nombre: nombreLimpio,
         apellidos: apellidosLimpios,
         telefono: telefonoLimpio,
       });
       setMensajeDatos(
-        'Tus datos de contacto se guardaron en este navegador y se autocompletarán al agendar una cita.'
+        esUsuario
+          ? 'Tus datos de contacto se guardaron en tu cuenta y se autocompletarán al agendar una cita.'
+          : 'Tus datos de contacto se guardaron en este navegador y se autocompletarán al agendar una cita.'
       );
-    } catch {
-      setErrorDatos('No se pudieron guardar los datos en este navegador.');
+    } catch (error) {
+      setErrorDatos(error?.message || 'No se pudieron guardar los datos de contacto.');
     }
   }
 

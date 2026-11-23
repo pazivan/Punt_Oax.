@@ -684,7 +684,9 @@ function DetalleSolicitud({ idSolicitud, onSalir }) {
       setAviso(respuesta.mensaje || 'La acción se realizó correctamente.')
       setAccion(null)
       try { const actualizado = await consultarSolicitudAdmin(solicitud.id_solicitud); setDetalle(actualizado) } catch { /* se mantiene el resultado confirmado por PATCH */ }
-    } catch (err) { setErrorAccion(err.message) }
+    } catch (err) {
+      setErrorAccion(err?.message || 'No se pudo completar la operación administrativa. Verifica tu conexión o inténtalo de nuevo.')
+    }
     finally { ocupado.current = false; setProcesando(false) }
   }
 
@@ -896,7 +898,9 @@ function DetalleClinicaAdmin({ idClinica, onSalir }) {
       }))
       setAviso(respuesta.mensaje || 'Visibilidad actualizada correctamente.')
       setAccion(null)
-    } catch (err) { setErrorAccion(err.message) }
+    } catch (err) {
+      setErrorAccion(err?.message || 'No se pudo completar la operación administrativa. Verifica tu conexión o inténtalo de nuevo.')
+    }
     finally { ocupado.current = false; setProcesando(false) }
   }
 
@@ -1054,7 +1058,9 @@ function DetalleUsuarioAdmin({ idUsuario, onSalir }) {
       setUsuario((prev) => ({ ...prev, activo: respuesta.usuario?.activo ?? !estaActivo }))
       setAviso(respuesta.mensaje || 'Estado de la cuenta actualizado.')
       setConfirmando(false)
-    } catch (err) { setErrorAccion(err.message) }
+    } catch (err) {
+      setErrorAccion(err?.message || 'No se pudo completar la operación administrativa. Verifica tu conexión o inténtalo de nuevo.')
+    }
     finally { setProcesando(false) }
   }
 

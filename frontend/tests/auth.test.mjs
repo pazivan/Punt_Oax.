@@ -136,20 +136,26 @@ test('perfil usa Bearer; 401/403 limpian sesión y cerrar sesión la elimina', a
   assert.equal((await consultarPerfil()).usuarioAutenticado.rol, 'usuario')
   assert.equal(llamadas[0].ruta, '/api/auth/perfil')
   assert.equal(llamadas[0].opciones.headers.Authorization, 'Bearer jwt-u')
-  for (const estado of [401, 403]) {
+  for (const [estado, cuerpo] of [
+    [401, { error: 'Token inválido o expirado.' }],
+    [403, { error: 'Token inválido o expirado.', codigo: 'TOKEN_INVALIDO' }],
+  ]) {
     guardarSesion({ token: 'jwt-u', usuario: {} }, 'usuario')
-    llamadas = simular(estado, { error: 'Token inválido o expirado.' })
+    llamadas = simular(estado, cuerpo)
     await assert.rejects(consultarPerfil(), /Token inválido/)
     assert.equal(leerSesion(), null)
   }
   guardarSesion({ token: 'jwt-c', clinica: {} }, 'clinica')
+  simular(403, { error: 'Tu clínica aún no está aprobada.', codigo: 'CLINICA_NO_APROBADA' })
+  await assert.rejects(consultarPerfil(), /no está aprobada/)
+  assert.ok(leerSesion(), 'un 403 por permisos o estado de clínica no cierra la sesión')
   cerrarSesion()
   assert.equal(leerSesion(), null)
 })
 
 test('errores HTTP legibles, con JSON, sin JSON y conexión fallida', async () => {
   for (const [estado, mensaje] of [[400, /Revisa los datos/], [401, /contraseña incorrectos/],
-    [403, /Acceso denegado/], [409, /correo ya está registrado/]]) {
+    [403, /No tienes permisos/], [409, /correo ya está registrado/]]) {
     simular(estado, null, { sinJson: true })
     await assert.rejects(iniciarSesion('a@ejemplo.com', 'contraseña'), mensaje)
   }

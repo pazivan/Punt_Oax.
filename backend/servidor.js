@@ -1559,7 +1559,7 @@ app.post("/api/auth/login-usuario", async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      "SELECT id_usuario, correo, password_hash, nombre, apellidos, correo_verificado_en, version_sesion, activo FROM usuarios WHERE correo = LOWER(TRIM($1))",
+      "SELECT id_usuario, correo, password_hash, nombre, apellidos, telefono, correo_verificado_en, version_sesion, activo FROM usuarios WHERE correo = LOWER(TRIM($1))",
       [correo]
     );
 
@@ -1593,6 +1593,7 @@ app.post("/api/auth/login-usuario", async (req, res) => {
         nombre: usuario.nombre,
         apellidos: usuario.apellidos,
         correo: usuario.correo,
+        telefono: usuario.telefono || null,
         rol: "usuario",
       },
     });
@@ -1777,6 +1778,60 @@ app.get("/api/auth/perfil", autenticarToken, (req, res) => {
     mensaje: "Token verificado con éxito.",
     usuarioAutenticado: req.usuario,
   });
+});
+
+app.patch("/api/auth/perfil", autenticarToken, requerirRol(["usuario"]), async (req, res) => {
+  const { nombre, apellidos, telefono } = req.body || {};
+  const telefonoLimpio = typeof telefono === "string" ? telefono.trim() : "";
+
+  if (telefono !== undefined && telefono !== null && telefonoLimpio) {
+    const errorTelefono = validarTelefono(telefonoLimpio, { requerido: true });
+    if (errorTelefono) {
+      return res.status(400).json({ error: errorTelefono });
+    }
+  }
+
+  const nombreLimpio = typeof nombre === "string" ? nombre.trim() : null;
+  const apellidosLimpios = typeof apellidos === "string" ? apellidos.trim() : null;
+  if (nombreLimpio && nombreLimpio.length > 100) {
+    return res.status(400).json({ error: "El nombre no puede superar los 100 caracteres." });
+  }
+  if (apellidosLimpios && apellidosLimpios.length > 150) {
+    return res.status(400).json({ error: "Los apellidos no pueden superar los 150 caracteres." });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE usuarios
+       SET nombre = COALESCE($2, nombre),
+           apellidos = COALESCE($3, apellidos),
+           telefono = CASE WHEN $4::boolean THEN $5 ELSE telefono END
+       WHERE id_usuario = $1
+       RETURNING id_usuario, nombre, apellidos, correo, telefono`,
+      [
+        req.usuario.id,
+        nombreLimpio || null,
+        apellidosLimpios || null,
+        telefono !== undefined,
+        telefonoLimpio || null,
+      ]
+    );
+    if (!rows[0]) return res.status(404).json({ error: "Usuario no encontrado." });
+    return res.json({
+      mensaje: "Datos de contacto actualizados.",
+      usuario: {
+        id: rows[0].id_usuario,
+        nombre: rows[0].nombre,
+        apellidos: rows[0].apellidos,
+        correo: rows[0].correo,
+        telefono: rows[0].telefono || null,
+        rol: "usuario",
+      },
+    });
+  } catch (error) {
+    console.error("Error al actualizar perfil de usuario:", error.message);
+    return res.status(500).json({ error: "No se pudieron actualizar los datos de contacto." });
+  }
 });
 
 // 5. Ruta de prueba protegida: Solo Administradores (Criterio de autorización por rol)
