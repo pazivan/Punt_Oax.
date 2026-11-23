@@ -43,6 +43,8 @@ const MIN_OBSERVACIONES_RECHAZO = 10;
 const MAX_OBSERVACIONES = 1000;
 
 const esUuid = (valor) => typeof valor === "string" && UUID_RE.test(valor);
+const esCoordenadaValida = (valor) =>
+  valor !== null && valor !== undefined && valor !== "" && Number.isFinite(Number(valor));
 const respuesta = (status, body) => ({ status, body });
 
 async function enTransaccion(pool, trabajo) {
@@ -255,8 +257,8 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
       }
       if (
         ubicacionSolicitada &&
-        Number.isFinite(Number(ubicacionSolicitada.latitud)) &&
-        Number.isFinite(Number(ubicacionSolicitada.longitud))
+        esCoordenadaValida(ubicacionSolicitada.latitud) &&
+        esCoordenadaValida(ubicacionSolicitada.longitud)
       ) {
         valores.push(Number(ubicacionSolicitada.longitud), Number(ubicacionSolicitada.latitud));
         sets.push(
@@ -303,8 +305,8 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
     } else if (
       decision === "aprobar" &&
       ubicacionSolicitada &&
-      Number.isFinite(Number(ubicacionSolicitada.latitud)) &&
-      Number.isFinite(Number(ubicacionSolicitada.longitud))
+      esCoordenadaValida(ubicacionSolicitada.latitud) &&
+      esCoordenadaValida(ubicacionSolicitada.longitud)
     ) {
       clinica = await db.query(
         `UPDATE clinicas
@@ -327,13 +329,13 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
     } else {
       clinica = await db.query(
         `UPDATE clinicas
-         SET estado_publicacion = $1,
+         SET estado_publicacion = $1::text,
              situacion_ubicacion = CASE
-               WHEN $1 = 'aprobada' AND ubicacion_geo IS NOT NULL AND situacion_ubicacion = 'pendiente' THEN 'fija'
+               WHEN $1::text = 'aprobada' AND ubicacion_geo IS NOT NULL AND situacion_ubicacion = 'pendiente' THEN 'fija'
                ELSE situacion_ubicacion
              END,
              verificacion_datos = CASE
-               WHEN $1 = 'aprobada' THEN 'verificado'
+               WHEN $1::text = 'aprobada' THEN 'verificado'
                ELSE verificacion_datos
              END
          WHERE id_clinica = $2
@@ -561,10 +563,37 @@ function registrarRutasAdminClinicas(app, { pool, autenticarToken, requerirRol, 
       }
       return res.status(resultado.status).json(resultado.body);
     } catch (error) {
-      console.error(`Error al ${etiqueta}:`, error.message);
+      console.error(`Error al ${etiqueta}:`, error.code || "", error.message);
       if (responderErrorEsquema(res, error)) return;
       if (error.status) return res.status(error.status).json({ error: error.message });
-      return res.status(500).json({ error: `No se pudo ${etiqueta}.` });
+      if (error.code === "23505") {
+        return res.status(409).json({
+          error: `No se pudo ${etiqueta} porque existe un conflicto con otro registro activo.`,
+          codigo: "CONFLICTO_REGISTRO",
+        });
+      }
+      if (error.code === "23503") {
+        return res.status(409).json({
+          error: `No se pudo ${etiqueta} porque falta un registro relacionado requerido.`,
+          codigo: "REFERENCIA_NO_DISPONIBLE",
+        });
+      }
+      if (error.code === "23514") {
+        return res.status(400).json({
+          error: `No se pudo ${etiqueta} porque alguno de los valores no cumple las reglas de validación.`,
+          codigo: "VALIDACION_DATOS",
+        });
+      }
+      if (error.code === "22P02") {
+        return res.status(400).json({
+          error: `No se pudo ${etiqueta} porque uno de los identificadores o valores tiene un formato inválido.`,
+          codigo: "FORMATO_INVALIDO",
+        });
+      }
+      return res.status(500).json({
+        error: `No se pudo ${etiqueta} por un error interno del servidor. Intenta de nuevo y, si el problema continúa, revisa los registros del servidor.`,
+        codigo: "ERROR_INTERNO",
+      });
     }
   };
 
