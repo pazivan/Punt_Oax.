@@ -25,6 +25,7 @@ const {
   validarTransicionEstadoCita,
 } = require("./validacionesCitas");
 const { festivoNacional } = require("./agendaClinica");
+const { esEstadoOperativo, respuestaNoAprobada } = require("./clinicasEstado");
 
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ESTADOS = Array.from(ESTADOS_VALIDOS);
@@ -46,7 +47,13 @@ const COLUMNAS_CITA = `
   cl.nombre AS nombre_clinica,
   cl.municipio AS municipio_clinica,
   cl.direccion AS direccion_clinica,
-  cl.telefono AS telefono_clinica
+  cl.telefono AS telefono_clinica,
+  cl.ubicacion_maps_url AS ubicacion_maps_clinica,
+  (cl.ubicacion_geo IS NOT NULL
+    AND cl.situacion_ubicacion = 'fija'
+    AND cl.verificacion_datos = 'verificado') AS ubicacion_confirmada_clinica,
+  ST_Y(cl.ubicacion_geo::geometry) AS latitud_clinica,
+  ST_X(cl.ubicacion_geo::geometry) AS longitud_clinica
 `;
 
 const JOINS_CITA = `
@@ -85,7 +92,7 @@ async function enTransaccion(pool, trabajo) {
 // ------------------------------------------------------------------
 // 1. Horarios libres de una clínica (para que el usuario elija)
 // ------------------------------------------------------------------
-async function listarEspaciosDisponibles(db, idClinica, { desde, hasta, servicio } = {}) {
+async function listarEspaciosDisponibles(db, idClinica, { desde, hasta, servicio, incluir_estado } = {}) {
   if (!esUuid(idClinica)) return respuesta(400, { error: "Identificador de clínica no válido." });
   if (servicio !== undefined && !esUuid(servicio)) {
     return respuesta(400, { error: "Identificador de servicio no válido." });
@@ -110,10 +117,16 @@ async function listarEspaciosDisponibles(db, idClinica, { desde, hasta, servicio
   );
   if (!clinica.rows.length) return respuesta(404, { error: "Centro no encontrado." });
 
+  const incluirEstado = incluir_estado === '1' || incluir_estado === 'true';
+
   // Fechas en hora de México; sin 'desde'/'hasta' se muestran los próximos 30 días.
   const { rows } = await db.query(
      `SELECT ed.id_espacio, ed.fecha_hora_inicio, cs.id_clinica_servicio,
              s.id_servicio, s.nombre AS nombre_servicio,
+             (ed.fecha_hora_inicio > NOW()) AS es_futuro,
+             NOT EXISTS (
+               SELECT 1 FROM citas ci WHERE ci.id_espacio = ed.id_espacio AND ci.estado <> 'cancelada'
+             ) AS disponible,
              (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::date::text AS fecha_local
      FROM espacios_disponibles ed
      INNER JOIN clinicas_servicios cs ON cs.id_clinica_servicio = ed.id_clinica_servicio
@@ -121,18 +134,18 @@ async function listarEspaciosDisponibles(db, idClinica, { desde, hasta, servicio
      WHERE cs.id_clinica = $1
        AND ($2::uuid IS NULL OR s.id_servicio = $2::uuid)
        AND ed.habilitado = TRUE AND cs.activo = TRUE AND s.activo = TRUE
-       AND ed.fecha_hora_inicio > NOW()
+       AND ($5::boolean OR ed.fecha_hora_inicio > NOW())
        AND ed.fecha_hora_inicio >= COALESCE($3::date::timestamp AT TIME ZONE 'America/Mexico_City', NOW())
        AND ed.fecha_hora_inicio < COALESCE(($4::date + 1)::timestamp AT TIME ZONE 'America/Mexico_City',
                                            NOW() + INTERVAL '30 days')
-        AND NOT EXISTS (
+       AND ($5::boolean OR NOT EXISTS (
           SELECT 1 FROM citas ci WHERE ci.id_espacio = ed.id_espacio AND ci.estado <> 'cancelada'
-        )
+        ))
         AND NOT EXISTS (SELECT 1 FROM clinicas_dias_bloqueados b
           WHERE b.id_clinica = cs.id_clinica
           AND b.fecha = (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::date)
      ORDER BY ed.fecha_hora_inicio, s.nombre`,
-    [idClinica, servicio ?? null, desde ?? null, hasta ?? null]
+    [idClinica, servicio ?? null, desde ?? null, hasta ?? null, incluirEstado]
   );
    const espacios = rows.filter((espacio) => !festivoNacional(espacio.fecha_local))
      .map(({ fecha_local, ...espacio }) => espacio);
@@ -284,6 +297,14 @@ async function actualizarEstadoCitaClinica(pool, idClinica, idCita, cuerpo) {
     return respuesta(400, { error: `Estado no válido. Usa: ${ESTADOS_CLINICA.join(", ")}.` });
   }
   return enTransaccion(pool, async (db) => {
+    const { rows: clinica } = await db.query(
+      "SELECT estado_publicacion FROM clinicas WHERE id_clinica = $1",
+      [idClinica]
+    );
+    if (!clinica[0]) return respuesta(404, { error: "No se encontró tu clínica." });
+    if (!esEstadoOperativo(clinica[0].estado_publicacion)) {
+      return respuesta(403, respuestaNoAprobada(clinica[0].estado_publicacion));
+    }
     const { rows } = await db.query(
       `SELECT ci.estado, ed.fecha_hora_inicio > NOW() AS es_futura
        FROM citas ci
@@ -334,7 +355,10 @@ function registrarRutasCitas(app, { pool, autenticarToken, requerirRol }) {
   app.get("/api/clinicas/:id/espacios", autenticarToken,
     manejar("consultar los horarios disponibles", (req) =>
       listarEspaciosDisponibles(pool, req.params.id, {
-        desde: req.query.desde, hasta: req.query.hasta, servicio: req.query.servicio,
+        desde: req.query.desde,
+        hasta: req.query.hasta,
+        servicio: req.query.servicio,
+        incluir_estado: req.query.incluir_estado,
       })));
 
   app.post("/api/citas", ...soloUsuario,

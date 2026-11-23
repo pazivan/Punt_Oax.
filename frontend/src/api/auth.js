@@ -1,7 +1,7 @@
 function mensajeError(estado) {
   if (estado === 400) return 'Revisa los datos enviados e inténtalo de nuevo.'
   if (estado === 401) return 'Correo o contraseña incorrectos.'
-  if (estado === 403) return 'Acceso denegado o sesión caducada.'
+  if (estado === 403) return 'No tienes permisos para realizar esta acción.'
   if (estado === 409) return 'Este correo ya está registrado.'
   return `Error del servidor (${estado}). Inténtalo más tarde.`
 }
@@ -18,8 +18,11 @@ async function leerRespuesta(respuesta) {
     const error = new Error(typeof contenido?.error === 'string' && contenido.error.trim()
       ? contenido.error
       : mensajeError(respuesta.status))
+    error.status = respuesta.status
+    error.esTemporal = respuesta.status >= 500
     if (contenido && typeof contenido === 'object') {
       error.campos = contenido.campos
+      error.codigo = contenido.codigo
       error.requiere_verificacion = contenido.requiere_verificacion
       error.faltantes = contenido.faltantes
     }
@@ -41,7 +44,11 @@ async function enviarAuth(ruta, datos) {
       body: JSON.stringify(datos),
     })
   } catch {
-    throw new Error('No se pudo conectar con el servidor.')
+    const error = new Error('No se pudo conectar con el servidor.')
+    error.esRed = true
+    error.esTemporal = true
+    error.codigo = 'ERROR_CONEXION'
+    throw error
   }
 
   return leerRespuesta(respuesta)
@@ -129,7 +136,15 @@ export function guardarSesion(respuesta, tipo) {
   return sesion
 }
 
+let cacheCitas = { token: null, ts: 0, promesa: null, resultado: null }
+const TTL_CITAS_MS = 10000
+
+export function invalidarCacheCitas() {
+  cacheCitas = { token: null, ts: 0, promesa: null, resultado: null }
+}
+
 export function cerrarSesion() {
+  invalidarCacheCitas()
   try {
     localStorage.setItem(CLAVE_MIGRACION, '1')
     localStorage.removeItem(CLAVE_SESION)
@@ -155,7 +170,12 @@ export async function revocarSesion(token = leerSesion()?.token) {
 
 export async function enviarConSesion(ruta, opciones = {}) {
   const token = leerSesion()?.token
-  if (!token) throw new Error('Inicia sesión para continuar.')
+  if (!token) {
+    const error = new Error('Inicia sesión para continuar.')
+    error.status = 401
+    error.codigo = 'SESION_REQUERIDA'
+    throw error
+  }
 
   let respuesta
   try {
@@ -168,13 +188,24 @@ export async function enviarConSesion(ruta, opciones = {}) {
       },
     })
   } catch {
-    throw new Error('No se pudo conectar con el servidor.')
+    const error = new Error('No se pudo conectar con el servidor.')
+    error.esRed = true
+    error.esTemporal = true
+    error.codigo = 'ERROR_CONEXION'
+    throw error
   }
 
-  if ((respuesta.status === 401 || respuesta.status === 403) && leerSesion()?.token === token) {
-    cerrarSesion()
+  try {
+    return await leerRespuesta(respuesta)
+  } catch (error) {
+    // La falta de permisos o el estado de la clínica no invalidan la sesión.
+    // Solo las respuestas que indican credenciales inválidas la cierran.
+    if ((respuesta.status === 401 ||
+        (respuesta.status === 403 &&
+          ['TOKEN_EXPIRADO', 'TOKEN_INVALIDO', 'SESION_INVALIDA', 'CUENTA_DESACTIVADA'].includes(error.codigo))) &&
+        leerSesion()?.token === token) cerrarSesion()
+    throw error
   }
-  return leerRespuesta(respuesta)
 }
 
 export async function consultarPerfil() {
@@ -201,14 +232,35 @@ export const bloquearDiaClinica = (fecha) => enviarConSesion('/api/clinicas/mi-a
 })
 
 // Citas del paciente autenticado: el servidor filtra por su JWT.
-export function consultarCitasUsuario() {
-  return enviarConSesion('/api/citas')
+// Deduplica solicitudes simultáneas y reutiliza respuesta reciente para acelerar Inicio/Campana.
+export function consultarCitasUsuario({ forzar = false } = {}) {
+  const token = leerSesion()?.token || null
+  const ahora = Date.now()
+  if (!forzar && token && cacheCitas.token === token) {
+    if (cacheCitas.promesa) return cacheCitas.promesa
+    if (cacheCitas.resultado && ahora - cacheCitas.ts < TTL_CITAS_MS) {
+      return Promise.resolve(cacheCitas.resultado)
+    }
+  }
+  const promesa = enviarConSesion('/api/citas')
+    .then((datos) => {
+      cacheCitas = { token, ts: Date.now(), promesa: null, resultado: datos }
+      return datos
+    })
+    .catch((err) => {
+      if (cacheCitas.promesa === promesa) cacheCitas.promesa = null
+      throw err
+    })
+  cacheCitas = { token, ts: ahora, promesa, resultado: null }
+  return promesa
 }
 
-export function cancelarCitaUsuario(idCita) {
-  return enviarConSesion(`/api/citas/${encodeURIComponent(idCita)}/cancelar`, {
+export async function cancelarCitaUsuario(idCita) {
+  const respuesta = await enviarConSesion(`/api/citas/${encodeURIComponent(idCita)}/cancelar`, {
     method: 'PATCH',
   })
+  invalidarCacheCitas()
+  return respuesta
 }
 
 // La clínica solo puede operar sobre citas de sus propios servicios (lo valida el servidor).
@@ -221,21 +273,25 @@ export function actualizarEstadoCitaClinica(idCita, estado) {
 }
 
 // Horarios reservables de una sede y confirmación de la cita (Sprint 6).
-export function consultarEspaciosClinica(idClinica, { desde, hasta } = {}) {  const parametros = new URLSearchParams()
+export function consultarEspaciosClinica(idClinica, { desde, hasta, incluirEstado = false } = {}) {
+  const parametros = new URLSearchParams()
   if (desde) parametros.set('desde', desde)
   if (hasta) parametros.set('hasta', hasta)
+  if (incluirEstado) parametros.set('incluir_estado', '1')
   const consulta = parametros.toString()
   return enviarConSesion(
     `/api/clinicas/${encodeURIComponent(idClinica)}/espacios${consulta ? `?${consulta}` : ''}`
   )
 }
 
-export function solicitarCita(idEspacio) {
-  return enviarConSesion('/api/citas', {
+export async function solicitarCita(idEspacio) {
+  const respuesta = await enviarConSesion('/api/citas', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id_espacio: idEspacio }),
   })
+  invalidarCacheCitas()
+  return respuesta
 }
 
 export function consultarMiFicha() {
@@ -256,6 +312,26 @@ export function guardarEnlacesInformacion(enlaces) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ enlaces }),
   })
+}
+
+export function solicitarCambioUbicacionClinica({ latitud, longitud }) {
+  return enviarConSesion('/api/clinicas/mi-ficha/ubicacion', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ latitud, longitud }),
+  })
+}
+
+export function solicitarActualizacionClinica(datos) {
+  return enviarConSesion('/api/clinicas/mi-ficha/solicitud-actualizacion', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(datos),
+  })
+}
+
+export function consultarMisSolicitudesClinica() {
+  return enviarConSesion('/api/clinicas/mi-ficha/solicitudes')
 }
 
 export async function subirDocumentosClinica(archivos) {

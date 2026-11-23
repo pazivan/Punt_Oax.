@@ -111,115 +111,6 @@ function formatearFechaLargaDia(claveFecha) {
   }).format(fecha)
 }
 
-function generarCitasDemostracion(nombreClinica = 'Centro de Atención PuntoOax') {
-  const base = new Date()
-  const crearIso = (diasOffset, hora, minuto = 0) => {
-    const f = new Date(base)
-    f.setDate(f.getDate() + diasOffset)
-    f.setHours(hora, minuto, 0, 0)
-    return f.toISOString()
-  }
-
-  return [
-    {
-      id_cita: 'demo-cita-0101-a8f3',
-      paciente_nombre: 'Valeria',
-      paciente_apellidos: 'Morales Guzmán',
-      paciente_telefono: '951 234 8891',
-      nombre_servicio: 'Pruebas rápidas de ITS (VIH y sífilis)',
-      nombre_clinica: nombreClinica,
-      estado: 'confirmada',
-      fecha_hora_inicio: crearIso(0, 10, 0),
-      fecha_reserva: crearIso(-2, 14, 20),
-      es_demo: true,
-    },
-    {
-      id_cita: 'demo-cita-0102-b9c4',
-      paciente_nombre: 'Alejandro',
-      paciente_apellidos: 'Cruz Velasco',
-      paciente_telefono: '951 412 3309',
-      nombre_servicio: 'Orientación y métodos anticonceptivos',
-      nombre_clinica: nombreClinica,
-      estado: 'confirmada',
-      fecha_hora_inicio: crearIso(0, 12, 30),
-      fecha_reserva: crearIso(-1, 11, 15),
-      es_demo: true,
-    },
-    {
-      id_cita: 'demo-cita-0103-c7d2',
-      paciente_nombre: 'Mariana',
-      paciente_apellidos: 'López Santiago',
-      paciente_telefono: '951 678 1920',
-      nombre_servicio: 'Acompañamiento y consejería en ILE',
-      nombre_clinica: nombreClinica,
-      estado: 'confirmada',
-      fecha_hora_inicio: crearIso(0, 16, 0),
-      fecha_reserva: crearIso(-3, 9, 45),
-      es_demo: true,
-    },
-    {
-      id_cita: 'demo-cita-0104-d5e1',
-      paciente_nombre: 'Sofía',
-      paciente_apellidos: 'Hernández Ríos',
-      paciente_telefono: '951 309 4452',
-      nombre_servicio: 'Detección y tratamiento de ITS',
-      nombre_clinica: nombreClinica,
-      estado: 'confirmada',
-      fecha_hora_inicio: crearIso(1, 9, 0),
-      fecha_reserva: crearIso(-1, 17, 10),
-      es_demo: true,
-    },
-    {
-      id_cita: 'demo-cita-0105-e3f9',
-      paciente_nombre: 'Carlos Eduardo',
-      paciente_apellidos: 'Mendoza Pérez',
-      paciente_telefono: '951 890 1123',
-      nombre_servicio: 'Consejería en salud sexual y reproductiva',
-      nombre_clinica: nombreClinica,
-      estado: 'confirmada',
-      fecha_hora_inicio: crearIso(1, 11, 0),
-      fecha_reserva: crearIso(-2, 16, 0),
-      es_demo: true,
-    },
-    {
-      id_cita: 'demo-cita-0106-f2a8',
-      paciente_nombre: 'Gabriela',
-      paciente_apellidos: 'Jiménez Toledo',
-      paciente_telefono: '951 554 7821',
-      nombre_servicio: 'Aplicación de implante subdérmico',
-      nombre_clinica: nombreClinica,
-      estado: 'confirmada',
-      fecha_hora_inicio: crearIso(3, 13, 0),
-      fecha_reserva: crearIso(-1, 10, 30),
-      es_demo: true,
-    },
-    {
-      id_cita: 'demo-cita-0107-h4k1',
-      paciente_nombre: 'Fernanda',
-      paciente_apellidos: 'Vásquez Aquino',
-      paciente_telefono: '951 201 6634',
-      nombre_servicio: 'Pruebas rápidas de ITS (VIH y sífilis)',
-      nombre_clinica: nombreClinica,
-      estado: 'completada',
-      fecha_hora_inicio: crearIso(-2, 10, 0),
-      fecha_reserva: crearIso(-6, 12, 0),
-      es_demo: true,
-    },
-    {
-      id_cita: 'demo-cita-0108-j8m3',
-      paciente_nombre: 'Diego',
-      paciente_apellidos: 'Ramírez Zárate',
-      paciente_telefono: '951 773 9082',
-      nombre_servicio: 'Orientación y métodos anticonceptivos',
-      nombre_clinica: nombreClinica,
-      estado: 'cancelada',
-      fecha_hora_inicio: crearIso(-1, 15, 0),
-      fecha_reserva: crearIso(-4, 18, 20),
-      es_demo: true,
-    },
-  ]
-}
-
 function DetalleCita({
   cita,
   ahora,
@@ -407,10 +298,6 @@ function DetalleCita({
 
 export default function MisCitasClinica({ sesion, onSalir }) {
   const [citasServidor, setCitasServidor] = useState([])
-  const [citasDemo, setCitasDemo] = useState(() =>
-    generarCitasDemostracion(sesion?.cuenta?.nombre || 'Centro de Atención PuntoOax')
-  )
-  const [usandoDemo, setUsandoDemo] = useState(false)
   const [estado, setEstado] = useState('cargando')
   const [error, setError] = useState('')
   const [filtro, setFiltro] = useState('proximas')
@@ -460,30 +347,23 @@ export default function MisCitasClinica({ sesion, onSalir }) {
           throw new Error('La respuesta de citas no tiene el formato esperado.')
         }
         setCitasServidor(respuesta.citas)
-        // Si aún no hay citas reales en BD, activamos las de demostración para poder explorar el calendario y la lista
-        if (respuesta.citas.length === 0) {
-          setUsandoDemo(true)
-        } else {
-          setUsandoDemo(false)
-        }
         setAhora(Date.now())
         setError('')
         setEstado('listo')
       })
-      .catch(() => {
+      .catch((err) => {
         if (!vigente) return
         setCitasServidor([])
-        setUsandoDemo(true)
         setAhora(Date.now())
-        setError('')
-        setEstado('listo')
+        setError(err?.message || 'No se pudieron consultar las citas. Verifica tu conexión e inténtalo de nuevo.')
+        setEstado('error')
       })
     return () => {
       vigente = false
     }
   }, [recargar])
 
-  const citasActivas = usandoDemo ? citasDemo : citasServidor
+  const citasActivas = citasServidor
 
   // Agrupación de citas por día (YYYY-MM-DD) en zona horaria de México
   const citasPorDia = useMemo(() => {
@@ -709,24 +589,6 @@ export default function MisCitasClinica({ sesion, onSalir }) {
     setErrorAccion('')
 
     try {
-      if (citaObjetivo.es_demo || usandoDemo) {
-        setCitasDemo((actual) =>
-          actual.map((c) =>
-            c.id_cita === citaObjetivo.id_cita ? { ...c, estado: nuevoEstado } : c
-          )
-        )
-        const etiquetaAccion =
-          nuevoEstado === 'cancelada'
-            ? 'La cita fue cancelada y movida al historial.'
-            : nuevoEstado === 'completada'
-              ? 'La cita se marcó como completada.'
-              : 'Se registró que el paciente no asistió.'
-        setMensaje(etiquetaAccion)
-        setSeleccionada(null)
-        setAhora(Date.now())
-        return
-      }
-
       const respuesta = await actualizarEstadoCitaClinica(
         citaObjetivo.id_cita,
         nuevoEstado
@@ -844,7 +706,30 @@ export default function MisCitasClinica({ sesion, onSalir }) {
         {/* =====================================================================
             VENTANA 2: VISTA TIPO AGENDA (CALENDARIO GRANDE + CITAS POR HORAS)
             ===================================================================== */}
-        {vistaActiva === 'calendario' && (
+        {vistaActiva === 'calendario' && estado === 'cargando' && (
+          <div className="citas-estado-mensaje" role="status">
+            <Clock3 size={24} aria-hidden="true" />
+            <h2>Cargando calendario…</h2>
+            <p>Consultando las citas reales de tu clínica.</p>
+          </div>
+        )}
+
+        {vistaActiva === 'calendario' && estado === 'error' && (
+          <div className="citas-estado-mensaje" role="alert">
+            <AlertCircle size={26} aria-hidden="true" />
+            <h2>No pudimos consultar las citas</h2>
+            <p>{error}</p>
+            <button
+              type="button"
+              className="citas-boton citas-boton--oscuro"
+              onClick={actualizarCitas}
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
+        {vistaActiva === 'calendario' && estado === 'listo' && (
         <section
           className="citas-agenda-section"
           aria-labelledby="titulo-calendario-agenda"

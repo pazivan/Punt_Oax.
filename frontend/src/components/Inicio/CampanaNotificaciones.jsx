@@ -8,7 +8,7 @@ import {
   MapPin,
   X,
 } from 'lucide-react';
-import { consultarCitasUsuario } from '../../api/auth.js';
+import { consultarCitasUsuario, consultarMisSolicitudesClinica } from '../../api/auth.js';
 import {
   calcularTiempoRestanteCita,
   filtrarCitas,
@@ -21,22 +21,44 @@ import {
  * Calcula en el frontend cuánto tiempo falta para cada cita confirmada a partir
  * de los datos devueltos por GET /api/citas (consultarCitasUsuario).
  */
-export default function CampanaNotificaciones({ sesion, citasPreCargadas = null }) {
+export default function CampanaNotificaciones({ sesion, citasPreCargadas = null, enPostulacion = false }) {
   const esUsuarioNormal = !sesion?.tipo || sesion?.tipo === 'usuario';
+  const esClinica = sesion?.tipo === 'clinica';
   const [abierto, setAbierto] = useState(false);
   const [citasInternas, setCitasInternas] = useState([]);
+  const [solicitudesClinica, setSolicitudesClinica] = useState([]);
   const [errorCitas, setErrorCitas] = useState(false);
   const [cargando, setCargando] = useState(
-    () => Boolean(esUsuarioNormal && !Array.isArray(citasPreCargadas))
+    () => Boolean((esUsuarioNormal && !Array.isArray(citasPreCargadas)) || esClinica)
   );
   const [ahora, setAhora] = useState(() => Date.now());
   const contenedorRef = useRef(null);
 
   useEffect(() => {
+    if (esClinica) {
+      let activo = true;
+      consultarMisSolicitudesClinica()
+        .then((res) => {
+          if (!activo) return;
+          setSolicitudesClinica(Array.isArray(res?.solicitudes) ? res.solicitudes : []);
+          setErrorCitas(false);
+        })
+        .catch(() => {
+          if (!activo) return;
+          setErrorCitas(true);
+        })
+        .finally(() => {
+          if (activo) setCargando(false);
+        });
+      return () => {
+        activo = false;
+      };
+    }
+
     if (!esUsuarioNormal || Array.isArray(citasPreCargadas)) return undefined;
 
     let activo = true;
-    consultarCitasUsuario()
+    consultarCitasUsuario({ forzar: abierto })
       .then((res) => {
         if (!activo) return;
         setCitasInternas(Array.isArray(res?.citas) ? res.citas : []);
@@ -53,9 +75,7 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null 
     return () => {
       activo = false;
     };
-    // Al abrir se vuelve a consultar: una reserva o cancelación pudo ocurrir
-    // en otra vista. Si la vista ya entregó las citas, no se repite la llamada.
-  }, [esUsuarioNormal, citasPreCargadas, abierto]);
+  }, [esUsuarioNormal, esClinica, citasPreCargadas, abierto]);
 
   // Actualiza el reloj cada minuto para mantener al día el cálculo de "cuánto falta"
   useEffect(() => {
@@ -88,8 +108,133 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null 
     () => filtrarCitas(fuenteCitas, 'proximas', ahora),
     [fuenteCitas, ahora]
   );
+  const solicitudesResueltas = useMemo(
+    () => solicitudesClinica.filter((s) => s.estado === 'aprobada' || s.estado === 'rechazada'),
+    [solicitudesClinica]
+  );
 
-  if (!esUsuarioNormal) return null;
+  if (!esUsuarioNormal && !esClinica) return null;
+
+  if (esClinica) {
+    const totalResueltas = solicitudesResueltas.length;
+    const destinoBase = enPostulacion ? '/mi-clinica' : '/panel-clinica?vista=solicitudes';
+    return (
+      <div className="notif-wrapper" ref={contenedorRef}>
+        <button
+          type="button"
+          className={`notif-bell-btn${abierto ? ' is-open' : ''}`}
+          onClick={() => {
+            if (!abierto) {
+              setCargando(true);
+              setErrorCitas(false);
+            }
+            setAbierto((prev) => !prev);
+          }}
+          aria-label={
+            totalResueltas > 0
+              ? `Notificaciones: ${totalResueltas} solicitud${totalResueltas === 1 ? '' : 'es'} resuelta${totalResueltas === 1 ? '' : 's'}`
+              : 'Notificaciones de solicitudes'
+          }
+          aria-expanded={abierto}
+          title="Resoluciones de solicitudes"
+        >
+          <Bell size={18} color="#001D14" />
+          {totalResueltas > 0 && (
+            <span className="notif-badge" aria-hidden="true">
+              {totalResueltas > 9 ? '9+' : totalResueltas}
+            </span>
+          )}
+        </button>
+
+        {abierto && (
+          <section
+            className="notif-dropdown"
+            role="dialog"
+            aria-label="Resoluciones de solicitudes"
+          >
+            <header className="notif-dropdown-header">
+              <div>
+                <span className="notif-dropdown-eyebrow">SEGUIMIENTO ADMINISTRATIVO</span>
+                <h3 className="notif-dropdown-title">Solicitudes resueltas</h3>
+              </div>
+              <button
+                type="button"
+                className="notif-close-btn"
+                onClick={() => setAbierto(false)}
+                aria-label="Cerrar notificaciones"
+              >
+                <X size={16} color="#414845" />
+              </button>
+            </header>
+
+            <div className="notif-dropdown-body">
+              {cargando ? (
+                <p className="notif-empty-text">Consultando tus solicitudes…</p>
+              ) : errorCitas ? (
+                <p className="notif-empty-text" role="alert">
+                  No se pudieron consultar tus solicitudes. Cierra y vuelve a abrir para reintentar.
+                </p>
+              ) : totalResueltas === 0 ? (
+                <div className="notif-empty-box">
+                  <CalendarClock size={24} color="#596763" aria-hidden="true" />
+                  <p className="notif-empty-title">Sin resoluciones nuevas</p>
+                  <p className="notif-empty-text">
+                    Cuando el administrador apruebe o rechace una solicitud, verás el dictamen y sus comentarios aquí.
+                  </p>
+                </div>
+              ) : (
+                <ul className="notif-list">
+                  {solicitudesResueltas.slice(0, 5).map((sol) => (
+                    <li key={sol.id_solicitud} className="notif-item">
+                      <Link
+                        to={enPostulacion ? '/mi-clinica' : `/panel-clinica?vista=solicitudes&solicitud=${encodeURIComponent(sol.id_solicitud)}`}
+                        onClick={() => setAbierto(false)}
+                        style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                      >
+                        <div className="notif-item-top">
+                          <span className={`notif-countdown-pill${sol.estado === 'rechazada' ? ' is-urgent' : ''}`}>
+                            {sol.estado === 'aprobada' ? 'Aprobada' : 'Rechazada'}
+                          </span>
+                          <span className="notif-service-tag">
+                            {sol.tipo_solicitud === 'actualizacion_ubicacion'
+                              ? 'Ubicación'
+                              : sol.tipo_solicitud === 'actualizacion_informacion'
+                                ? 'Actualización'
+                                : 'Postulación'}
+                          </span>
+                        </div>
+                        <p className="notif-date-text" style={{ marginTop: '6px' }}>
+                          {sol.observaciones
+                            ? sol.observaciones
+                            : sol.estado === 'aprobada'
+                              ? 'Tu solicitud fue aprobada.'
+                              : 'Revisa el detalle de la solicitud.'}
+                        </p>
+                        <p className="notif-location-text">
+                          {formatearFechaCita(sol.fecha_resolucion || sol.fecha_solicitud)}
+                        </p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <footer className="notif-dropdown-footer">
+              <Link
+                to={destinoBase}
+                className="notif-footer-link"
+                onClick={() => setAbierto(false)}
+              >
+                <span>Ver historial en Mis solicitudes</span>
+                <ArrowRight size={14} color="#001D14" />
+              </Link>
+            </footer>
+          </section>
+        )}
+      </div>
+    );
+  }
 
   const totalProximas = citasProximas.length;
 
@@ -100,7 +245,7 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null 
         className={`notif-bell-btn${abierto ? ' is-open' : ''}`}
         onClick={() => {
           setAhora(Date.now());
-          if (!abierto) {
+          if (!abierto && !Array.isArray(citasPreCargadas)) {
             setCargando(true);
             setErrorCitas(false);
           }

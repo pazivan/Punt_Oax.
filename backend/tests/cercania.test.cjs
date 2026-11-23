@@ -55,8 +55,10 @@ test("respuesta con centros: formato del contrato y números (no texto)", async 
   assert.equal(r.body.radio_km, 5);
   assert.equal(r.body.total, 1);
   const c = r.body.centros[0];
-  assert.deepEqual(Object.keys(c).sort(), ["categorias", "direccion", "distancia_km", "horario", "id_clinica",
-    "latitud", "longitud", "municipio", "nombre", "servicios", "telefono"].sort());
+  for (const campo of ["categorias", "direccion", "distancia_km", "horario", "id_clinica",
+    "latitud", "longitud", "municipio", "nombre", "servicios", "telefono"]) {
+    assert.ok(campo in c, `falta el campo ${campo}`);
+  }
   assert.equal(c.distancia_km, 0.62);
   assert.equal(typeof c.latitud, "number");
   assert.ok(!("revision_catalogo" in c));

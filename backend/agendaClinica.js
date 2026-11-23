@@ -1,4 +1,5 @@
 const { esUuid } = require('./validacionesCitas');
+const { consultarEstadoClinica, esEstadoOperativo, respuestaNoAprobada } = require('./clinicasEstado');
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -28,7 +29,12 @@ const responder = (res, status, body) => res.status(status).json(body);
 function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }) {
   const soloClinica = [autenticarToken, requerirRol(['clinica'])];
   const envolver = (accion) => async (req, res) => {
-    try { await accion(req, res); }
+    try {
+      const estado = await consultarEstadoClinica(pool, req.usuario.id);
+      if (!estado) return responder(res, 404, { error: 'No se encontró tu clínica.' });
+      if (!esEstadoOperativo(estado)) return responder(res, 403, respuestaNoAprobada(estado));
+      await accion(req, res);
+    }
     catch (error) {
       console.error('Error en agenda clínica:', error);
       responder(res, 500, { error: 'No se pudo actualizar la agenda.' });
@@ -52,7 +58,8 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
         AND fecha < (NOW() AT TIME ZONE 'America/Mexico_City')::date + 15 ORDER BY fecha`, [id]),
       pool.query(`SELECT (NOW() AT TIME ZONE 'America/Mexico_City')::date::text AS fecha`),
       pool.query(`SELECT dia_semana, to_char(hora_apertura, 'HH24:MI') AS apertura,
-        to_char(hora_cierre, 'HH24:MI') AS cierre FROM horarios_atencion
+        to_char(hora_cierre, 'HH24:MI') AS cierre, es_24_horas, cruza_medianoche
+        FROM horarios_atencion
         WHERE id_clinica = $1 ORDER BY dia_semana, hora_apertura`, [id]),
     ]);
     const inicio = new Date(`${hoy.rows[0].fecha}T12:00:00Z`);
@@ -68,15 +75,48 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
 
   app.put('/api/clinicas/mi-agenda/horarios', ...soloClinica, envolver(async (req, res) => {
     const horarios = req.body?.horarios;
-    if (!Array.isArray(horarios) || horarios.length > 14 || horarios.some((h) =>
-      !Number.isInteger(h?.dia_semana) || h.dia_semana < 0 || h.dia_semana > 6 ||
-      typeof h.apertura !== 'string' || !HORA.test(h.apertura) ||
-      typeof h.cierre !== 'string' || !HORA.test(h.cierre) || h.apertura >= h.cierre)) {
-      return responder(res, 400, { error: 'Envía hasta 14 franjas válidas dentro del mismo día.' });
+    if (!Array.isArray(horarios) || horarios.length > 14) {
+      return responder(res, 400, { error: 'Envía hasta 14 franjas válidas.' });
     }
-    const ordenados = [...horarios].sort((a, b) => a.dia_semana - b.dia_semana || a.apertura.localeCompare(b.apertura));
-    if (ordenados.some((h, i) => i > 0 && h.dia_semana === ordenados[i - 1].dia_semana && h.apertura < ordenados[i - 1].cierre))
-      return responder(res, 400, { error: 'Las franjas del mismo día no pueden solaparse.' });
+    const normalizados = [];
+    for (const h of horarios) {
+      if (!Number.isInteger(h?.dia_semana) || h.dia_semana < 0 || h.dia_semana > 6) {
+        return responder(res, 400, { error: 'Cada horario debe indicar un día válido de la semana.' });
+      }
+      const es24 = Boolean(h.es_24_horas);
+      const cruza = Boolean(h.cruza_medianoche) && !es24;
+      const apertura = es24 ? '00:00' : h.apertura;
+      const cierre = es24 ? '00:00' : h.cierre;
+      if (typeof apertura !== 'string' || !HORA.test(apertura) || typeof cierre !== 'string' || !HORA.test(cierre)) {
+        return responder(res, 400, { error: 'Cada horario debe usar horas válidas en formato HH:MM.' });
+      }
+      if (!es24 && !cruza && apertura >= cierre) {
+        return responder(res, 400, { error: 'La apertura debe ser anterior al cierre, o marca el turno como nocturno.' });
+      }
+      if (cruza && apertura <= cierre) {
+        return responder(res, 400, { error: 'Un turno nocturno debe iniciar después de la hora de cierre.' });
+      }
+      normalizados.push({
+        dia_semana: h.dia_semana,
+        apertura,
+        cierre,
+        es_24_horas: es24,
+        cruza_medianoche: cruza,
+      });
+    }
+    const ordenados = [...normalizados].sort((a, b) => a.dia_semana - b.dia_semana || a.apertura.localeCompare(b.apertura));
+    for (let i = 1; i < ordenados.length; i += 1) {
+      const prev = ordenados[i - 1];
+      const curr = ordenados[i];
+      if (curr.dia_semana === prev.dia_semana) {
+        if (prev.es_24_horas || curr.es_24_horas) {
+          return responder(res, 400, { error: 'Un día con horario de 24 horas no admite franjas adicionales.' });
+        }
+        if (prev.cruza_medianoche || curr.apertura < prev.cierre) {
+          return responder(res, 400, { error: 'Las franjas del mismo día no pueden solaparse.' });
+        }
+      }
+    }
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -86,8 +126,11 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
       // Los bloques con reserva quedan intactos. Los libres fuera del nuevo horario se deshabilitan.
       await client.query('DELETE FROM horarios_atencion WHERE id_clinica = $1', [req.usuario.id]);
       for (const h of ordenados) {
-        await client.query(`INSERT INTO horarios_atencion (id_clinica, dia_semana, hora_apertura, hora_cierre)
-          VALUES ($1, $2, $3::time, $4::time)`, [req.usuario.id, h.dia_semana, h.apertura, h.cierre]);
+        await client.query(
+          `INSERT INTO horarios_atencion (id_clinica, dia_semana, hora_apertura, hora_cierre, es_24_horas, cruza_medianoche)
+           VALUES ($1, $2, $3::time, $4::time, $5, $6)`,
+          [req.usuario.id, h.dia_semana, h.apertura, h.cierre, h.es_24_horas, h.cruza_medianoche]
+        );
       }
       const { rows: deshabilitados } = await client.query(`UPDATE espacios_disponibles ed SET habilitado = FALSE
         FROM clinicas_servicios cs WHERE cs.id_clinica_servicio = ed.id_clinica_servicio

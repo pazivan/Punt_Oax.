@@ -2,7 +2,8 @@
 
 **Sprint 8 · 4.8.1 · Issue #94 (Kelly)** — 16 al 22 de noviembre de 2026
 
-
+Implementación: ruta y validación en `backend/cercania.js` (Kelly, #95); consulta PostGIS en
+`backend/cercaniaPostgis.js` (Iván, #93). Integrado en `main` con el PR #123.
 
 Este documento define **qué recibe** y **qué responde** la API para que el
 backend y el frontend puedan trabajar en paralelo. Si algo cambia, se actualiza
@@ -100,14 +101,18 @@ decir «a X km en línea recta» o «aprox.».
 
 Notas de formato:
 
-- Los nombres de campo son **los mismos que ya devuelve `GET /api/clinicas`**
-  (`id_clinica`, `nombre`, `municipio`, `direccion`, `latitud`, `longitud`,
-  `categorias`, `servicios`, `telefono`, `horario`), para que el frontend pueda
-  reutilizar sus tarjetas. El único campo nuevo es `distancia_km`.
+- Cada centro trae **la misma ficha pública que `GET /api/clinicas`** (incluye,
+  entre otros, `id_clinica`, `nombre`, `municipio`, `direccion`, `latitud`,
+  `longitud`, `categorias`, `servicios`, `telefono`, `horario`, `horarios`,
+  `ubicacion_confirmada` y `acepta_citas`), para que el frontend reutilice sus
+  tarjetas. El único campo nuevo es `distancia_km`. El ejemplo de arriba muestra
+  solo algunos campos.
+- `ubicacion_confirmada` siempre es `true` en esta ruta, porque solo entran
+  centros con ubicación confirmada.
 - `distancia_km` es un **número** con 2 decimales (no texto). El frontend decide
   cómo mostrarlo, por ejemplo «1.6 km» o «620 m» si es menor a 1 km.
-- `telefono` y `horario` pueden venir en `null` cuando el catálogo los marca
-  como pendientes de confirmar (misma regla que la ficha pública).
+- `telefono`, `horario` y otros datos pueden venir en `null` cuando el catálogo
+  los marca como pendientes de confirmar (misma regla que la ficha pública).
 - `total` es la cantidad de centros en `centros` (después de aplicar `limite`).
 - `origen` y `radio_km` regresan lo que se usó para la búsqueda, ya validado.
 
@@ -183,5 +188,24 @@ Invoke-RestMethod "http://localhost:3000/api/clinicas/cercanas?lat=17.0606&lng=-
 try { Invoke-RestMethod "http://localhost:3000/api/clinicas/cercanas?lat=200&lng=-96.72" } catch { $_.ErrorDetails.Message }
 ```
 
+## 10. Punto de referencia (Oaxaca Centro)
 
+Iván (#93) definió un punto fijo para comprobar la consulta: `lat=17.0654`,
+`lng=-96.7236`, `radio_km=10`, `limite=10`
+(`PUNTO_REFERENCIA_OAXACA` en `backend/cercaniaPostgis.js`). Con el catálogo
+completo (ITS con coordenadas e ILE), los primeros resultados esperados son:
+
+| # | Centro | Servicio | Distancia |
+|---|---|---|---|
+| 1 | Unidad de Control Sanitario | ITS | 0.65 km |
+| 2 | Hospital General de Zona - UMAA No. 1 | ILE | 0.79 km |
+| 3 | Salud Digna Oaxaca Centro | ITS | 0.83 km |
+| 4 | Punto de Detección COESIDA IMEDI | ITS | 0.97 km |
+| 5 | Centro de Salud Urbano Colonia Estrella | ILE | 0.99 km |
+| 6 | Centro de Salud Urbano No. 1 | ILE | 1.03 km |
+
+```powershell
+Invoke-RestMethod "http://localhost:3000/api/clinicas/cercanas?lat=17.0654&lng=-96.7236&radio_km=10&limite=10" |
+  Select-Object -ExpandProperty centros | Select-Object distancia_km, nombre
+```
 

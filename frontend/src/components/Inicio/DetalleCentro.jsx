@@ -5,15 +5,19 @@ import {
   Building2,
   Clock,
   ExternalLink,
+  Heart,
   Mail,
   MapPin,
   Phone,
-  User,
 } from 'lucide-react';
-import CampanaNotificaciones from './CampanaNotificaciones.jsx';
+import EncabezadoUsuario from './EncabezadoUsuario.jsx';
+import PiePagina from './PiePagina.jsx';
+import MapaLeaflet from './MapaLeaflet.jsx';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
 import '../../styles/Inicio.css';
 import { normalizarUrlExterna, urlEnTexto } from '../../utils/enlaces.js';
+import { ubicacionConfirmada } from '../../utils/centros.js';
+import { formatearDistanciaKm } from '../../utils/cercania.js';
 
 /**
  * DetalleCentro - Ventana "Detalle de centro - PuntoOax" según diseño oficial de Figma (1280x1218),
@@ -46,14 +50,13 @@ export default function DetalleCentro({
   onSalir,
   onVolverAlMapa,
   onAgendarCita,
+  sinEncabezado = false,
+  esFavorita = false,
+  onAlternarFavorito,
 }) {
   if (!clinica) return null;
 
-  const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
-  const esAdmin = sesion?.tipo === 'administrador';
   const esUsuario = !sesion || sesion.tipo === 'usuario';
-  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/cuenta') : '/';
-  const rutaPerfil = esAdmin ? '/admin' : '/mi-perfil';
   const servicios = Array.isArray(clinica.servicios) ? clinica.servicios : [];
   const linksRelacionados = Array.isArray(clinica.links_relacionados)
     ? clinica.links_relacionados.filter(Boolean)
@@ -73,99 +76,25 @@ export default function DetalleCentro({
     ? clinica.correo_contacto.trim()
     : '';
   const tieneUrlMaps = Boolean(mapaUrl);
+  const etiquetaDistancia = formatearDistanciaKm(clinica.distancia_km);
+  const tieneUbicacionConfirmada = ubicacionConfirmada(clinica);
+  const clinicaAutenticadaId =
+    sesion?.tipo === 'clinica' ? (sesion?.cuenta?.id_clinica || sesion?.cuenta?.id || null) : null;
 
   return (
     <div className="detalle-page">
       {/* Header (80px) */}
-      {sesion?.tipo === 'clinica' ? (
-        <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
-      ) : (
-      <header className="inicio-header">
-        <div className="inicio-header-container">
-          <div className="inicio-header-left">
-            <div className="inicio-brand-wrap">
-              <Link to={rutaInicio} className="inicio-brand" style={{ textDecoration: 'none' }}>
-                <img
-                  src="/logo-puntoax.svg"
-                  alt=""
-                  className="inicio-brand-logo"
-                  aria-hidden="true"
-                />
-                <span>PuntOax</span>
-              </Link>
-            </div>
-
-            <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-              <Link to={rutaInicio} className="inicio-nav-link">
-                Inicio
-              </Link>
-              <button
-                type="button"
-                onClick={onVolverAlMapa}
-                className="inicio-nav-link active detalle-nav-active-btn"
-              >
-                <span className="inicio-nav-link-active-text">Mapa de centros</span>
-              </button>
-              {sesion?.tipo === 'clinica' ? (
-              <Link to="/mi-clinica/citas" className="inicio-nav-link">
-                  Mis citas
-                </Link>
-              ) : esAdmin ? (
-                <Link to="/admin" className="inicio-nav-link">
-                  Administración
-                </Link>
-              ) : (
-                <>
-                  <Link to="/agendar-cita" className="inicio-nav-link">
-                    Agendar cita
-                  </Link>
-                  {sesion?.tipo === 'usuario' && (
-                    <Link to="/mis-citas" className="inicio-nav-link">
-                      Mis citas
-                    </Link>
-                  )}
-                </>
-              )}
-              <Link to="/informacion-util" className="inicio-nav-link">
-                Información útil
-              </Link>
-            </nav>
-          </div>
-
-          <div className="inicio-header-right">
-            {sesion ? (
-              <>
-                <CampanaNotificaciones sesion={sesion} />
-
-                <Link
-                  to={rutaPerfil}
-                  className="inicio-header-profile-link"
-                  title={nombreOCorreo}
-                  aria-label={esAdmin ? 'Administración' : 'Mi perfil'}
-                >
-                  <span className="inicio-avatar-circle" aria-hidden="true">
-                    <User size={14} color="#FFFFFF" />
-                  </span>
-                  <span>{esAdmin ? 'Administración' : 'Mi perfil'}</span>
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={onSalir}
-                  className="inicio-header-logout-btn"
-                >
-                  Salir
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="inicio-header-account-link">Iniciar sesión</Link>
-                <Link to="/registro" className="inicio-header-logout-btn">Crear cuenta</Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      {!sinEncabezado && (
+        sesion?.tipo === 'clinica' ? (
+          <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
+        ) : (
+          <EncabezadoUsuario
+            sesion={sesion}
+            onSalir={onSalir}
+            seccionActiva="mapa"
+            onClicMapa={onVolverAlMapa}
+          />
+        )
       )}
 
       {/* Main (padding-top: 80px) */}
@@ -190,9 +119,27 @@ export default function DetalleCentro({
           {/* Header Title & Subtitle:margin */}
           <div className="detalle-header-margin">
             <div className="detalle-header-block">
-              <h1 className="detalle-heading-title">{clinica.nombre}</h1>
+              <div className="detalle-header-top-row">
+                <h1 className="detalle-heading-title">{clinica.nombre}</h1>
+                {typeof onAlternarFavorito === 'function' && (
+                  <button
+                    type="button"
+                    className={`detalle-fav-btn ${esFavorita ? 'is-favorite' : ''}`}
+                    aria-pressed={esFavorita}
+                    onClick={() => onAlternarFavorito(clinica)}
+                  >
+                    <Heart
+                      size={15}
+                      color={esFavorita ? '#FFFFFF' : '#C0262D'}
+                      fill={esFavorita ? '#FFFFFF' : 'none'}
+                      aria-hidden="true"
+                    />
+                    <span>{esFavorita ? 'En favoritos' : 'Agregar a favoritos'}</span>
+                  </button>
+                )}
+              </div>
               <p className="detalle-heading-subtitle">
-                {`${clinica.municipio || 'No especificado'} · ${clinica.entidad_federativa || 'Oaxaca'}`}
+                {`${clinica.municipio || 'No especificado'} · ${clinica.entidad_federativa || 'Oaxaca'}${etiquetaDistancia ? ` · ${etiquetaDistancia}` : ''}`}
               </p>
             </div>
           </div>
@@ -370,11 +317,15 @@ export default function DetalleCentro({
                 </p>
               </div>
 
-              {/* Map View (389.33px x 288px) */}
+              {/* Mapa real centrado en la clínica solo cuando la ubicación está confirmada */}
               <div className="detalle-map-view">
-                <div className="detalle-map-floating-pin" aria-hidden="true">
-                  <MapPin size={15} color="#FFFFFF" />
-                </div>
+                <MapaLeaflet
+                  clinicas={tieneUbicacionConfirmada ? [clinica] : []}
+                  clinicaSeleccionada={tieneUbicacionConfirmada ? clinica : null}
+                  clinicaAutenticadaId={clinicaAutenticadaId}
+                  mostrarLeyenda={false}
+                  zoomInicial={15}
+                />
               </div>
 
               {/* Ubicacion maps (columna Ubicacion maps del archivo CSV) */}
@@ -437,14 +388,7 @@ export default function DetalleCentro({
         </div>
       </main>
 
-      {/* Footer (112px) */}
-      <footer className="inicio-footer">
-        <div className="inicio-footer-container">
-          <p className="inicio-footer-text">
-            © 2026 PuntOax · Salud, bienestar y orientación en Oaxaca.
-          </p>
-        </div>
-      </footer>
+      <PiePagina />
     </div>
   );
 }

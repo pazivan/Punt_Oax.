@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { AlertTriangle } from 'lucide-react'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Login from './components/Auth/Login.jsx'
 import Register from './components/Auth/Register.jsx'
 import CorreoCuenta from './components/Auth/CorreoCuenta.jsx'
 import Inicio from './components/Inicio/Inicio.jsx'
 import MiPerfil from './components/Inicio/MiPerfil.jsx'
+import EncabezadoUsuario from './components/Inicio/EncabezadoUsuario.jsx'
 import MapaCentros from './components/Inicio/MapaCentros.jsx'
 import InformacionUtil from './components/Inicio/InformacionUtil.jsx'
 import AgendarCitaDatos from './components/Inicio/AgendarCitaDatos.jsx'
@@ -15,16 +15,20 @@ import FichaClinica from './components/Clinica/FichaClinica.jsx'
 import PanelClinica from './components/Clinica/PanelClinica.jsx'
 import MisCitasClinica from './components/Clinica/MisCitasClinica.jsx'
 import AgendaClinica from './components/Clinica/AgendaClinica.jsx'
+import RutaClinicaAprobada from './components/Clinica/RutaClinicaAprobada.jsx'
 import MisCitasUsuario from './components/Citas/MisCitasUsuario.jsx'
 import Administracion from './components/Admin/Administracion.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
+import { CargandoSesion, ErrorSesionTemporal } from './components/EstadoSesion.jsx'
+import { describirErrorConsulta } from './utils/erroresConsulta.js'
+import { ROLES, obtenerDestinoPorRol } from './utils/permisos.js'
 import { cerrarSesion, consultarPerfil, leerSesion, revocarSesion } from './api/auth.js'
 import { borrarVerificacionPendiente, guardarVerificacionPendiente, leerVerificacionPendiente } from './api/verificacionPendiente.js'
 import './App.css'
 
 function App() {
   const navigate = useNavigate()
-  const { pathname, state: estadoRuta, key: rutaKey } = useLocation()
+  const { pathname, hash, state: estadoRuta, key: rutaKey } = useLocation()
   const [sesion, setSesion] = useState(leerSesion)
   const [verificacionPendiente, setVerificacionPendiente] = useState(leerVerificacionPendiente)
   const [mensajeAuth, setMensajeAuth] = useState('')
@@ -32,6 +36,8 @@ function App() {
   const [perfil, setPerfil] = useState(null)
   const [verificandoPerfil, setVerificandoPerfil] = useState(() => Boolean(leerSesion()))
   const [errorPerfil, setErrorPerfil] = useState('')
+  const [errorPerfilReintentar, setErrorPerfilReintentar] = useState(true)
+  const [reintentoPerfil, setReintentoPerfil] = useState(0)
   const consultaPerfil = useRef(0)
   const [clinicas, setClinicas] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -74,9 +80,20 @@ function App() {
   }, [pathname, sesion, reintentoCatalogo])
 
   useEffect(() => {
-    // Cada navegación comienza desde el inicio del documento.
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-  }, [rutaKey])
+    // Cada navegación comienza arriba; los enlaces internos de la ficha
+    // conservan su destino aunque la vista se monte tras verificar la sesión.
+    if (!hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      return undefined
+    }
+    const id = requestAnimationFrame(() => {
+      document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+    return () => cancelAnimationFrame(id)
+  }, [rutaKey, hash])
 
   useEffect(() => {
     // En móvil la navegación superior es desplazable: mantén visible la pestaña activa
@@ -121,17 +138,29 @@ function App() {
       })
       .catch((err) => {
         if (activo && consulta === consultaPerfil.current) {
-          setErrorPerfil(err.message)
+          const aviso = describirErrorConsulta(err, 'tu sesión')
+          setErrorPerfil(aviso.mensaje)
+          setErrorPerfilReintentar(aviso.reintentar)
           setVerificandoPerfil(false)
           if (!leerSesion()) {
             setSesion(null)
             setPerfil(null)
-            setMensajeAuth('Tu sesión expiró. Inicia sesión de nuevo.')
+            setMensajeAuth(
+              err.codigo === 'TOKEN_EXPIRADO'
+                ? 'Tu sesión expiró. Inicia sesión de nuevo.'
+                : 'Tu sesión ya no es válida. Inicia sesión de nuevo.'
+            )
           }
         }
       })
     return () => { activo = false }
-  }, [sesion, pathname])
+  }, [sesion, pathname, reintentoPerfil])
+
+  const reintentarVerificacionPerfil = errorPerfilReintentar ? () => {
+    setErrorPerfil('')
+    setVerificandoPerfil(true)
+    setReintentoPerfil((valor) => valor + 1)
+  } : undefined
 
   useEffect(() => {
     function sincronizarSesion(evento) {
@@ -187,10 +216,32 @@ function App() {
     />
   )
 
-  if (pathname === '/login') {
+  const esUsuarioOVisitanteConHeader =
+    (!sesion || sesion.tipo !== 'clinica') && (
+      pathname === '/inicio' ||
+      pathname === '/mapa' ||
+      pathname === '/agendar-cita' ||
+      pathname === '/mis-citas' ||
+      pathname === '/informacion-util' ||
+      pathname === '/mi-perfil' ||
+      (pathname === '/conocenos' && Boolean(sesion))
+    )
+
+  function renderRuta() {
+    if (pathname === '/login') {
     if (sesion) {
-      if (verificandoPerfil) return <p role="status">Verificando tu sesión…</p>
-      if (perfil) return <Navigate to={sesion.tipo === 'clinica' ? '/mi-clinica' : sesion.tipo === 'administrador' ? '/admin' : '/cuenta'} replace />
+      if (verificandoPerfil) return <CargandoSesion />
+      if (!perfil && errorPerfil) {
+        return (
+          <ErrorSesionTemporal
+            mensaje={errorPerfil}
+            onReintentar={reintentarVerificacionPerfil}
+            rutaInicio="/conocenos"
+            textoInicio="Ir al inicio"
+          />
+        )
+      }
+      if (perfil) return <Navigate to={obtenerDestinoPorRol(perfil, sesion)} replace />
     }
     return <Login
       key={tipoRegistro}
@@ -209,8 +260,7 @@ function App() {
         setSesion(nuevaSesion)
         setErrorPerfil('')
         setMensajeAuth('')
-        // La ficha se consulta de nuevo en el servidor dentro de /mi-clinica.
-        navigate(nuevaSesion?.tipo === 'clinica' ? '/mi-clinica' : nuevaSesion?.tipo === 'administrador' ? '/admin' : '/cuenta')
+        navigate(obtenerDestinoPorRol(null, nuevaSesion), { replace: true })
       }}
       mensaje={estadoRuta?.aviso || mensajeAuth}
     />
@@ -247,7 +297,7 @@ function App() {
     }
     return (
       <>
-        <Conocenos sesion={sesion} perfil={perfil} onSalir={salir} />
+        <Conocenos sesion={sesion} onSalir={salir} sinEncabezado={esUsuarioOVisitanteConHeader} />
         {modalConfirmacionSalir}
       </>
     )
@@ -256,34 +306,23 @@ function App() {
   if (pathname === '/mapa') {
     return (
       <>
-        <RutaPrivada
-          sesion={sesion}
-          perfil={perfil}
-          verificando={verificandoPerfil}
-          error={errorPerfil}
-          rolesPermitidos={['usuario', 'clinica', 'administrador']}
-        >
-          {error ? (
-            <main className="app-container" role="alert">
-              <div className="state-card error">
-                <span className="alert-icon" aria-hidden="true"><AlertTriangle size={20} /></span>
-                <div>
-                  <strong>No se pudo cargar el mapa</strong>
-                  <p>{error}</p>
-                  <button
-                    type="button"
-                    className="link-btn"
-                    onClick={() => setReintentoCatalogo((valor) => valor + 1)}
-                  >
-                    Reintentar
-                  </button>
-                </div>
-              </div>
-            </main>
-          ) : (
-            <MapaCentros sesion={sesion} onSalir={salir} clinicas={clinicas} cargando={cargando} />
-          )}
-        </RutaPrivada>
+        {error ? (
+          <ErrorSesionTemporal
+            titulo="No se pudo cargar el mapa"
+            mensaje={error}
+            onReintentar={() => setReintentoCatalogo((valor) => valor + 1)}
+            rutaInicio={sesion ? obtenerDestinoPorRol(perfil, sesion) : '/conocenos'}
+            textoInicio="Ir al inicio"
+          />
+        ) : (
+          <MapaCentros
+            sesion={sesion}
+            onSalir={salir}
+            clinicas={clinicas}
+            cargando={cargando}
+            sinEncabezado={esUsuarioOVisitanteConHeader}
+          />
+        )}
         {modalConfirmacionSalir}
       </>
     )
@@ -297,14 +336,19 @@ function App() {
           perfil={perfil}
           verificando={verificandoPerfil}
           error={errorPerfil}
-          rolesPermitidos={['usuario']}
+          onReintentar={reintentarVerificacionPerfil}
+          rolesPermitidos={[ROLES.USUARIO]}
         >
           <AgendarCitaDatos
-            clinica={clinicas[0] || null}
+            clinica={estadoRuta?.clinica || null}
             clinicas={clinicas}
+            cargandoClinicas={cargando}
+            errorClinicas={error}
+            onReintentarClinicas={() => setReintentoCatalogo((valor) => valor + 1)}
             sesion={sesion}
             onSalir={salir}
             onVolverAlCentro={() => navigate('/mapa')}
+            sinEncabezado={esUsuarioOVisitanteConHeader}
           />
         </RutaPrivada>
         {modalConfirmacionSalir}
@@ -315,15 +359,7 @@ function App() {
   if (pathname === '/informacion-util') {
     return (
       <>
-        <RutaPrivada
-          sesion={sesion}
-          perfil={perfil}
-          verificando={verificandoPerfil}
-          error={errorPerfil}
-          rolesPermitidos={['usuario', 'clinica', 'administrador']}
-        >
-          <InformacionUtil sesion={sesion} onSalir={salir} />
-        </RutaPrivada>
+        <InformacionUtil sesion={sesion} onSalir={salir} sinEncabezado={esUsuarioOVisitanteConHeader} />
         {modalConfirmacionSalir}
       </>
     )
@@ -337,9 +373,10 @@ function App() {
           perfil={perfil}
           verificando={verificandoPerfil}
           error={errorPerfil}
-          rolesPermitidos={['usuario']}
+          onReintentar={reintentarVerificacionPerfil}
+          rolesPermitidos={[ROLES.USUARIO]}
         >
-          <MisCitasUsuario onSalir={salir} />
+          <MisCitasUsuario sesion={sesion} onSalir={salir} sinEncabezado={esUsuarioOVisitanteConHeader} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -349,9 +386,15 @@ function App() {
   if (pathname === '/mi-perfil') {
     return (
       <>
-        <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
-          error={errorPerfil} rolesPermitidos={['usuario', 'clinica']}>
-          <MiPerfil sesion={sesion} perfil={perfil} onSalir={salir} />
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          onReintentar={reintentarVerificacionPerfil}
+          rolesPermitidos={[ROLES.USUARIO, ROLES.CLINICA]}
+        >
+          <MiPerfil sesion={sesion} perfil={perfil} onSalir={salir} sinEncabezado={esUsuarioOVisitanteConHeader} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -361,9 +404,17 @@ function App() {
   if (pathname === '/panel-clinica') {
     return (
       <>
-        <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
-          error={errorPerfil} rolesPermitidos={['clinica']}>
-          <PanelClinica sesion={sesion} onSalir={salir} />
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          onReintentar={reintentarVerificacionPerfil}
+          rolesPermitidos={[ROLES.CLINICA]}
+        >
+          <RutaClinicaAprobada>
+            <PanelClinica sesion={sesion} onSalir={salir} />
+          </RutaClinicaAprobada>
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -378,9 +429,12 @@ function App() {
           perfil={perfil}
           verificando={verificandoPerfil}
           error={errorPerfil}
-          rolesPermitidos={['clinica']}
+          onReintentar={reintentarVerificacionPerfil}
+          rolesPermitidos={[ROLES.CLINICA]}
         >
-        <MisCitasClinica sesion={sesion} onSalir={salir} />
+          <RutaClinicaAprobada>
+            <MisCitasClinica sesion={sesion} onSalir={salir} />
+          </RutaClinicaAprobada>
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
@@ -388,8 +442,23 @@ function App() {
   }
 
   if (pathname === '/mi-clinica/agenda') {
-    return <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
-      error={errorPerfil} rolesPermitidos={['clinica']}><AgendaClinica sesion={sesion} onSalir={salir} /></RutaPrivada>
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          onReintentar={reintentarVerificacionPerfil}
+          rolesPermitidos={[ROLES.CLINICA]}
+        >
+          <RutaClinicaAprobada>
+            <AgendaClinica sesion={sesion} onSalir={salir} />
+          </RutaClinicaAprobada>
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
   }
 
   if (pathname === '/mi-clinica') {
@@ -400,39 +469,42 @@ function App() {
           perfil={perfil}
           verificando={verificandoPerfil}
           error={errorPerfil}
-          rolesPermitidos={['clinica']}
+          onReintentar={reintentarVerificacionPerfil}
+          rolesPermitidos={[ROLES.CLINICA]}
         >
-        <FichaClinica sesion={sesion} onSalir={salir} />
+          <FichaClinica sesion={sesion} onSalir={salir} />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
     )
   }
 
-  if (pathname === '/admin' || pathname === '/admin/usuarios' || /^\/admin\/solicitudes\/[^/]+$/.test(pathname)) {
-    return (
-      <>
-        <RutaPrivada sesion={sesion} perfil={perfil} verificando={verificandoPerfil}
-          error={errorPerfil} rolesPermitidos={['administrador']}>
-          <Administracion sesion={sesion} onSalir={salir}
-            listaUsuarios={pathname === '/admin/usuarios'}
-            idSolicitud={pathname === '/admin' || pathname === '/admin/usuarios' ? null : pathname.split('/')[3]} />
-        </RutaPrivada>
-        {modalConfirmacionSalir}
-      </>
-    )
-  }
+  const esNuevaClinica = pathname === '/admin/clinicas/nueva'
+  const esRutaAdmin =
+    pathname === '/admin' ||
+    pathname === '/admin/usuarios' ||
+    pathname === '/admin/clinicas' ||
+    esNuevaClinica ||
+    pathname === '/admin/citas' ||
+    pathname === '/admin/calendarios' ||
+    pathname === '/admin/mapa' ||
+    /^\/admin\/solicitudes\/[^/]+$/.test(pathname) ||
+    /^\/admin\/clinicas\/[^/]+$/.test(pathname) ||
+    /^\/admin\/usuarios\/[^/]+$/.test(pathname)
 
-  if (pathname === '/cuenta' && perfil?.rol === 'administrador') {
-    return <Navigate to="/admin" replace />
-  }
-
-  // Una clínica no usa la vista genérica de "Mi cuenta": su destino es la ficha.
-  if (pathname === '/cuenta' && perfil?.rol === 'clinica') {
-    return <Navigate to="/mi-clinica" replace />
-  }
-
-  if (pathname === '/cuenta') {
+  if (esRutaAdmin) {
+    const idSolicitud = /^\/admin\/solicitudes\/[^/]+$/.test(pathname) ? pathname.split('/')[3] : null
+    const idClinica = !esNuevaClinica && /^\/admin\/clinicas\/[^/]+$/.test(pathname) ? pathname.split('/')[3] : null
+    const idUsuario = /^\/admin\/usuarios\/[^/]+$/.test(pathname) ? pathname.split('/')[3] : null
+    const vistaAdmin = esNuevaClinica
+      ? 'nueva-clinica'
+      : pathname === '/admin/citas'
+        ? 'citas'
+        : pathname === '/admin/calendarios'
+          ? 'calendarios'
+          : pathname === '/admin/mapa'
+            ? 'mapa'
+            : null
     return (
       <>
         <RutaPrivada
@@ -440,23 +512,47 @@ function App() {
           perfil={perfil}
           verificando={verificandoPerfil}
           error={errorPerfil}
-          rolesPermitidos={['usuario', 'clinica', 'administrador']}
+          onReintentar={reintentarVerificacionPerfil}
+          rolesPermitidos={[ROLES.ADMINISTRADOR]}
         >
-          {pathname === '/cuenta' && (perfil?.rol === 'usuario' || sesion?.tipo === 'usuario') ? (
-            <Inicio sesion={sesion} onSalir={salir} />
-          ) : (
-            <main className="app-container">
-              <h1>Mi cuenta</h1>
-              <p role="status">Sesión verificada: {sesion?.cuenta.correo || sesion?.cuenta.nombre}</p>
-              <p>Los paneles de cada rol aún no están disponibles.</p>
-              <Link to="/mapa">Volver al mapa</Link>{' '}
-              <button type="button" onClick={salir}>Cerrar sesión</button>
-            </main>
-          )}
+          <Administracion
+            sesion={sesion}
+            onSalir={salir}
+            listaUsuarios={pathname === '/admin/usuarios'}
+            listaClinicas={pathname === '/admin/clinicas'}
+            vistaAdmin={vistaAdmin}
+            idSolicitud={idSolicitud}
+            idClinica={idClinica}
+            idUsuario={idUsuario}
+          />
         </RutaPrivada>
         {modalConfirmacionSalir}
       </>
     )
+  }
+
+  if (pathname === '/inicio') {
+    return (
+      <>
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          onReintentar={reintentarVerificacionPerfil}
+          rolesPermitidos={[ROLES.USUARIO]}
+        >
+          <Inicio sesion={sesion} onSalir={salir} sinEncabezado={esUsuarioOVisitanteConHeader} />
+        </RutaPrivada>
+        {modalConfirmacionSalir}
+      </>
+    )
+  }
+
+  if (pathname === '/cuenta') {
+    if (!sesion) return <Navigate to="/login" replace />
+    if (verificandoPerfil) return <CargandoSesion />
+    return <Navigate to={obtenerDestinoPorRol(perfil, sesion)} replace />
   }
 
   if (pathname === '/directorio' || /^\/centro\/[^/]+$/.test(pathname)) {
@@ -464,6 +560,16 @@ function App() {
   }
 
   return <Navigate to="/" replace />
+  }
+
+  return (
+    <>
+      {esUsuarioOVisitanteConHeader && (
+        <EncabezadoUsuario sesion={sesion} onSalir={salir} />
+      )}
+      {renderRuta()}
+    </>
+  )
 }
 
 export default App

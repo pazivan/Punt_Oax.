@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { bloquearDiaClinica, cambiarCupoClinica, consultarAgendaClinica, crearCupoClinica, guardarHorariosAgenda } from '../../api/auth.js'
 import EncabezadoClinica from './EncabezadoClinica.jsx'
+import EditorHorarios from './EditorHorarios.jsx'
+import SelectorHorario from './SelectorHorario.jsx'
 import '../Citas/Citas.css'
 import './AgendaClinica.css'
 
@@ -15,13 +17,12 @@ const fechaMexico = (valor) => {
 const horaMexico = (valor) => new Intl.DateTimeFormat('es-MX', {
   timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', hour12: false,
 }).format(new Date(valor))
-const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
 export default function AgendaClinica({ sesion, onSalir }) {
   const [agenda, setAgenda] = useState(null)
   const [servicio, setServicio] = useState('')
   const [fecha, setFecha] = useState('')
-  const [hora, setHora] = useState('')
+  const [hora, setHora] = useState('09:00')
   const [dia, setDia] = useState('')
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
@@ -81,29 +82,13 @@ export default function AgendaClinica({ sesion, onSalir }) {
               <p>Al cambiarlo, las citas confirmadas se conservan. Los cupos libres que queden fuera del nuevo horario se deshabilitan.</p>
             </div>
             <form className="agenda-form" onSubmit={(evento) => { evento.preventDefault(); ejecutar(() => guardarHorariosAgenda(horarios)) }}>
-              <div className="agenda-filas">
-                {horarios.map((item, indice) => (
-                  <div className="agenda-fila" key={indice}>
-                    <label className="agenda-campo">
-                      <span>Día</span>
-                      <select value={item.dia_semana} onChange={(evento) => setHorarios((actual) => actual.map((h, i) => i === indice ? { ...h, dia_semana: Number(evento.target.value) } : h))}>
-                        {dias.map((nombre, i) => <option value={i} key={nombre}>{nombre}</option>)}
-                      </select>
-                    </label>
-                    <label className="agenda-campo">
-                      <span>Apertura</span>
-                      <input type="time" value={item.apertura} required onChange={(evento) => setHorarios((actual) => actual.map((h, i) => i === indice ? { ...h, apertura: evento.target.value } : h))} />
-                    </label>
-                    <label className="agenda-campo">
-                      <span>Cierre</span>
-                      <input type="time" value={item.cierre} required onChange={(evento) => setHorarios((actual) => actual.map((h, i) => i === indice ? { ...h, cierre: evento.target.value } : h))} />
-                    </label>
-                    <button type="button" className="agenda-btn agenda-btn--quitar" onClick={() => setHorarios((actual) => actual.filter((_, i) => i !== indice))}>Quitar</button>
-                  </div>
-                ))}
-              </div>
+              <EditorHorarios
+                horarios={horarios}
+                onChange={setHorarios}
+                idPrefijo="agenda"
+                disabled={ocupado}
+              />
               <div className="agenda-acciones">
-                <button type="button" className="agenda-btn agenda-btn--ghost" disabled={horarios.length >= 14} onClick={() => setHorarios((actual) => [...actual, { dia_semana: 1, apertura: '09:00', cierre: '17:00' }])}>Agregar franja</button>
                 <button type="submit" className="agenda-btn agenda-btn--primario" disabled={ocupado}>Guardar horario</button>
               </div>
             </form>
@@ -126,10 +111,16 @@ export default function AgendaClinica({ sesion, onSalir }) {
                   <span>Fecha</span>
                   <input type="date" value={fecha} min={agenda.hoy} max={limite} onChange={(evento) => setFecha(evento.target.value)} required />
                 </label>
-                <label className="agenda-campo">
-                  <span>Hora de inicio (Oaxaca)</span>
-                  <input type="time" value={hora} onChange={(evento) => setHora(evento.target.value)} required />
-                </label>
+                <div className="agenda-campo">
+                  <label htmlFor="agenda-hora-cupo">Hora de inicio (Oaxaca)</label>
+                  <SelectorHorario
+                    id="agenda-hora-cupo"
+                    value={hora || '09:00'}
+                    onChange={setHora}
+                    disabled={ocupado}
+                    ariaLabel="Hora de inicio del cupo"
+                  />
+                </div>
                 <button type="submit" className="agenda-btn agenda-btn--primario" disabled={ocupado || !agenda.servicios.length}>Publicar cupo</button>
               </div>
               <p className="agenda-ayuda">La clínica decide cuántas horas ofrecer y evita horas demasiado próximas: aún no se calcula duración ni capacidad automáticamente.</p>

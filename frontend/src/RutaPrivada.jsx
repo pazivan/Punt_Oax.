@@ -1,19 +1,41 @@
-import { Link, Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
+import { CargandoSesion, ErrorSesionTemporal } from './components/EstadoSesion.jsx'
+import { obtenerDestinoPorRol } from './utils/permisos.js'
 
-// Adaptación del prototipo de rutas privadas de Citlalli a la sesión verificada.
-export function RutaPrivada({ sesion, perfil, verificando, error, rolesPermitidos, children }) {
-  if (!sesion) return <Navigate to="/login" replace />
+export function RutaPrivada({
+  sesion,
+  perfil,
+  verificando,
+  error,
+  onReintentar,
+  rolesPermitidos,
+  children,
+}) {
+  const { pathname } = useLocation()
+
+  if (!sesion) {
+    return <Navigate to="/login" replace />
+  }
 
   if (verificando) {
-    return <p role="status">Verificando tu sesión…</p>
+    return <CargandoSesion />
   }
 
   if (!perfil) {
-    return <p role="alert">{error || 'No se pudo verificar tu sesión.'} <Link to="/conocenos">Volver a Conócenos</Link></p>
+    return (
+      <ErrorSesionTemporal
+        mensaje={error || 'No se pudo comprobar tu sesión por un fallo temporal de conexión.'}
+        onReintentar={onReintentar}
+        rutaInicio="/conocenos"
+        textoInicio="Ir al inicio"
+      />
+    )
   }
 
   if (!rolesPermitidos.includes(perfil.rol)) {
-    return <p role="alert">No tienes permiso para ver esta página. <Link to="/conocenos">Volver a Conócenos</Link></p>
+    const destino = obtenerDestinoPorRol(perfil, sesion)
+    const destinoSeguro = destino && destino !== pathname ? destino : '/conocenos'
+    return <Navigate to={destinoSeguro} replace />
   }
 
   return children

@@ -81,8 +81,12 @@ function autenticarToken(req, res, next) {
 
   jwt.verify(token, JWT_SECRET, async (err, usuarioDecodificado) => {
     if (err) {
+      const expirado = err.name === "TokenExpiredError";
       return res.status(403).json({
-        error: "Token inválido o expirado. Inicie sesión nuevamente.",
+        error: expirado
+          ? "Tu sesión expiró. Inicia sesión nuevamente."
+          : "Token inválido o expirado. Inicie sesión nuevamente.",
+        codigo: expirado ? "TOKEN_EXPIRADO" : "TOKEN_INVALIDO",
       });
     }
 
@@ -93,18 +97,30 @@ function autenticarToken(req, res, next) {
     };
     const tipo = cuentas[usuarioDecodificado.rol];
     if (!tipo || !/^[0-9a-f-]{36}$/i.test(usuarioDecodificado.id || '')) {
-      return res.status(403).json({ error: "Token inválido o expirado." });
+      return res.status(403).json({ error: "Token inválido o expirado.", codigo: "TOKEN_INVALIDO" });
     }
     try {
-      const { rows } = await pool.query(`SELECT version_sesion${usuarioDecodificado.rol === 'administrador' ? '' : ', correo_verificado_en'} FROM ${tipo[0]} WHERE ${tipo[1]}=$1`, [usuarioDecodificado.id]);
-      if (!rows[0] || rows[0].version_sesion !== (usuarioDecodificado.version_sesion ?? 0) ||
-          (usuarioDecodificado.rol !== 'administrador' && !rows[0].correo_verificado_en)) {
-        return res.status(403).json({ error: "Sesión inválida. Inicia sesión nuevamente." });
+      const columnasExtra = usuarioDecodificado.rol === 'administrador'
+        ? ''
+        : usuarioDecodificado.rol === 'clinica'
+          ? ', correo_verificado_en, estado_publicacion'
+          : ', correo_verificado_en, activo';
+      const { rows } = await pool.query(`SELECT version_sesion${columnasExtra} FROM ${tipo[0]} WHERE ${tipo[1]}=$1`, [usuarioDecodificado.id]);
+      if (!rows[0] || rows[0].version_sesion !== (usuarioDecodificado.version_sesion ?? 0)) {
+        return res.status(403).json({ error: "Sesión inválida. Inicia sesión nuevamente.", codigo: "SESION_INVALIDA" });
       }
-      req.usuario = usuarioDecodificado;
+      if (usuarioDecodificado.rol === 'usuario' && rows[0].activo === false) {
+        return res.status(403).json({ error: "Tu cuenta está desactivada. Contacta al administrador.", codigo: "CUENTA_DESACTIVADA" });
+      }
+      if (usuarioDecodificado.rol !== 'administrador' && !rows[0].correo_verificado_en) {
+        return res.status(403).json({ error: "Verifica tu correo antes de continuar.", codigo: "CORREO_NO_VERIFICADO" });
+      }
+      req.usuario = usuarioDecodificado.rol === 'clinica'
+        ? { ...usuarioDecodificado, estado_publicacion: rows[0].estado_publicacion }
+        : usuarioDecodificado;
       next();
     } catch {
-      res.status(503).json({ error: "No se pudo verificar la sesión." });
+      res.status(503).json({ error: "No se pudo verificar la sesión.", codigo: "ERROR_TEMPORAL_SERVIDOR" });
     }
   });
 }

@@ -6,9 +6,10 @@ import {
   FileText,
   MapPin,
   Star,
-  User,
 } from 'lucide-react';
-import CampanaNotificaciones, { BannerRecordatorioCitas } from './CampanaNotificaciones.jsx';
+import { BannerRecordatorioCitas } from './CampanaNotificaciones.jsx';
+import EncabezadoUsuario from './EncabezadoUsuario.jsx';
+import PiePagina from './PiePagina.jsx';
 import '../../styles/Inicio.css';
 
 /**
@@ -21,74 +22,10 @@ import '../../styles/Inicio.css';
  *   - Fila de 3 tarjetas (228px): Mapa de centros, Información útil (dirige a /informacion-util) y Agenda tu visita.
  * - Footer (112px): Texto institucional centrado.
  */
-export default function Inicio({ sesion, onSalir }) {
-  const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
-
+export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
   return (
-    <div className="inicio-page">
-      {/* Header (80px) */}
-      <header className="inicio-header">
-        <div className="inicio-header-container">
-          <div className="inicio-header-left">
-            <div className="inicio-brand-wrap">
-              <span className="inicio-brand">
-                <img
-                  src="/logo-puntoax.svg"
-                  alt=""
-                  className="inicio-brand-logo"
-                  aria-hidden="true"
-                />
-                <span>PuntOax</span>
-              </span>
-            </div>
-
-            <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-              <Link to="/cuenta" className="inicio-nav-link active">
-                <span className="inicio-nav-link-active-text">Inicio</span>
-              </Link>
-              <Link to="/mapa" className="inicio-nav-link">
-                Mapa de centros
-              </Link>
-              <Link to="/agendar-cita" className="inicio-nav-link">
-                Agendar cita
-              </Link>
-              <Link to="/mis-citas" className="inicio-nav-link">
-                Mis citas
-              </Link>
-              <Link to="/informacion-util" className="inicio-nav-link">
-                Información útil
-              </Link>
-              <Link to="/conocenos" className="inicio-nav-link">
-                Conócenos
-              </Link>
-            </nav>
-          </div>
-
-          <div className="inicio-header-right">
-            <CampanaNotificaciones sesion={sesion} />
-
-            <Link
-              to="/mi-perfil"
-              className="inicio-header-profile-link"
-              title={nombreOCorreo}
-              aria-label="Mi perfil"
-            >
-              <span className="inicio-avatar-circle" aria-hidden="true">
-                <User size={14} color="#FFFFFF" />
-              </span>
-              <span>Mi perfil</span>
-            </Link>
-
-            <button
-              type="button"
-              onClick={onSalir}
-              className="inicio-header-logout-btn"
-            >
-              Salir
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="inicio-page inicio-home-page">
+      {!sinEncabezado && <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="inicio" />}
 
       {/* Main (padding-top: 80px) */}
       <main className="inicio-main">
@@ -265,14 +202,7 @@ export default function Inicio({ sesion, onSalir }) {
         </div>
       </main>
 
-      {/* Footer (112px) */}
-      <footer className="inicio-footer">
-        <div className="inicio-footer-container">
-          <p className="inicio-footer-text">
-            © 2026 PuntOax · Salud, bienestar y orientación en Oaxaca.
-          </p>
-        </div>
-      </footer>
+      <PiePagina />
     </div>
   );
 }

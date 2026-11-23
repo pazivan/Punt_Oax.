@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
+  Building2,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -13,7 +15,8 @@ import {
   ShieldCheck,
   User,
 } from 'lucide-react';
-import CampanaNotificaciones from './CampanaNotificaciones.jsx';
+import EncabezadoUsuario from './EncabezadoUsuario.jsx';
+import PiePagina from './PiePagina.jsx';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
 import { consultarCitasUsuario, consultarMiFicha } from '../../api/auth.js';
 import {
@@ -49,7 +52,7 @@ function limpiarTelefonoDiezDigitos(valor) {
  * Muestra los detalles de su cuenta, resumen de citas, edición de datos personales
  * de contacto y módulo de cambio de contraseña con validaciones.
  */
-export default function MiPerfil({ sesion, perfil, onSalir }) {
+export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = false }) {
   const esClinica = sesion?.tipo === 'clinica' || perfil?.rol === 'clinica';
   const correoCuenta =
     sesion?.cuenta?.correo || perfil?.correo || '';
@@ -134,14 +137,11 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
   }, [esClinica]);
 
   const enModoPanelAprobado =
-    esClinica &&
-    (fichaClinica?.clinica?.estado_publicacion === 'aprobada' ||
-      sesion?.cuenta?.estado_publicacion === 'aprobada' ||
-      sessionStorage.getItem('puntoax_panel_aprobado') === '1');
+    esClinica && fichaClinica?.clinica?.estado_publicacion === 'aprobada';
 
   const estadoSolicitudClinica = useMemo(() => {
     if (!esClinica) return '';
-    const pub = fichaClinica?.clinica?.estado_publicacion || sesion?.cuenta?.estado_publicacion;
+    const pub = fichaClinica?.clinica?.estado_publicacion;
     const fichaEst = fichaClinica?.clinica?.estado_ficha;
     const postEst = fichaClinica?.postulacion?.estado;
 
@@ -153,7 +153,7 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
       return 'Requiere correcciones';
     }
     return 'Aún no registrada (en borrador)';
-  }, [esClinica, fichaClinica, sesion]);
+  }, [esClinica, fichaClinica]);
 
   const nombreCompletoVista =
     [nombre.trim(), apellidos.trim()].filter(Boolean).join(' ') ||
@@ -299,73 +299,21 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
   return (
     <div className="perfil-page">
       {/* Header (80px) */}
-      {esClinica ? (
-        <EncabezadoClinica
-          sesion={sesion}
-          onSalir={onSalir}
-          modoPostulacion={!enModoPanelAprobado}
-        />
-      ) : (
-        <header className="inicio-header">
-          <div className="inicio-header-container">
-            <div className="inicio-header-left">
-              <div className="inicio-brand-wrap">
-                <Link to="/cuenta" className="inicio-brand" style={{ textDecoration: 'none' }}>
-                  <img
-                    src="/logo-puntoax.svg"
-                    alt=""
-                    className="inicio-brand-logo"
-                    aria-hidden="true"
-                  />
-                  <span>PuntOax</span>
-                </Link>
-              </div>
-
-              <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-                <Link to="/cuenta" className="inicio-nav-link">
-                  Inicio
-                </Link>
-                <Link to="/mapa" className="inicio-nav-link">
-                  Mapa de centros
-                </Link>
-                <Link to="/agendar-cita" className="inicio-nav-link">
-                  Agendar cita
-                </Link>
-                <Link to="/mis-citas" className="inicio-nav-link">
-                  Mis citas
-                </Link>
-                <Link to="/informacion-util" className="inicio-nav-link">
-                  Información útil
-                </Link>
-              </nav>
-            </div>
-
-            <div className="inicio-header-right">
-              <CampanaNotificaciones sesion={sesion} citasPreCargadas={citas} />
-
-              <Link
-                to="/mi-perfil"
-                className="inicio-header-profile-link is-active"
-                title={correoCuenta || 'Mi perfil'}
-                aria-label="Mi perfil"
-                aria-current="page"
-              >
-                <span className="inicio-avatar-circle" aria-hidden="true">
-                  <User size={14} color="#FFFFFF" />
-                </span>
-                <span>Mi perfil</span>
-              </Link>
-
-              <button
-                type="button"
-                onClick={onSalir}
-                className="inicio-header-logout-btn"
-              >
-                Salir
-              </button>
-            </div>
-          </div>
-        </header>
+      {!sinEncabezado && (
+        esClinica ? (
+          <EncabezadoClinica
+            sesion={sesion}
+            onSalir={onSalir}
+            modoPostulacion={!enModoPanelAprobado}
+          />
+        ) : (
+          <EncabezadoUsuario
+            sesion={sesion}
+            onSalir={onSalir}
+            seccionActiva="perfil"
+            citasPreCargadas={citas}
+          />
+        )
       )}
 
       {/* Main Content */}
@@ -374,7 +322,7 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
           <div className="detalle-back-margin">
             <div className="detalle-back-wrap">
               <Link
-                to={esClinica ? (enModoPanelAprobado ? '/panel-clinica' : '/mi-clinica') : '/cuenta'}
+                to={esClinica ? (enModoPanelAprobado ? '/panel-clinica' : '/mi-clinica') : '/inicio'}
                 className="detalle-back-link"
                 style={{ textDecoration: 'none' }}
               >
@@ -623,13 +571,75 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
                     </>
                   )}
 
-                  <div className="perfil-form-actions">
+                      <div className="perfil-form-actions">
                     <button type="submit" className="agendar-submit-btn">
                       <span className="agendar-submit-text">Guardar datos de perfil</span>
                     </button>
                   </div>
                 </form>
               </section>
+
+              {esClinica && (
+                <section className="perfil-card" aria-labelledby="perfil-clinica-info-heading">
+                  <div className="perfil-card-header">
+                    <div className="perfil-card-icon" aria-hidden="true">
+                      <Building2 size={18} color="#001D14" />
+                    </div>
+                    <div>
+                      <h2 id="perfil-clinica-info-heading" className="perfil-card-title">
+                        Información de mi clínica
+                      </h2>
+                      <p className="perfil-card-desc">
+                        Administra los datos institucionales del establecimiento (información general, servicios, horarios y ubicación en el mapa), independientes de tu cuenta personal.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="perfil-meta-list" style={{ marginBottom: '16px' }}>
+                    <div className="perfil-meta-item">
+                      <span className="perfil-meta-label">Establecimiento</span>
+                      <span className="perfil-meta-value">
+                        {fichaClinica?.clinica?.nombre || 'Por registrar'}
+                      </span>
+                    </div>
+                    <div className="perfil-meta-item">
+                      <span className="perfil-meta-label">Estado institucional</span>
+                      <span className="perfil-meta-value">{estadoSolicitudClinica}</span>
+                    </div>
+                    {fichaClinica?.clinica?.municipio && (
+                      <div className="perfil-meta-item">
+                        <span className="perfil-meta-label">Municipio</span>
+                        <span className="perfil-meta-value">{fichaClinica.clinica.municipio}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="perfil-form-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    <Link
+                      to={enModoPanelAprobado ? '/panel-clinica?vista=editar' : '/mi-clinica'}
+                      className="agendar-submit-btn"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <span className="agendar-submit-text">
+                        {enModoPanelAprobado
+                          ? 'Información de mi clínica'
+                          : 'Ir a la ficha de mi clínica'}
+                      </span>
+                      <ArrowRight size={15} color="#FFFFFF" aria-hidden="true" />
+                    </Link>
+
+                    {enModoPanelAprobado && (
+                      <Link
+                        to="/panel-clinica?vista=solicitudes"
+                        className="panel-clinica-back-shortcut"
+                        style={{ textDecoration: 'none', padding: '12px 18px', borderRadius: '10px' }}
+                      >
+                        <span>Mis solicitudes</span>
+                      </Link>
+                    )}
+                  </div>
+                </section>
+              )}
 
               {/* Tarjeta 2: Seguridad y cambio de contraseña */}
               <section className="perfil-card" aria-labelledby="perfil-password-heading">
@@ -813,14 +823,7 @@ export default function MiPerfil({ sesion, perfil, onSalir }) {
         </div>
       </main>
 
-      {/* Footer (112px) */}
-      <footer className="inicio-footer">
-        <div className="inicio-footer-container">
-          <p className="inicio-footer-text">
-            © 2026 PuntOax · Salud, bienestar y orientación en Oaxaca.
-          </p>
-        </div>
-      </footer>
+      <PiePagina />
     </div>
   );
 }

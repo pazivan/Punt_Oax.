@@ -46,3 +46,41 @@ export function filtrarCentros(centros, { busqueda = '', municipio = '', servici
       (!servicio || servicioNombres.includes(servicio))
   })
 }
+
+/**
+ * Normaliza un nombre de municipio para agrupar variantes con distinta capitalización o tildes
+ * (por ejemplo, "Oaxaca de Juárez" y "Oaxaca de juarez") sin alterar los datos originales.
+ */
+export function claveMunicipioNormalizada(municipio) {
+  if (typeof municipio !== 'string') return ''
+  return municipio
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase('es')
+}
+
+/**
+ * Clasifica el tipo de servicio real registrado de un centro para los marcadores del mapa:
+ * 'its' | 'ile' | 'ambos'. No inventa servicios no presentes.
+ */
+export function clasificarServicioCentro(centro) {
+  const categorias = Array.isArray(centro?.categorias) ? centro.categorias : []
+  const servicios = Array.isArray(centro?.servicios) ? centro.servicios : []
+  const textoServicios = typeof centro?.servicios_texto === 'string' ? centro.servicios_texto : ''
+
+  const tieneAmbosExplicitos = categorias.some((cat) => String(cat).toLowerCase() === 'ambos')
+  const tieneIts =
+    categorias.some((cat) => String(cat).toLowerCase() === 'its') ||
+    servicios.some((srv) => /\b(its|vih|s[ií]filis|vhc|vph|clamidia|gonorrea)\b/i.test(String(srv))) ||
+    /\b(its|vih|s[ií]filis|vhc|vph)\b/i.test(textoServicios)
+  const tieneIle =
+    categorias.some((cat) => ['aborto', 'ile'].includes(String(cat).toLowerCase())) ||
+    servicios.some((srv) => /\b(ile|aborto|ameu)\b|interrupci[oó]n/i.test(String(srv))) ||
+    /\b(ile|aborto|ameu)\b|interrupci[oó]n/i.test(textoServicios)
+
+  if (tieneAmbosExplicitos || (tieneIts && tieneIle)) return 'ambos'
+  if (tieneIle) return 'ile'
+  return 'its'
+}

@@ -869,3 +869,260 @@
     font-size: 18px;
   }
 }
+
+/* ==========================================================================
+   Encapsulación de /login: estabilidad entre roles y ajuste vertical en escritorio
+   ========================================================================== */
+.auth-login-page .auth-header {
+  height: 64px;
+}
+
+.auth-login-page .auth-header-actions {
+  min-height: 36px;
+}
+
+.auth-login-page .auth-main {
+  padding: 12px 24px;
+}
+
+.auth-login-page .auth-card-container {
+  min-height: 532px;
+}
+
+.auth-login-page .auth-left-panel {
+  padding: 28px 40px;
+  justify-content: flex-start;
+  gap: 16px;
+}
+
+.auth-login-page .auth-login-hero-copy {
+  min-height: 128px;
+}
+
+.auth-login-page .auth-heading-hero {
+  font-size: 32px;
+  line-height: 38px;
+}
+
+.auth-login-page .auth-map-preview-box {
+  margin: 4px 0;
+}
+
+.auth-login-page .auth-map-card-inner {
+  height: 176px;
+}
+
+.auth-login-page .auth-features-list {
+  margin-top: auto;
+  gap: 8px;
+}
+
+.auth-login-page .auth-right-panel {
+  padding: 28px 40px;
+  justify-content: flex-start;
+}
+
+.auth-login-page .auth-form-instruction {
+  min-height: 40px;
+  margin-bottom: 14px;
+}
+
+.auth-login-page .auth-role-toggle {
+  margin-bottom: 16px;
+}
+
+.auth-login-page .auth-form {
+  gap: 14px;
+}
+
+.auth-login-page .auth-submit-btn {
+  height: 48px;
+  margin-top: 4px;
+}
+
+.auth-login-page .auth-login-links {
+  margin-top: 16px;
+  gap: 8px;
+}
+
+.auth-login-page .auth-secondary-link,
+.auth-verify-page .auth-secondary-link,
+.auth-recover-page .auth-secondary-link {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.auth-login-page .auth-inline-link:focus-visible,
+.auth-verify-page .auth-inline-link:focus-visible,
+.auth-recover-page .auth-inline-link:focus-visible {
+  outline: 2px solid #103328;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.auth-login-page .auth-login-toast {
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 10px 18px;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  background-color: #D6E6E0;
+  border: 1px solid #9FBAB0;
+  color: #001D14;
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(16, 51, 40, 0.14);
+}
+
+.auth-login-page .auth-login-toast .auth-info-icon {
+  color: #103328;
+  display: block;
+}
+
+.auth-login-page .auth-login-optional-links {
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-login-page .auth-footer {
+  height: 48px;
+}
+
+@media (max-width: 960px) {
+  .auth-login-page .auth-card-container {
+    min-height: auto;
+  }
+
+  .auth-login-page .auth-left-panel,
+  .auth-login-page .auth-right-panel {
+    padding: 28px 24px;
+  }
+
+  .auth-login-page .auth-login-hero-copy {
+    min-height: 116px;
+  }
+
+  .auth-login-page .auth-heading-hero {
+    font-size: 28px;
+    line-height: 34px;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-login-page .auth-header {
+    height: auto;
+    min-height: 60px;
+  }
+
+  .auth-login-page .auth-main {
+    padding: 20px 14px 28px;
+  }
+
+  .auth-login-page .auth-left-panel {
+    padding: 22px 18px;
+  }
+
+  .auth-login-page .auth-right-panel {
+    padding: 24px 18px;
+  }
+
+  .auth-login-page .auth-login-hero-copy {
+    min-height: 134px;
+  }
+
+  .auth-login-page .auth-heading-hero {
+    font-size: 25px;
+    line-height: 31px;
+  }
+}
+
+/* ==========================================================================
+   Encapsulación de /verificar-correo, /recuperar y /restablecer
+   ========================================================================== */
+.auth-verify-page .auth-main,
+.auth-recover-page .auth-main {
+  padding: 20px 16px;
+}
+
+.auth-verify-page .auth-right-panel,
+.auth-recover-page .auth-right-panel {
+  padding: 28px 34px;
+  flex: 0 1 520px;
+}
+
+.auth-verify-page .auth-simple-brand,
+.auth-recover-page .auth-simple-brand {
+  margin: 0 auto 16px;
+}
+
+.auth-verify-page .auth-form-title,
+.auth-recover-page .auth-form-title {
+  margin: 0 0 6px;
+}
+
+.auth-verify-page .auth-verify-intro,
+.auth-recover-page .auth-verify-intro {
+  font-size: 14px;
+  line-height: 20px;
+  color: #414845;
+  margin: 0 0 14px;
+}
+
+.auth-verify-page .auth-form,
+.auth-recover-page .auth-form {
+  gap: 12px;
+}
+
+.auth-verify-page .auth-correo-fijo {
+  padding: 12px 14px;
+  gap: 4px;
+}
+
+.auth-recover-page .auth-input-readonly {
+  display: flex;
+  align-items: center;
+  background-color: #ECEEED;
+  border-color: #CBD3CE;
+  color: #414845;
+  cursor: default;
+  user-select: none;
+}
+
+.auth-verify-page .auth-submit-btn,
+.auth-recover-page .auth-submit-btn {
+  height: 48px;
+  margin-top: 2px;
+}
+
+.auth-verify-page .auth-verify-links,
+.auth-recover-page .auth-verify-links {
+  margin-top: 16px;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .auth-verify-page .auth-main,
+  .auth-recover-page .auth-main {
+    padding: 16px 12px 24px;
+  }
+
+  .auth-verify-page .auth-right-panel,
+  .auth-recover-page .auth-right-panel {
+    padding: 24px 18px;
+  }
+
+  .auth-verify-page .auth-simple-brand,
+  .auth-recover-page .auth-simple-brand {
+    margin-bottom: 14px;
+  }
+}

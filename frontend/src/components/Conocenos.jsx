@@ -1,31 +1,32 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, HeartHandshake, MapPin, ShieldCheck } from 'lucide-react'
+import EncabezadoUsuario from './Inicio/EncabezadoUsuario.jsx'
+import EncabezadoClinica from './Clinica/EncabezadoClinica.jsx'
 import './Conocenos.css'
 
-export default function Conocenos({ sesion, perfil, onSalir }) {
-  const rutaCuenta = perfil?.rol === 'clinica' ? '/mi-clinica' : perfil?.rol === 'administrador' ? '/admin' : '/cuenta'
+export default function Conocenos({ sesion, onSalir, sinEncabezado = false }) {
+  const usaEncabezadoFijo = Boolean(sesion)
 
-  return <div className="conocenos-page">
-    <header className="conocenos-header">
-      <Link to="/" className="conocenos-logo">
-        <img src="/logo-puntoax.svg" alt="" className="conocenos-logo-img" aria-hidden="true" />
-        <div>PuntOax<span>.</span></div>
-      </Link>
-      <nav aria-label="Navegación pública">
-        {sesion ? (
-          <>
-            <Link to={rutaCuenta}>Mi cuenta</Link>
-            <button type="button" className="conocenos-salir" onClick={onSalir}>Salir</button>
-          </>
-        ) : (
-          <>
+  return <div className={`conocenos-page${usaEncabezadoFijo ? ' conocenos-con-encabezado-fijo' : ''}`}>
+    {!sinEncabezado && (
+      sesion?.tipo === 'clinica' ? (
+        <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
+      ) : sesion ? (
+        <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="conocenos" />
+      ) : (
+        <header className="conocenos-header">
+          <Link to="/" className="conocenos-logo">
+            <img src="/logo-puntoax.svg" alt="" className="conocenos-logo-img" aria-hidden="true" />
+            <div>PuntOax<span>.</span></div>
+          </Link>
+          <nav aria-label="Navegación pública">
             <Link to="/login">Iniciar sesión</Link>
             <Link to="/registro" className="conocenos-register">Crear cuenta</Link>
-          </>
-        )}
-      </nav>
-    </header>
-    <main>
+          </nav>
+        </header>
+      )
+    )}
+    <main className="conocenos-main">
       <section className="conocenos-hero">
         <div>
           <span className="conocenos-eyebrow">CONÓCENOS · SALUD EN OAXACA</span>
@@ -37,7 +38,7 @@ export default function Conocenos({ sesion, perfil, onSalir }) {
           <img
             src="/img/oaxaca-panel-ilustracion.svg"
             alt=""
-            style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '10px' }}
+            className="conocenos-preview-img"
           />
           <span>PuntOax · Oaxaca</span>
         </div>

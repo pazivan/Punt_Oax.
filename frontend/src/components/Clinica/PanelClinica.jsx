@@ -1,43 +1,114 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle,
+  CalendarDays,
   CheckCircle2,
   Clock3,
   Edit3,
   ExternalLink,
+  FileText,
   Globe,
   Mail,
   MapPin,
   Phone,
   Save,
-  Trash2,
+  Send,
 } from 'lucide-react'
 import {
   consultarCitasClinica,
   consultarMiFicha,
   guardarBorradorClinica,
+  guardarHorariosAgenda,
   leerSesion,
+  solicitarActualizacionClinica,
 } from '../../api/auth'
 import EncabezadoClinica from './EncabezadoClinica.jsx'
 import FuentesInformacion from './FuentesInformacion.jsx'
+import EditorHorarios from './EditorHorarios.jsx'
+import SelectorUbicacionMapa from './SelectorUbicacionMapa.jsx'
+import ModalSolicitudActualizacion from './ModalSolicitudActualizacion.jsx'
+import HistorialSolicitudesClinica from './HistorialSolicitudesClinica.jsx'
 import MapaLeaflet from '../Inicio/MapaLeaflet.jsx'
-import { CLINICAS_DEMO, normalizarYUnificarClinicas } from '../../data/clinicasDemo.js'
-import { OAXACA, coordenadas } from '../../utils/centros.js'
-import { filtrarCitas } from '../../utils/citasClinica'
+import { DIAS, coordenadas } from '../../utils/centros.js'
+import { ZONA_HORARIA, filtrarCitas } from '../../utils/citasClinica'
+import { compararFichaConFormulario } from '../../utils/comparacionFicha'
+import { validarCoordenadas, validarHorarios } from '../../utils/validacionFicha'
 import { validarEmail, validarTelefono } from '../../utils/validaciones'
+import { describirErrorConsulta } from '../../utils/erroresConsulta.js'
 import '../../styles/Inicio.css'
 import '../../css/PanelClinica.css'
 
-const DIAS = [
-  { numero: 0, nombre: 'Domingo' },
-  { numero: 1, nombre: 'Lunes' },
-  { numero: 2, nombre: 'Martes' },
-  { numero: 3, nombre: 'Miércoles' },
-  { numero: 4, nombre: 'Jueves' },
-  { numero: 5, nombre: 'Viernes' },
-  { numero: 6, nombre: 'Sábado' },
-]
+function numeroUbicacion(valor) {
+  if (valor == null || valor === '') return null
+  const numero = Number(valor)
+  return Number.isFinite(numero) ? numero : null
+}
+
+function obtenerClaveFechaMexico(fechaIso) {
+  if (!fechaIso) return ''
+  const fecha = new Date(fechaIso)
+  if (Number.isNaN(fecha.getTime())) return ''
+  const partes = new Intl.DateTimeFormat('es-MX', {
+    timeZone: ZONA_HORARIA,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(fecha)
+  const obtener = (tipo) => partes.find((p) => p.type === tipo)?.value || ''
+  return `${obtener('year')}-${obtener('month')}-${obtener('day')}`
+}
+
+const ETIQUETA_ESTADO_PUBLICACION = {
+  aprobada: 'PUBLICADA',
+  pendiente: 'PENDIENTE DE REVISIÓN',
+  suspendida: 'SUSPENDIDA',
+  rechazada: 'REQUIERE CORRECCIONES',
+  borrador: 'BORRADOR',
+}
+
+function estadoInicialDesdeFicha(ficha) {
+  const servicios = {
+    its: { seleccionado: false, detalle: '' },
+    ile: { seleccionado: false, detalle: '' },
+  }
+  for (const servicio of ficha.servicios || []) {
+    if (servicio.categoria in servicios) {
+      servicios[servicio.categoria] = {
+        seleccionado: true,
+        detalle: servicio.detalle_servicio || '',
+      }
+    }
+  }
+  const latitud = numeroUbicacion(ficha.clinica?.latitud)
+  const longitud = numeroUbicacion(ficha.clinica?.longitud)
+  return {
+    nombre: ficha.clinica?.nombre || '',
+    tipo_institucion: ficha.clinica?.tipo_institucion || '',
+    descripcion: ficha.clinica?.descripcion || '',
+    telefono: ficha.clinica?.telefono || '',
+    correo_contacto: ficha.clinica?.correo_contacto || '',
+    sitio_web: ficha.clinica?.sitio_web || '',
+    municipio: ficha.clinica?.municipio || '',
+    localidad: ficha.clinica?.localidad || '',
+    direccion: ficha.clinica?.direccion || '',
+    codigo_postal: ficha.clinica?.codigo_postal || '',
+    ubicacion_maps_url: ficha.clinica?.ubicacion_maps_url || '',
+    ubicacion: {
+      latitud,
+      longitud,
+      confirmada: latitud !== null && longitud !== null,
+    },
+    servicios,
+    horarios: (ficha.horarios || []).map((horario) => ({
+      dia_semana: horario.dia_semana,
+      apertura: horario.apertura,
+      cierre: horario.cierre,
+      es_24_horas: Boolean(horario.es_24_horas),
+      cruza_medianoche: Boolean(horario.cruza_medianoche),
+    })),
+  }
+}
 
 const AREAS = [
   {
@@ -59,40 +130,6 @@ const ETIQUETA_TIPO_INSTITUCION = {
   otra: 'Otra institución',
 }
 
-function estadoInicialDesdeFicha(ficha) {
-  const servicios = {
-    its: { seleccionado: false, detalle: '' },
-    ile: { seleccionado: false, detalle: '' },
-  }
-  for (const servicio of ficha.servicios || []) {
-    if (servicio.categoria in servicios) {
-      servicios[servicio.categoria] = {
-        seleccionado: true,
-        detalle: servicio.detalle_servicio || '',
-      }
-    }
-  }
-  return {
-    nombre: ficha.clinica?.nombre || '',
-    tipo_institucion: ficha.clinica?.tipo_institucion || '',
-    descripcion: ficha.clinica?.descripcion || '',
-    telefono: ficha.clinica?.telefono || '',
-    correo_contacto: ficha.clinica?.correo_contacto || '',
-    sitio_web: ficha.clinica?.sitio_web || '',
-    municipio: ficha.clinica?.municipio || '',
-    localidad: ficha.clinica?.localidad || '',
-    direccion: ficha.clinica?.direccion || '',
-    codigo_postal: ficha.clinica?.codigo_postal || '',
-    ubicacion_maps_url: ficha.clinica?.ubicacion_maps_url || '',
-    servicios,
-    horarios: (ficha.horarios || []).map((horario) => ({
-      dia_semana: horario.dia_semana,
-      apertura: horario.apertura,
-      cierre: horario.cierre,
-    })),
-  }
-}
-
 function construirPayload(form) {
   return {
     nombre: form.nombre.trim(),
@@ -111,8 +148,10 @@ function construirPayload(form) {
       .map(([categoria, valor]) => ({ categoria, detalle: valor.detalle.trim() })),
     horarios: form.horarios.map((horario) => ({
       dia_semana: horario.dia_semana,
-      apertura: horario.apertura,
-      cierre: horario.cierre,
+      apertura: horario.es_24_horas ? '00:00' : horario.apertura,
+      cierre: horario.es_24_horas ? '00:00' : horario.cierre,
+      es_24_horas: Boolean(horario.es_24_horas),
+      cruza_medianoche: Boolean(horario.cruza_medianoche) && !horario.es_24_horas,
     })),
   }
 }
@@ -142,25 +181,9 @@ function validarInformacion(form) {
       return `El ${campo} debe iniciar con http:// o https://.`
     }
   }
-  const ordenados = [...form.horarios].sort(
-    (a, b) => a.dia_semana - b.dia_semana || a.apertura.localeCompare(b.apertura)
-  )
-  for (let i = 0; i < ordenados.length; i += 1) {
-    const horario = ordenados[i]
-    if (!horario.apertura || !horario.cierre) {
-      return 'Completa la apertura y el cierre de cada horario.'
-    }
-    if (horario.apertura >= horario.cierre) {
-      return 'La apertura debe ser anterior al cierre. Los turnos nocturnos aún no están disponibles.'
-    }
-    if (
-      i > 0 &&
-      ordenados[i - 1].dia_semana === horario.dia_semana &&
-      horario.apertura < ordenados[i - 1].cierre
-    ) {
-      return 'Las franjas de un mismo día no deben solaparse.'
-    }
-  }
+  const erroresHorarios = validarHorarios(form.horarios)
+  const primerErrorHorario = Object.values(erroresHorarios)[0]
+  if (primerErrorHorario) return primerErrorHorario
   return ''
 }
 
@@ -174,14 +197,22 @@ export default function PanelClinica({ sesion, onSalir }) {
   const [ficha, setFicha] = useState(null)
   const [form, setForm] = useState(null)
   const [citasClinica, setCitasClinica] = useState([])
-  const [catalogoClinicas, setCatalogoClinicas] = useState([])
-  const [clinicaMapaSeleccionada, setClinicaMapaSeleccionada] = useState(null)
-  const vistaActiva = searchParams.get('vista') === 'editar' ? 'editar' : 'inicio'
+  const [estadoCitas, setEstadoCitas] = useState('cargando')
+  const [centrarMapaTrigger, setCentrarMapaTrigger] = useState(0)
+  const vistaQuery = searchParams.get('vista')
+  const vistaActiva =
+    vistaQuery === 'editar' ? 'editar' : vistaQuery === 'solicitudes' ? 'solicitudes' : 'inicio'
+  const solicitudQueryId = searchParams.get('solicitud')
   const [cargando, setCargando] = useState(true)
-  const [errorCarga, setErrorCarga] = useState('')
+  const [errorCarga, setErrorCarga] = useState(null)
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [modalSolicitudAbierto, setModalSolicitudAbierto] = useState(false)
+  const [enviandoSolicitud, setEnviandoSolicitud] = useState(false)
+  const [errorSolicitud, setErrorSolicitud] = useState('')
+  const [errorUbicacion, setErrorUbicacion] = useState('')
+  const [recargaSolicitudes, setRecargaSolicitudes] = useState(0)
 
   useEffect(() => {
     sessionStorage.setItem('puntoax_panel_aprobado', '1')
@@ -190,6 +221,8 @@ export default function PanelClinica({ sesion, onSalir }) {
   function setVistaActiva(nuevaVista) {
     if (nuevaVista === 'editar') {
       setSearchParams({ vista: 'editar' }, { replace: true })
+    } else if (nuevaVista === 'solicitudes') {
+      setSearchParams({ vista: 'solicitudes' }, { replace: true })
     } else {
       setSearchParams({}, { replace: true })
     }
@@ -202,11 +235,11 @@ export default function PanelClinica({ sesion, onSalir }) {
 
   async function cargarFicha() {
     setCargando(true)
-    setErrorCarga('')
+    setErrorCarga(null)
     try {
       aplicarFicha(await consultarMiFicha())
     } catch (err) {
-      setErrorCarga(err.message)
+      setErrorCarga(err)
     } finally {
       setCargando(false)
     }
@@ -221,7 +254,7 @@ export default function PanelClinica({ sesion, onSalir }) {
         setForm(estadoInicialDesdeFicha(datos))
       })
       .catch((err) => {
-        if (activo) setErrorCarga(err.message)
+        if (activo) setErrorCarga(err)
       })
       .finally(() => {
         if (activo) setCargando(false)
@@ -231,19 +264,12 @@ export default function PanelClinica({ sesion, onSalir }) {
       .then((res) => {
         if (!activo) return
         setCitasClinica(Array.isArray(res?.citas) ? res.citas : [])
+        setEstadoCitas('listo')
       })
       .catch(() => {
-        if (activo) setCitasClinica([])
-      })
-
-    fetch('/api/clinicas')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((lista) => {
         if (!activo) return
-        setCatalogoClinicas(Array.isArray(lista) ? lista : [])
-      })
-      .catch(() => {
-        if (activo) setCatalogoClinicas([])
+        setCitasClinica([])
+        setEstadoCitas('error')
       })
 
     return () => {
@@ -253,6 +279,19 @@ export default function PanelClinica({ sesion, onSalir }) {
 
   const citasProximasCount = useMemo(
     () => filtrarCitas(citasClinica, 'proximas').length,
+    [citasClinica]
+  )
+
+  const claveHoy = useMemo(() => obtenerClaveFechaMexico(new Date().toISOString()), [])
+  const citasHoyCount = useMemo(
+    () =>
+      citasClinica.filter(
+        (c) => c.estado === 'confirmada' && obtenerClaveFechaMexico(c.fecha_hora_inicio) === claveHoy
+      ).length,
+    [citasClinica, claveHoy]
+  )
+  const citasPendientesCierreCount = useMemo(
+    () => citasClinica.filter((c) => c.estado === 'confirmada').length,
     [citasClinica]
   )
 
@@ -266,52 +305,31 @@ export default function PanelClinica({ sesion, onSalir }) {
     )
   }, [form])
 
-  const centrosParaMapa = useMemo(() => {
-    const base =
-      catalogoClinicas.length > 0
-        ? catalogoClinicas
-        : normalizarYUnificarClinicas(CLINICAS_DEMO)
-
-    if (!ficha?.clinica || !form) return base
-
-    const idPropio = ficha.clinica.id_clinica
-    const existente = base.find(
-      (c) =>
-        c.id_clinica === idPropio ||
-        (c.nombre &&
-          form.nombre &&
-          c.nombre.trim().toLowerCase() === form.nombre.trim().toLowerCase())
-    )
-
-    const coordsExistentes = coordenadas(existente || ficha.clinica)
-    const [lat, lng] = coordsExistentes || OAXACA
-
-    const miCentroEnMapa = {
-      ...(existente || {}),
-      id_clinica: idPropio || 'mi-clinica-actual',
-      nombre: form.nombre.trim() || ficha.clinica.nombre || 'Mi clínica',
-      municipio: form.municipio.trim() || ficha.clinica.municipio || 'Oaxaca de Juárez',
-      direccion: form.direccion.trim() || ficha.clinica.direccion || 'Dirección registrada',
-      telefono: form.telefono.trim() || ficha.clinica.telefono || '',
-      servicios: areasSeleccionadas.map((a) => a.nombre),
-      horarios: form.horarios,
-      latitud: lat,
-      longitud: lng,
+  const miCentroEnMapa = useMemo(() => {
+    if (!ficha?.clinica) return null
+    const coordsExistentes = coordenadas(ficha.clinica)
+    if (!coordsExistentes) return null
+    return {
+      ...ficha.clinica,
+      id_clinica: ficha.clinica.id_clinica,
+      nombre: ficha.clinica.nombre || 'Mi clínica',
+      municipio: ficha.clinica.municipio || 'Oaxaca',
+      direccion: ficha.clinica.direccion || 'Dirección registrada',
+      telefono: ficha.clinica.telefono || '',
+      servicios: (ficha.servicios || []).map((s) => s.nombre || s.categoria),
+      horarios: ficha.horarios || [],
+      latitud: coordsExistentes[0],
+      longitud: coordsExistentes[1],
       ubicacion_confirmada: true,
       esMiCentro: true,
     }
+  }, [ficha])
 
-    const resto = base.filter(
-      (c) =>
-        c.id_clinica !== idPropio &&
-        (!existente || c.id_clinica !== existente.id_clinica)
-    )
-
-    return [miCentroEnMapa, ...resto]
-  }, [catalogoClinicas, ficha, form, areasSeleccionadas])
-
-  const centroActivoEnMapa =
-    clinicaMapaSeleccionada || centrosParaMapa[0] || null
+  const comparacionCambios = useMemo(
+    () => compararFichaConFormulario(ficha, form),
+    [ficha, form]
+  )
+  const haySolicitudPendiente = ficha?.postulacion?.estado === 'pendiente'
 
   if (cargando) {
     return (
@@ -332,6 +350,7 @@ export default function PanelClinica({ sesion, onSalir }) {
   }
 
   if (errorCarga) {
+    const aviso = describirErrorConsulta(errorCarga, 'los datos de tu clínica')
     return (
       <div className="panel-clinica-page">
         <EncabezadoClinica
@@ -343,11 +362,11 @@ export default function PanelClinica({ sesion, onSalir }) {
         />
         <main className="ficha-state-card" role="alert">
           <AlertTriangle size={30} aria-hidden="true" />
-          <h1>No pudimos cargar los datos de tu clínica</h1>
-          <p>{errorCarga}</p>
-          <button type="button" className="ficha-btn-primary" onClick={cargarFicha}>
+          <h1>{aviso.titulo}</h1>
+          <p>{aviso.mensaje}</p>
+          {aviso.reintentar && <button type="button" className="ficha-btn-primary" onClick={cargarFicha}>
             Reintentar
-          </button>
+          </button>}
         </main>
       </div>
     )
@@ -396,46 +415,97 @@ export default function PanelClinica({ sesion, onSalir }) {
     setMensaje('')
   }
 
-  const franjasDelDia = (dia) =>
-    form.horarios
-      .map((horario, indice) => ({ ...horario, indice }))
-      .filter((horario) => horario.dia_semana === dia)
-
-  const alternarDia = (dia) => {
-    const franjas = franjasDelDia(dia)
+  const confirmarUbicacion = ({ latitud, longitud }) => {
+    const coords = validarCoordenadas(latitud, longitud)
+    if (coords.error) {
+      setErrorUbicacion(coords.error)
+      return
+    }
     setForm((actual) => ({
       ...actual,
-      horarios: franjas.length
-        ? actual.horarios.filter((horario) => horario.dia_semana !== dia)
-        : [...actual.horarios, { dia_semana: dia, apertura: '09:00', cierre: '17:00' }],
+      ubicacion: {
+        latitud: coords.latitud,
+        longitud: coords.longitud,
+        confirmada: true,
+      },
     }))
+    setErrorUbicacion('')
     setMensaje('')
   }
 
-  const agregarFranja = (dia) => {
+  const corregirUbicacion = () => {
     setForm((actual) => ({
       ...actual,
-      horarios: [...actual.horarios, { dia_semana: dia, apertura: '18:00', cierre: '20:00' }],
+      ubicacion: {
+        ...actual.ubicacion,
+        confirmada: false,
+      },
     }))
+    setErrorUbicacion('')
     setMensaje('')
   }
 
-  const actualizarHorario = (indice, campo, valor) => {
-    setForm((actual) => ({
-      ...actual,
-      horarios: actual.horarios.map((horario, posicion) =>
-        posicion === indice ? { ...horario, [campo]: valor } : horario
-      ),
-    }))
+  const abrirModalSolicitud = () => {
+    if (haySolicitudPendiente || !comparacionCambios.hayCambiosRevision) return
+    setError('')
     setMensaje('')
+    setErrorSolicitud('')
+    if (!form.nombre.trim()) {
+      setError('El nombre institucional es obligatorio.')
+      return
+    }
+    if (form.codigo_postal.trim() && !/^\d{5}$/.test(form.codigo_postal.trim())) {
+      setError('El código postal debe tener 5 dígitos.')
+      return
+    }
+    const areasSeleccionadasIds = Object.entries(form.servicios)
+      .filter(([, valor]) => valor.seleccionado)
+      .map(([categoria]) => categoria)
+    if (areasSeleccionadasIds.length === 0) {
+      setError('Selecciona al menos un área de atención (ITS o ILE).')
+      return
+    }
+    setModalSolicitudAbierto(true)
   }
 
-  const eliminarFranja = (indice) => {
-    setForm((actual) => ({
-      ...actual,
-      horarios: actual.horarios.filter((_, posicion) => posicion !== indice),
-    }))
-    setMensaje('')
+  const confirmarEnvioSolicitud = async (motivo) => {
+    if (enviandoSolicitud || haySolicitudPendiente) return
+    setEnviandoSolicitud(true)
+    setErrorSolicitud('')
+    try {
+      const payload = {
+        motivo,
+        nombre: form.nombre.trim(),
+        tipo_institucion: form.tipo_institucion || null,
+        municipio: form.municipio.trim() || null,
+        codigo_postal: form.codigo_postal.trim() || null,
+        direccion: form.direccion.trim() || null,
+        areas_servicio: Object.entries(form.servicios)
+          .filter(([, valor]) => valor.seleccionado)
+          .map(([categoria]) => categoria),
+      }
+      if (form.ubicacion?.confirmada) {
+        const coords = validarCoordenadas(form.ubicacion.latitud, form.ubicacion.longitud)
+        if (!coords.error) {
+          payload.latitud = coords.latitud
+          payload.longitud = coords.longitud
+        }
+      }
+      const resp = await solicitarActualizacionClinica(payload)
+      const actualizada = await consultarMiFicha()
+      setFicha(actualizada)
+      setForm(estadoInicialDesdeFicha(actualizada))
+      setModalSolicitudAbierto(false)
+      setRecargaSolicitudes((v) => v + 1)
+      setMensaje(
+        resp.mensaje ||
+          'Solicitud de actualización enviada para revisión administrativa. Tus datos publicados se mantienen visibles hasta su aprobación.'
+      )
+    } catch (err) {
+      setErrorSolicitud(err.message || 'No se pudo enviar la solicitud de actualización.')
+    } finally {
+      setEnviandoSolicitud(false)
+    }
   }
 
   async function persistirCambios() {
@@ -467,13 +537,26 @@ export default function PanelClinica({ sesion, onSalir }) {
         }),
       })
 
-      if (respuestaHttp.ok) {
-        const actualizada = await consultarMiFicha()
-        setFicha(actualizada)
-        return actualizada
+      if (!respuestaHttp.ok) {
+        const errJson = await respuestaHttp.json().catch(() => null)
+        throw new Error(errJson?.error || 'No se pudieron actualizar los datos publicados.')
       }
-      const errJson = await respuestaHttp.json().catch(() => null)
-      throw new Error(errJson?.error || 'No se pudieron actualizar los datos publicados.')
+
+      if (ficha?.clinica?.estado_publicacion === 'aprobada') {
+        await guardarHorariosAgenda(
+          form.horarios.map((h) => ({
+            dia_semana: h.dia_semana,
+            apertura: h.es_24_horas ? '00:00' : h.apertura,
+            cierre: h.es_24_horas ? '00:00' : h.cierre,
+            es_24_horas: Boolean(h.es_24_horas),
+            cruza_medianoche: Boolean(h.cruza_medianoche) && !h.es_24_horas,
+          }))
+        )
+      }
+
+      const actualizada = await consultarMiFicha()
+      setFicha(actualizada)
+      return actualizada
     }
 
     const respuesta = await guardarBorradorClinica(construirPayload(form))
@@ -546,25 +629,47 @@ export default function PanelClinica({ sesion, onSalir }) {
                 <div className="panel-clinica-top-overview-left">
                   <div className="panel-clinica-badge-row">
                     <span className="panel-clinica-status-pill">
-                      ACTIVO
+                      {ETIQUETA_ESTADO_PUBLICACION[ficha?.clinica?.estado_publicacion] || 'ACTIVA'}
                     </span>
                     <span className="panel-clinica-center-meta">
                       {nombreCentroMostrado} • {municipioMostrado}
                     </span>
                   </div>
                   <h2 className="panel-clinica-welcome-title">
-                    ¡Bienvenido, equipo!
+                    {nombreCentroMostrado}
                   </h2>
-                  <div className="panel-clinica-welcome-actions">
+                  <div className="panel-clinica-welcome-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {vistaActiva === 'inicio' ? (
-                      <button
-                        type="button"
-                        className="panel-clinica-edit-shortcut"
-                        onClick={() => setVistaActiva('editar')}
-                      >
-                        <Edit3 size={14} color="#FFFFFF" aria-hidden="true" />
-                        <span>Actualizar información</span>
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="panel-clinica-edit-shortcut"
+                          onClick={() => setVistaActiva('editar')}
+                        >
+                          <Edit3 size={14} color="#FFFFFF" aria-hidden="true" />
+                          <span>Actualizar información</span>
+                        </button>
+                        <Link to="/mi-clinica/citas" className="panel-clinica-back-shortcut" style={{ textDecoration: 'none' }}>
+                          <CalendarDays size={14} aria-hidden="true" />
+                          <span>Mis citas</span>
+                        </Link>
+                        <Link to="/mi-clinica/agenda" className="panel-clinica-back-shortcut" style={{ textDecoration: 'none' }}>
+                          <Clock3 size={14} aria-hidden="true" />
+                          <span>Gestionar agenda</span>
+                        </Link>
+                        <button
+                          type="button"
+                          className="panel-clinica-back-shortcut"
+                          onClick={() => setVistaActiva('solicitudes')}
+                        >
+                          <FileText size={14} aria-hidden="true" />
+                          <span>Mis solicitudes</span>
+                        </button>
+                        <Link to="/mapa" className="panel-clinica-back-shortcut" style={{ textDecoration: 'none' }}>
+                          <MapPin size={14} aria-hidden="true" />
+                          <span>Ver mapa</span>
+                        </Link>
+                      </>
                     ) : (
                       <button
                         type="button"
@@ -577,20 +682,62 @@ export default function PanelClinica({ sesion, onSalir }) {
                   </div>
                 </div>
 
-                {/* Indicador compacto */}
+                {/* Indicadores reales de citas */}
                 <div className="panel-clinica-top-overview-right">
                   <div className="panel-clinica-stats-row">
                     <div className="panel-clinica-stat-card">
                       <span className="panel-clinica-stat-value">
-                        {citasProximasCount}
+                        {estadoCitas === 'cargando' ? '—' : citasHoyCount}
                       </span>
                       <span className="panel-clinica-stat-label">
-                        Citas próximas
+                        Citas de hoy
+                      </span>
+                    </div>
+                    <div className="panel-clinica-stat-card">
+                      <span className="panel-clinica-stat-value">
+                        {estadoCitas === 'cargando' ? '—' : citasProximasCount}
+                      </span>
+                      <span className="panel-clinica-stat-label">
+                        Próximas citas
+                      </span>
+                    </div>
+                    <div className="panel-clinica-stat-card">
+                      <span className="panel-clinica-stat-value">
+                        {estadoCitas === 'cargando' ? '—' : citasPendientesCierreCount}
+                      </span>
+                      <span className="panel-clinica-stat-label">
+                        Citas pendientes
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {vistaActiva === 'inicio' && estadoCitas === 'listo' && citasClinica.length === 0 && (
+                <div
+                  className="ficha-doc-note"
+                  role="status"
+                  style={{ marginTop: '14px', width: '100%', boxSizing: 'border-box' }}
+                >
+                  <CalendarDays size={18} aria-hidden="true" />
+                  <p>
+                    <strong>Sin citas agendadas todavía.</strong> Cuando los pacientes reserven horarios en tu centro aparecerán aquí y en{' '}
+                    <Link to="/mi-clinica/citas" style={{ color: '#103328', fontWeight: 700 }}>Mis citas</Link>.
+                    {' '}Puedes publicar cupos desde <Link to="/mi-clinica/agenda" style={{ color: '#103328', fontWeight: 700 }}>Gestionar agenda</Link>.
+                  </p>
+                </div>
+              )}
+
+              {vistaActiva === 'inicio' && estadoCitas === 'error' && (
+                <div
+                  className="ficha-alert ficha-alert-error"
+                  role="alert"
+                  style={{ marginTop: '14px', width: '100%', boxSizing: 'border-box' }}
+                >
+                  <AlertTriangle size={18} aria-hidden="true" />
+                  <p>No se pudieron consultar las citas reales de tu clínica en este momento.</p>
+                </div>
+              )}
 
               {error && (
                 <div
@@ -743,12 +890,15 @@ export default function PanelClinica({ sesion, onSalir }) {
                           {form.horarios.length > 0 ? (
                             <ul className="panel-clinica-schedule-list">
                               {form.horarios.map((h, idx) => {
-                                const nombreDia =
-                                  DIAS.find((d) => d.numero === Number(h.dia_semana))?.nombre ||
-                                  'Día'
+                                const nombreDia = DIAS[Number(h.dia_semana)] || 'Día'
+                                const textoFranja = h.es_24_horas
+                                  ? '24 horas'
+                                  : h.cruza_medianoche
+                                    ? `${h.apertura} - ${h.cierre} (nocturno)`
+                                    : `${h.apertura} - ${h.cierre}`
                                 return (
                                   <li key={`${h.dia_semana}-${idx}`}>
-                                    <strong>{nombreDia}:</strong> {h.apertura} - {h.cierre}
+                                    <strong>{nombreDia}:</strong> {textoFranja}
                                   </li>
                                 )
                               })}
@@ -761,7 +911,7 @@ export default function PanelClinica({ sesion, onSalir }) {
                     </div>
                   </section>
 
-                  {/* Columna derecha: Mapa integrado al lado de los datos */}
+                  {/* Columna derecha: Mapa exclusivo de la clínica autenticada */}
                   <section
                     className="panel-clinica-summary-block"
                     aria-labelledby="resumen-mapa-clinica"
@@ -769,54 +919,48 @@ export default function PanelClinica({ sesion, onSalir }) {
                     <div className="panel-clinica-summary-header">
                       <div>
                         <h3 id="resumen-mapa-clinica" className="panel-clinica-section-title">
-                          Mapa de tu centro y red de clínicas
+                          Ubicación de mi clínica
                         </h3>
                       </div>
 
-                      <button
-                        type="button"
-                        className="panel-clinica-focus-btn"
-                        onClick={() => setClinicaMapaSeleccionada(centrosParaMapa[0] || null)}
-                      >
-                        <MapPin size={13} color="#FFFFFF" aria-hidden="true" />
-                        <span>Mi centro</span>
-                      </button>
+                      {miCentroEnMapa && (
+                        <button
+                          type="button"
+                          className="panel-clinica-focus-btn"
+                          onClick={() => setCentrarMapaTrigger((v) => v + 1)}
+                        >
+                          <MapPin size={13} color="#FFFFFF" aria-hidden="true" />
+                          <span>Mi centro</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="panel-clinica-map-vertical">
                       <div className="panel-clinica-map-canvas">
-                        <MapaLeaflet
-                          clinicas={centrosParaMapa}
-                          clinicaSeleccionada={centroActivoEnMapa}
-                          onSeleccionarClinica={(c) => setClinicaMapaSeleccionada(c)}
-                          onVerDetallesClinica={(c) => setClinicaMapaSeleccionada(c)}
-                        />
-                      </div>
-
-                      <div className="panel-clinica-map-chips" aria-label="Centros en el mapa">
-                        {centrosParaMapa.slice(0, 4).map((centro) => {
-                          const activo =
-                            centroActivoEnMapa?.id_clinica === centro.id_clinica
-                          return (
-                            <button
-                              key={centro.id_clinica}
-                              type="button"
-                              className={`panel-clinica-map-item ${activo ? 'is-selected' : ''
-                                }`}
-                              onClick={() => setClinicaMapaSeleccionada(centro)}
-                            >
-                              <span
-                                className={`panel-clinica-map-badge ${centro.esMiCentro ? 'is-own' : ''
-                                  }`}
+                        {miCentroEnMapa ? (
+                          <MapaLeaflet
+                            clinicas={[miCentroEnMapa]}
+                            clinicaSeleccionada={miCentroEnMapa}
+                            clinicaAutenticadaId={ficha?.clinica?.id_clinica}
+                            mostrarLeyenda={false}
+                            zoomInicial={15}
+                            centrarTrigger={centrarMapaTrigger}
+                          />
+                        ) : (
+                          <div className="ficha-doc-note" role="status" style={{ margin: '16px' }}>
+                            <MapPin size={18} aria-hidden="true" />
+                            <p>
+                              <strong>Sin coordenadas publicadas.</strong> Puedes proponer la ubicación de tu clínica desde{' '}
+                              <button
+                                type="button"
+                                className="ficha-link-button"
+                                onClick={() => setVistaActiva('editar')}
                               >
-                                {centro.esMiCentro ? 'TU CENTRO' : centro.municipio || 'Oaxaca'}
-                              </span>
-                              <strong className="panel-clinica-map-item-name">
-                                {centro.nombre}
-                              </strong>
-                            </button>
-                          )
-                        })}
+                                Actualizar información
+                              </button>.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </section>
@@ -840,6 +984,36 @@ export default function PanelClinica({ sesion, onSalir }) {
                       Actualizar información del centro
                     </h3>
                   </div>
+
+                  <div className="ficha-doc-note" style={{ width: '100%', boxSizing: 'border-box', marginBottom: '12px' }}>
+                    <AlertTriangle size={18} aria-hidden="true" />
+                    <p>
+                      <strong>¿Cómo se actualizan tus datos?</strong>{' '}
+                      Los datos de contacto, descripción, detalle de servicios y horarios se publican de inmediato con{' '}
+                      <strong>Guardar cambios directos</strong>.{' '}
+                      En cambio, el nombre institucional, tipo de institución, domicilio, áreas de servicio y ubicación geográfica requieren revisión administrativa mediante{' '}
+                      <strong>Solicitar actualización</strong> (sin afectar tus datos publicados mientras se revisan).
+                    </p>
+                  </div>
+
+                  {haySolicitudPendiente && (
+                    <div className="ficha-ubicacion-pendiente-banner" role="status" style={{ width: '100%', boxSizing: 'border-box' }}>
+                      <Clock3 size={18} aria-hidden="true" />
+                      <div>
+                        <strong>Tienes una solicitud pendiente de revisión administrativa</strong>
+                        <p style={{ margin: '4px 0 0' }}>
+                          No puedes enviar otra solicitud de actualización hasta que el administrador resuelva la actual.{' '}
+                          <button
+                            type="button"
+                            className="ficha-link-button"
+                            onClick={() => setVistaActiva('solicitudes')}
+                          >
+                            Ver en Mis solicitudes
+                          </button>
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="panel-clinica-fields-row">
                     <div className="panel-clinica-field-col">
@@ -1042,84 +1216,74 @@ export default function PanelClinica({ sesion, onSalir }) {
                     </h3>
                   </div>
 
-                  <div className="ficha-days" style={{ width: '100%' }}>
-                    {DIAS.map((dia) => {
-                      const franjas = franjasDelDia(dia.numero)
-                      return (
-                        <div
-                          className={`ficha-day-card ${franjas.length ? 'is-selected' : ''}`}
-                          key={dia.numero}
-                        >
-                          <div className="ficha-day-header">
-                            <label className="ficha-check-row">
-                              <input
-                                type="checkbox"
-                                checked={franjas.length > 0}
-                                onChange={() => alternarDia(dia.numero)}
-                              />
-                              <span>
-                                <strong>{dia.nombre}</strong>
-                              </span>
-                            </label>
-                            {franjas.length > 0 && (
-                              <button
-                                type="button"
-                                className="ficha-link-button"
-                                onClick={() => agregarFranja(dia.numero)}
-                              >
-                                + Agregar franja
-                              </button>
-                            )}
-                          </div>
-                          {franjas.map((franja) => (
-                            <div className="ficha-time-row" key={franja.indice}>
-                              <div className="ficha-field">
-                                <label htmlFor={`ficha-apertura-${franja.indice}`}>Apertura</label>
-                                <input
-                                  id={`ficha-apertura-${franja.indice}`}
-                                  className="ficha-input"
-                                  type="time"
-                                  value={franja.apertura}
-                                  onChange={(evento) =>
-                                    actualizarHorario(franja.indice, 'apertura', evento.target.value)
-                                  }
-                                />
-                              </div>
-                              <div className="ficha-field">
-                                <label htmlFor={`ficha-cierre-${franja.indice}`}>Cierre</label>
-                                <input
-                                  id={`ficha-cierre-${franja.indice}`}
-                                  className="ficha-input"
-                                  type="time"
-                                  value={franja.cierre}
-                                  onChange={(evento) =>
-                                    actualizarHorario(franja.indice, 'cierre', evento.target.value)
-                                  }
-                                />
-                              </div>
-                              {franjas.length > 1 && (
-                                <button
-                                  type="button"
-                                  className="ficha-icon-button"
-                                  onClick={() => eliminarFranja(franja.indice)}
-                                  aria-label={`Eliminar franja del ${dia.nombre}`}
-                                >
-                                  <Trash2 size={16} aria-hidden="true" />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    })}
+                  <EditorHorarios
+                    horarios={form.horarios}
+                    idPrefijo="panel"
+                    disabled={guardando}
+                    onChange={(nuevosHorarios) => {
+                      setForm((actual) => ({ ...actual, horarios: nuevosHorarios }))
+                      setMensaje('')
+                      setError('')
+                    }}
+                  />
+
+                  <div className="panel-clinica-section-title-wrap" style={{ paddingTop: '28px' }}>
+                    <h3 className="panel-clinica-section-title">
+                      Ubicación geográfica del centro
+                    </h3>
                   </div>
+
+                  <div style={{ width: '100%' }}>
+                    {ficha?.ubicacion_pendiente && (
+                      <div className="ficha-ubicacion-pendiente-banner" role="status">
+                        <AlertTriangle size={18} aria-hidden="true" />
+                        <div>
+                          <strong>Cambio de ubicación pendiente de revisión</strong>
+                          <p style={{ margin: '4px 0 0' }}>
+                            Solicitaste actualizar la ubicación a ({Number(ficha.ubicacion_pendiente.latitud).toFixed(6)}, {Number(ficha.ubicacion_pendiente.longitud).toFixed(6)}).
+                            Tu ubicación pública aprobada permanece visible en el mapa hasta que el administrador apruebe el cambio.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <SelectorUbicacionMapa
+                      latitud={form.ubicacion?.latitud}
+                      longitud={form.ubicacion?.longitud}
+                      confirmada={form.ubicacion?.confirmada === true}
+                      error={errorUbicacion}
+                      deshabilitado={guardando || enviandoSolicitud || haySolicitudPendiente}
+                      onConfirmar={confirmarUbicacion}
+                      onCorregir={corregirUbicacion}
+                    />
+                  </div>
+
+                  {(comparacionCambios.hayCambiosDirectos || comparacionCambios.hayCambiosRevision) && (
+                    <div className="ficha-doc-note" role="status" style={{ width: '100%', boxSizing: 'border-box', marginTop: '14px' }}>
+                      <CheckCircle2 size={18} aria-hidden="true" />
+                      <p>
+                        {comparacionCambios.hayCambiosDirectos && (
+                          <span>
+                            <strong>Cambios directos detectados ({comparacionCambios.cambiosDirectos.length}):</strong>{' '}
+                            {comparacionCambios.cambiosDirectos.map((c) => c.etiqueta).join(', ')}.{' '}
+                          </span>
+                        )}
+                        {comparacionCambios.hayCambiosRevision && (
+                          <span>
+                            <strong>Cambios que requieren revisión ({comparacionCambios.cambiosRevision.length}):</strong>{' '}
+                            {comparacionCambios.cambiosRevision.map((c) => c.etiqueta).join(', ')}.
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="panel-clinica-actions-row">
                     <button
                       type="button"
                       className="panel-clinica-btn-secondary"
                       onClick={restaurarDatos}
-                      disabled={guardando}
+                      disabled={guardando || enviandoSolicitud}
                     >
                       Restaurar
                     </button>
@@ -1128,20 +1292,64 @@ export default function PanelClinica({ sesion, onSalir }) {
                       <button
                         type="submit"
                         className="panel-clinica-btn-primary"
-                        disabled={guardando}
+                        disabled={guardando || !comparacionCambios.hayCambiosDirectos}
+                        title={
+                          comparacionCambios.hayCambiosDirectos
+                            ? 'Publicar cambios de contacto, descripción, detalles o horarios'
+                            : 'No hay cambios directos pendientes por guardar'
+                        }
                       >
                         <Save size={15} color="#FFFFFF" aria-hidden="true" />
-                        <span>{guardando ? 'Guardando…' : 'Guardar cambios'}</span>
+                        <span>{guardando ? 'Guardando…' : 'Guardar cambios directos'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="panel-clinica-btn-primary"
+                        style={{ background: '#1F4E3D' }}
+                        disabled={
+                          guardando ||
+                          enviandoSolicitud ||
+                          haySolicitudPendiente ||
+                          !comparacionCambios.hayCambiosRevision
+                        }
+                        onClick={abrirModalSolicitud}
+                        title={
+                          haySolicitudPendiente
+                            ? 'Ya existe una solicitud pendiente de revisión'
+                            : comparacionCambios.hayCambiosRevision
+                              ? 'Enviar modificaciones institucionales o de ubicación a revisión administrativa'
+                              : 'No hay cambios que requieran revisión administrativa'
+                        }
+                      >
+                        <Send size={15} color="#FFFFFF" aria-hidden="true" />
+                        <span>Solicitar actualización</span>
                       </button>
                     </div>
                   </div>
                 </form>
+              )}
+
+              {vistaActiva === 'solicitudes' && (
+                <HistorialSolicitudesClinica
+                  solicitudSeleccionadaId={solicitudQueryId}
+                  recargaTrigger={recargaSolicitudes}
+                />
               )}
               <FuentesInformacion iniciales={ficha?.clinica?.enlaces_informacion} />
             </div>
           </div>
         </div>
       </main>
+
+      <ModalSolicitudActualizacion
+        abierto={modalSolicitudAbierto}
+        cambios={comparacionCambios.cambiosRevision}
+        enviando={enviandoSolicitud}
+        errorServidor={errorSolicitud}
+        onCancelar={() => setModalSolicitudAbierto(false)}
+        onConfirmar={confirmarEnvioSolicitud}
+      />
 
       <footer className="panel-clinica-footer">
         <div className="panel-clinica-footer-container">

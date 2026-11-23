@@ -1,6 +1,5 @@
 /**
- * API de centros cercanos (Sprint 8 · Kelly · issues #94 y #95)
- * Contrato: docs/contrato-api-cercania.md
+ * API de centros cercanos (Sprint 8 · Kelly #94/#95 + PostGIS Iván #93)
  *
  *   GET /api/clinicas/cercanas?lat=&lng=&radio_km=10&limite=10&servicios=its,ile
  *
@@ -8,12 +7,10 @@
  * - Solo clínicas aprobadas con ubicación confirmada (fija y verificada).
  * - Ordenadas por distancia en línea recta (PostGIS, geography).
  * - PRIVACIDAD: las coordenadas recibidas no se guardan ni se escriben en logs.
- *
- * La consulta SQL está separada en consultarCentrosCercanos() para que Iván (#93)
- * pueda revisarla o reemplazarla sin tocar la validación ni la ruta.
  */
 
 const { fichaPublica } = require("./catalogoPublico");
+const { consultarCentrosCercanos } = require("./cercaniaPostgis");
 
 const RADIO_PREDETERMINADO_KM = 10;
 const LIMITE_PREDETERMINADO = 10;
@@ -24,7 +21,7 @@ const SERVICIOS_PERMITIDOS = ["its", "ile"];
 const respuesta = (status, body) => ({ status, body });
 
 // ------------------------------------------------------------------
-// 1. Validación de parámetros (sección 2 y 6 del contrato)
+// 1. Validación de parámetros
 // ------------------------------------------------------------------
 function validarParametros(query = {}) {
   const campos = {};
@@ -81,71 +78,18 @@ function validarParametros(query = {}) {
 }
 
 // ------------------------------------------------------------------
-// 2. Consulta PostGIS (sección 3 del contrato) — parte de Iván (#93)
+// 2. Armar la respuesta
 // ------------------------------------------------------------------
-async function consultarCentrosCercanos(db, { lat, lng, radio_km: radioKm, limite, servicios }) {
-  const { rows } = await db.query(
-    `WITH origen AS (
-       SELECT ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography AS punto
-     )
-     SELECT
-       c.id_clinica,
-       c.nombre,
-       c.municipio,
-       c.direccion,
-       c.telefono,
-       c.horario_texto AS horario,
-       c.revision_catalogo,
-       ST_Y(c.ubicacion_geo::geometry) AS latitud,
-       ST_X(c.ubicacion_geo::geometry) AS longitud,
-       ROUND((ST_Distance(c.ubicacion_geo, o.punto) / 1000)::numeric, 2) AS distancia_km,
-       COALESCE((
-         SELECT json_agg(DISTINCT LOWER(s.categoria) ORDER BY LOWER(s.categoria))
-         FROM clinicas_servicios cs JOIN servicios s ON s.id_servicio = cs.id_servicio
-         WHERE cs.id_clinica = c.id_clinica AND cs.activo AND s.activo AND s.categoria IS NOT NULL
-       ), '[]'::json) AS categorias,
-       COALESCE((
-         SELECT json_agg(s.nombre ORDER BY s.nombre)
-         FROM clinicas_servicios cs JOIN servicios s ON s.id_servicio = cs.id_servicio
-         WHERE cs.id_clinica = c.id_clinica AND cs.activo AND s.activo
-       ), '[]'::json) AS servicios
-     FROM clinicas c, origen o
-     WHERE c.estado_publicacion = 'aprobada'
-       AND c.ubicacion_geo IS NOT NULL
-       AND c.situacion_ubicacion = 'fija'
-       AND c.verificacion_datos = 'verificado'
-       AND ST_DWithin(c.ubicacion_geo, o.punto, $3)
-       AND (
-         $4::text[] IS NULL OR EXISTS (
-           SELECT 1 FROM clinicas_servicios cs JOIN servicios s ON s.id_servicio = cs.id_servicio
-           WHERE cs.id_clinica = c.id_clinica AND cs.activo AND s.activo
-             AND LOWER(COALESCE(s.categoria, '')) = ANY($4::text[])
-         )
-       )
-     ORDER BY distancia_km, c.nombre
-     LIMIT $5`,
-    [lat, lng, radioKm * 1000, servicios, limite]
-  );
-  return rows;
-}
-
-// ------------------------------------------------------------------
-// 3. Armar la respuesta (secciones 4 y 5 del contrato)
-// ------------------------------------------------------------------
-const CAMPOS_PUBLICOS = [
-  "id_clinica", "nombre", "municipio", "direccion", "latitud", "longitud",
-  "distancia_km", "categorias", "servicios", "telefono", "horario",
-];
-
 function formatearCentro(fila) {
-  // fichaPublica oculta teléfono/horario si el catálogo los marca como pendientes.
-  const publica = fichaPublica({ ...fila, horarios: [] });
-  const centro = {};
-  for (const campo of CAMPOS_PUBLICOS) centro[campo] = publica[campo] ?? null;
-  centro.latitud = Number(centro.latitud);
-  centro.longitud = Number(centro.longitud);
-  centro.distancia_km = Number(centro.distancia_km);
-  return centro;
+  // fichaPublica oculta teléfono/horario/correo/cp si el catálogo los marca como pendientes.
+  const publica = fichaPublica({ horarios: [], ...fila });
+  return {
+    ...publica,
+    latitud: Number(publica.latitud),
+    longitud: Number(publica.longitud),
+    distancia_km: Number(publica.distancia_km),
+    ubicacion_confirmada: Boolean(publica.ubicacion_confirmada),
+  };
 }
 
 async function buscarCentrosCercanos(db, query) {

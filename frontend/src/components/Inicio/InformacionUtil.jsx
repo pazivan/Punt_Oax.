@@ -6,9 +6,9 @@ import {
   ArrowRight,
   CheckCircle2,
   ExternalLink,
-  User,
 } from 'lucide-react';
-import CampanaNotificaciones from './CampanaNotificaciones.jsx';
+import EncabezadoUsuario from './EncabezadoUsuario.jsx';
+import PiePagina from './PiePagina.jsx';
 import '../../styles/Inicio.css';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx'
 
@@ -199,85 +199,18 @@ const FUENTES_OFICIALES = [
  * Conserva toda la información jurídica, sanitaria y de derechos original e incorpora
  * el detalle de métodos clínicos de aborto seguro y los tipos de estudios/enfermedades (ITS).
  */
-export default function InformacionUtil({ sesion, onSalir }) {
+export default function InformacionUtil({ sesion, onSalir, sinEncabezado = false }) {
   const [apartadoActivo, setApartadoActivo] = useState('panorama');
-  const nombreOCorreo = sesion?.cuenta?.nombre || sesion?.cuenta?.correo || 'Mi cuenta';
-  const esAdmin = sesion?.tipo === 'administrador';
-  const rutaInicio = sesion ? (esAdmin ? '/admin' : '/cuenta') : '/';
-  const rutaPerfil = esAdmin ? '/admin' : '/mi-perfil';
 
   return (
     <div className="info-util-page">
       {/* Header (80px) */}
-      {sesion?.tipo === 'clinica' ? (
-      <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
-    ) : (
-      <header className="inicio-header">
-        <div className="inicio-header-container">
-          <div className="inicio-header-left">
-            <div className="inicio-brand-wrap">
-              <Link to={rutaInicio} className="inicio-brand" style={{ textDecoration: 'none' }}>
-                <img
-                  src="/logo-puntoax.svg"
-                  alt=""
-                  className="inicio-brand-logo"
-                  aria-hidden="true"
-                />
-                <span>PuntOax</span>
-              </Link>
-            </div>
-
-            <nav className="inicio-nav agendar-header-nav" aria-label="Navegación principal">
-              <Link to={rutaInicio} className="inicio-nav-link">
-                Inicio
-              </Link>
-              <Link to="/mapa" className="inicio-nav-link">
-                Mapa de centros
-              </Link>
-              {sesion?.tipo === 'clinica' ? (
-              <Link to="/mi-clinica/citas" className="inicio-nav-link">
-                  Mis citas
-                </Link>
-              ) : esAdmin ? (
-                <Link to="/admin" className="inicio-nav-link">
-                  Administración
-                </Link>
-              ) : (
-                <Link to="/agendar-cita" className="inicio-nav-link">
-                  Agendar cita
-                </Link>
-              )}
-              <Link to="/informacion-util" className="inicio-nav-link active">
-                <span className="inicio-nav-link-active-text">Información útil</span>
-              </Link>
-            </nav>
-          </div>
-
-          <div className="inicio-header-right">
-            <CampanaNotificaciones sesion={sesion} />
-
-            <Link
-              to={rutaPerfil}
-              className="inicio-header-profile-link"
-              title={nombreOCorreo}
-              aria-label={esAdmin ? 'Administración' : 'Mi perfil'}
-            >
-              <span className="inicio-avatar-circle" aria-hidden="true">
-                <User size={14} color="#FFFFFF" />
-              </span>
-              <span>{esAdmin ? 'Administración' : 'Mi perfil'}</span>
-            </Link>
-
-            <button
-              type="button"
-              onClick={onSalir}
-              className="inicio-header-logout-btn"
-            >
-              Salir
-            </button>
-          </div>
-        </div>
-      </header>
+      {!sinEncabezado && (
+        sesion?.tipo === 'clinica' ? (
+          <EncabezadoClinica sesion={sesion} onSalir={onSalir} />
+        ) : (
+          <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="informacion" />
+        )
       )}
 
       {/* Main Content */}
@@ -286,7 +219,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
           {/* Enlace de regreso */}
           <div className="detalle-back-margin">
             <div className="detalle-back-wrap">
-              <Link to="/cuenta" className="detalle-back-link" style={{ textDecoration: 'none' }}>
+              <Link to="/inicio" className="detalle-back-link" style={{ textDecoration: 'none' }}>
                 <span className="detalle-back-icon" aria-hidden="true">
                   <ArrowLeft size={14} color="#001D14" />
                 </span>
@@ -781,14 +714,7 @@ export default function InformacionUtil({ sesion, onSalir }) {
         </div>
       </main>
 
-      {/* Footer (112px) */}
-      <footer className="inicio-footer">
-        <div className="inicio-footer-container">
-          <p className="inicio-footer-text">
-            © 2026 PuntOax · Salud, bienestar y orientación en Oaxaca.
-          </p>
-        </div>
-      </footer>
+      <PiePagina />
     </div>
   );
 }

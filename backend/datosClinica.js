@@ -22,8 +22,8 @@
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const { MENSAJE_TELEFONO, validarTelefono } = require("./validacionesRegistro");
+const { esEstadoOperativo, respuestaNoAprobada } = require("./clinicasEstado");
 const REGEX_CORREO = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
-const ESTADOS_PUBLICADOS = ["aprobada", "suspendida"];
 const CAMPOS_CLINICA = ["telefono", "correo_contacto", "sitio_web", "descripcion"];
 const CAMPOS_SERVICIO = ["detalle_servicio", "costo", "costo_texto", "requisitos", "requiere_cita"];
 
@@ -145,6 +145,9 @@ async function consultarDatosPublicados(db, idClinica) {
   );
   const clinica = rows[0];
   if (!clinica) return respuesta(404, { error: "No se encontró tu clínica." });
+  if (!esEstadoOperativo(clinica.estado_publicacion)) {
+    return respuesta(403, respuestaNoAprobada(clinica.estado_publicacion));
+  }
   const servicios = await db.query(
     `SELECT s.id_servicio, s.nombre, s.categoria, cs.detalle_servicio, cs.costo, cs.costo_texto,
             cs.requisitos, cs.requiere_cita
@@ -155,7 +158,7 @@ async function consultarDatosPublicados(db, idClinica) {
     [idClinica]
   );
   return respuesta(200, {
-    clinica: { ...clinica, puede_editar_datos: ESTADOS_PUBLICADOS.includes(clinica.estado_publicacion) },
+    clinica: { ...clinica, puede_editar_datos: clinica.estado_publicacion === "aprobada" },
     servicios: servicios.rows.map((s) => ({ ...s, costo: s.costo === null ? null : Number(s.costo) })),
   });
 }
@@ -171,10 +174,8 @@ async function actualizarDatosPublicados(pool, idClinica, body) {
       [idClinica]
     );
     if (!rows[0]) return respuesta(404, { error: "No se encontró tu clínica." });
-    if (!ESTADOS_PUBLICADOS.includes(rows[0].estado_publicacion)) {
-      return respuesta(409, {
-        error: "Tu clínica aún no está publicada. Mientras tanto edita tu ficha con PUT /api/clinicas/mi-ficha.",
-      });
+    if (!esEstadoOperativo(rows[0].estado_publicacion)) {
+      return respuesta(403, respuestaNoAprobada(rows[0].estado_publicacion));
     }
 
     const columnas = Object.keys(clinica);

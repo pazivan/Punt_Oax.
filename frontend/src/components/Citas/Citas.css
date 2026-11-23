@@ -911,3 +911,38 @@
     padding-right: 0;
   }
 }
+
+
+/* Skeletons de carga en Mis citas */
+.citas-skeleton-card {
+  background: #FFFFFF;
+  border: 1px solid #E3EAE6;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.citas-skeleton-line {
+  height: 14px;
+  width: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #ECEEED 25%, #F5F7F6 50%, #ECEEED 75%);
+  background-size: 200% 100%;
+  animation: puntoaxShimmer 1.3s infinite linear;
+}
+
+.citas-skeleton-line--short {
+  width: 32%;
+  height: 12px;
+}
+
+.citas-skeleton-line--title {
+  width: 68%;
+  height: 18px;
+}
+
+.citas-skeleton-line--medium {
+  width: 50%;
+}
