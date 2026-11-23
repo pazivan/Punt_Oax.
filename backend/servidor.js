@@ -14,6 +14,7 @@ const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
 const { registrarRutasAdminUsuarios } = require("./adminUsuarios");
 const { registrarRutasAdminSupervision } = require("./adminSupervision");
+const { registrarRutasAsistente } = require("./asistenteIA");
 const { registrarRutasAgendaClinica } = require("./agendaClinica");
 const { registrarRutasCercania } = require("./cercania");
 const { registrarRutasDatosClinica } = require("./datosClinica");
@@ -35,6 +36,8 @@ const {
 const app = express();
 const PUERTO = process.env.PORT || 3000;
 
+// Confía únicamente en proxies locales/internos (nginx/Docker) para obtener req.ip real sin permitir suplantación externa.
+app.set("trust proxy", "loopback, linklocal, uniquelocal");
 app.use(cors());
 app.use(express.json());
 const { enviarDesafio, proveedor: proveedorCorreo, limiteIp: limiteCorreo } = registrarRutasCorreo(app, { pool, hashearPassword, validarPassword });
@@ -1800,6 +1803,9 @@ registrarRutasAdminUsuarios(app, { pool, autenticarToken, requerirRol });
 
 // Supervisión administrativa de resumen, citas y calendarios.
 registrarRutasAdminSupervision(app, { pool, autenticarToken, requerirRol });
+
+// Agente de ayuda híbrido con Gemini Function Calling (experimental).
+registrarRutasAsistente(app, { pool });
 
 // Datos de la clínica publicada desde su panel (Sprint 7 · issue #65). Ver backend/datosClinica.js
 registrarRutasDatosClinica(app, { pool, autenticarToken, requerirRol });

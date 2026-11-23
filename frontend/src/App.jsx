@@ -18,6 +18,7 @@ import AgendaClinica from './components/Clinica/AgendaClinica.jsx'
 import RutaClinicaAprobada from './components/Clinica/RutaClinicaAprobada.jsx'
 import MisCitasUsuario from './components/Citas/MisCitasUsuario.jsx'
 import Administracion from './components/Admin/Administracion.jsx'
+import AsistentePuntOax from './components/Asistente/AsistentePuntOax.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { CargandoSesion, ErrorSesionTemporal } from './components/EstadoSesion.jsx'
 import { describirErrorConsulta } from './utils/erroresConsulta.js'
@@ -365,6 +366,25 @@ function App() {
     )
   }
 
+  if (pathname === '/asistente') {
+    return (
+      <div className="puntoax-asistente-demo-page">
+        <main className="puntoax-asistente-demo-card">
+          <span className="admin-eyebrow">SPRINT 8 · ENTORNO EXPERIMENTAL</span>
+          <h1>Asistente virtual híbrido de PuntOax</h1>
+          <p>
+            Esta vista local permite probar el asistente con Gemini Function Calling conectado exclusivamente al catálogo público de centros aprobados.
+          </p>
+          <div className="puntoax-asistente-demo-links">
+            <a href="/mapa">Ir al mapa de centros</a>
+            <a href="/conocenos">Volver a Conócenos</a>
+          </div>
+        </main>
+        <AsistentePuntOax abiertoInicial={true} />
+      </div>
+    )
+  }
+
   if (pathname === '/mis-citas') {
     return (
       <>
@@ -562,12 +582,30 @@ function App() {
   return <Navigate to="/" replace />
   }
 
+  const esClinicaOAdmin =
+    sesion?.tipo === ROLES.CLINICA ||
+    sesion?.tipo === ROLES.ADMINISTRADOR ||
+    perfil?.tipo === ROLES.CLINICA ||
+    perfil?.tipo === ROLES.ADMINISTRADOR
+
+  const esRutaPublicaAsistente =
+    pathname === '/' ||
+    pathname === '/conocenos' ||
+    pathname === '/inicio' ||
+    pathname === '/mapa' ||
+    pathname === '/informacion-util'
+
+  const mostrarAsistente = !esClinicaOAdmin && esRutaPublicaAsistente
+
   return (
     <>
       {esUsuarioOVisitanteConHeader && (
         <EncabezadoUsuario sesion={sesion} onSalir={salir} />
       )}
       {renderRuta()}
+      {mostrarAsistente && (
+        <AsistentePuntOax sesion={sesion} />
+      )}
     </>
   )
 }
