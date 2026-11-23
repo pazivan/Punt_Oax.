@@ -9,7 +9,7 @@ const { listarCitasClinica } = require("./citasClinica");
 const { fichaPublica } = require("./catalogoPublico");
 const { actualizarEnlacesInformacion } = require("./enlacesInformacion");
 const { responderErrorEsquema } = require("./erroresEsquema");
-const { hashearPassword, verificarPassword, generarToken, autenticarToken, requerirRol } = require("./auth");
+const { hashearPassword, verificarPassword, generarToken, autenticarToken, autenticarTokenOpcional, requerirRol } = require("./auth");
 const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
 const { registrarRutasAdminUsuarios } = require("./adminUsuarios");
@@ -1804,8 +1804,8 @@ registrarRutasAdminUsuarios(app, { pool, autenticarToken, requerirRol });
 // Supervisión administrativa de resumen, citas y calendarios.
 registrarRutasAdminSupervision(app, { pool, autenticarToken, requerirRol });
 
-// Agente de ayuda híbrido con Gemini Function Calling (experimental).
-registrarRutasAsistente(app, { pool });
+// Agente de ayuda híbrido con Gemini Function Calling (visitantes y pacientes).
+registrarRutasAsistente(app, { pool, autenticarTokenOpcional });
 
 // Datos de la clínica publicada desde su panel (Sprint 7 · issue #65). Ver backend/datosClinica.js
 registrarRutasDatosClinica(app, { pool, autenticarToken, requerirRol });

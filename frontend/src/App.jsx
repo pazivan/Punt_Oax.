@@ -593,7 +593,10 @@ function App() {
     pathname === '/conocenos' ||
     pathname === '/inicio' ||
     pathname === '/mapa' ||
-    pathname === '/informacion-util'
+    pathname === '/informacion-util' ||
+    pathname === '/agendar-cita' ||
+    pathname === '/mis-citas' ||
+    pathname === '/mi-perfil'
 
   const mostrarAsistente = !esClinicaOAdmin && esRutaPublicaAsistente
 
