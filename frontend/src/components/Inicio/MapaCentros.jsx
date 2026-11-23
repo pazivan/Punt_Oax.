@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   Columns2,
@@ -54,6 +54,8 @@ export default function MapaCentros({
   sinPie = false,
 }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const centroParamId = searchParams.get('centro') || '';
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [filtroServicio, setFiltroServicio] = useState('todos');
   const [filtroMunicipio, setFiltroMunicipio] = useState('todos');
@@ -191,6 +193,12 @@ export default function MapaCentros({
   );
   const [centrarTrigger, setCentrarTrigger] = useState(0);
   const [clinicaEnDetalle, setClinicaEnDetalle] = useState(null);
+  const [cerroCentroParam, setCerroCentroParam] = useState('');
+  const clinicaPorParam =
+    centroParamId && cerroCentroParam !== centroParamId && Array.isArray(clinicas)
+      ? clinicas.find((c) => String(c.id_clinica) === String(centroParamId)) || null
+      : null;
+  const detalleActivo = clinicaEnDetalle || clinicaPorParam;
   const [clinicaEnAgendar, setClinicaEnAgendar] = useState(null);
 
   // Al abrir o cerrar las vistas de detalle/agenda se empieza desde el inicio.
@@ -314,14 +322,17 @@ export default function MapaCentros({
     );
   }
 
-  // Si el usuario pulsó "Ver detalles", mostramos la ventana Detalle de centro - PuntoOax
-  if (clinicaEnDetalle) {
+  // Si el usuario pulsó "Ver detalles" o llegó con ?centro=, mostramos la ventana Detalle de centro - PuntoOax
+  if (detalleActivo) {
     return (
       <DetalleCentro
-        clinica={clinicaEnDetalle}
+        clinica={detalleActivo}
         sesion={sesion}
         onSalir={onSalir}
-        onVolverAlMapa={() => setClinicaEnDetalle(null)}
+        onVolverAlMapa={() => {
+          setClinicaEnDetalle(null);
+          if (centroParamId) setCerroCentroParam(centroParamId);
+        }}
         onAgendarCita={puedeAgendar ? (sede) => {
           if (!sesion) {
             navigate('/agendar-cita', { state: { clinica: sede } });
@@ -330,7 +341,7 @@ export default function MapaCentros({
           setClinicaEnAgendar(sede);
         } : undefined}
         sinEncabezado={sinEncabezado}
-        esFavorita={favoritosIds.includes(clinicaEnDetalle.id_clinica)}
+        esFavorita={favoritosIds.includes(detalleActivo.id_clinica)}
         onAlternarFavorito={alternarFavorito}
       />
     );
