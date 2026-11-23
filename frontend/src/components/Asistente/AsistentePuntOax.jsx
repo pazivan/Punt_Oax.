@@ -26,18 +26,21 @@ const PREGUNTAS_SUGERIDAS = [
   '¿Qué centros están cerca de mí?',
 ]
 
+const PREGUNTA_PACIENTE = '¿Cuándo es mi próxima cita?'
+
 const MENSAJE_BIENVENIDA = {
   id: 'bienvenida',
   emisor: 'ia',
   texto:
     '¡Hola! Soy el asistente virtual de PuntOax. Puedo ayudarte a consultar centros aprobados en Oaxaca, sus servicios (ITS e ILE), horarios, costos, requisitos, disponibilidad de citas y centros cercanos.',
   fuentes: [],
+  citas: [],
 }
 
-const RUTA_INTERNA_RE = /\[([^\]]+)\]\(((?:\/mapa(?:\?centro=[0-9a-f-]+)?|\/agendar-cita))\)|\*\*([^*]+)\*\*/gi
+const RUTA_INTERNA_RE = /\[([^\]]+)\]\(((?:\/mapa(?:\?centro=[0-9a-f-]+)?|\/agendar-cita|\/mis-citas|\/login))\)|\*\*([^*]+)\*\*/gi
 
 function esEnlaceInternoValido(ruta, idsPermitidos) {
-  if (ruta === '/mapa' || ruta === '/agendar-cita') return true
+  if (ruta === '/mapa' || ruta === '/agendar-cita' || ruta === '/mis-citas' || ruta === '/login') return true
   const match = ruta.match(/^\/mapa\?centro=([0-9a-f-]+)$/i)
   return Boolean(match && idsPermitidos.has(match[1]))
 }
@@ -131,6 +134,18 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
   const botonAbrirRef = useRef(null)
   const listaRef = useRef(null)
   const enviandoRef = useRef(false)
+  const claveCuenta = sesion?.token ? `${sesion.tipo || 'u'}:${sesion.token}` : 'visitante'
+  const claveCuentaPreviaRef = useRef(claveCuenta)
+
+  useEffect(() => {
+    if (claveCuentaPreviaRef.current !== claveCuenta) {
+      claveCuentaPreviaRef.current = claveCuenta
+      setMensajes([MENSAJE_BIENVENIDA])
+      setPregunta('')
+      setUbicacion(null)
+      setErrorUbicacion('')
+    }
+  }, [claveCuenta])
 
   useEffect(() => {
     if (!abierto) return undefined
@@ -191,7 +206,10 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
     try {
       const respuesta = await fetch('/api/asistente/consultar', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sesion?.token ? { Authorization: `Bearer ${sesion.token}` } : {}),
+        },
         body: JSON.stringify({
           pregunta: limpia,
           ...(ubicacion ? { ubicacion } : {}),
@@ -208,6 +226,7 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
           emisor: 'ia',
           texto: datos?.respuesta || 'No se recibió respuesta del asistente.',
           fuentes: Array.isArray(datos?.fuentes) ? datos.fuentes : [],
+          citas: Array.isArray(datos?.citas) ? datos.citas : [],
         },
       ])
     } catch (err) {
@@ -311,6 +330,39 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
               >
                 <div>{m.emisor === 'ia' ? renderizarTextoSeguro(m.texto, m.fuentes) : m.texto}</div>
 
+                {Array.isArray(m.citas) && m.citas.length > 0 && (
+                  <div className="puntoax-asistente-fuentes">
+                    <span className="puntoax-asistente-fuentes-titulo">Tus citas</span>
+                    {m.citas.map((c) => (
+                      <article key={c.id_cita} className="puntoax-asistente-tarjeta">
+                        <div className="puntoax-asistente-tarjeta-top">
+                          <strong className="puntoax-asistente-tarjeta-nombre">{c.nombre_clinica}</strong>
+                          <span className={`puntoax-asistente-cita-estado is-${c.es_proxima ? 'proxima' : c.estado}`}>
+                            {c.etiqueta_estado}
+                          </span>
+                        </div>
+                        <div className="puntoax-asistente-tarjeta-meta">
+                          <span>{c.nombre_servicio}</span>
+                          <span>{c.fecha_local} · {c.hora_local} h</span>
+                        </div>
+                        <div className="puntoax-asistente-tarjeta-acciones">
+                          <Link to="/mis-citas" className="puntoax-asistente-agendar-link">
+                            <CalendarCheck size={13} aria-hidden="true" />
+                            <span>Ver mis citas</span>
+                          </Link>
+                          <Link
+                            to={c.enlace_ficha || `/mapa?centro=${c.id_clinica}`}
+                            className="puntoax-asistente-fuente-link"
+                          >
+                            <span>Ver ficha</span>
+                            <ExternalLink size={13} aria-hidden="true" />
+                          </Link>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+
                 {Array.isArray(m.fuentes) && m.fuentes.length > 0 && (
                   <div className="puntoax-asistente-fuentes">
                     <span className="puntoax-asistente-fuentes-titulo">Establecimientos en PuntOax</span>
@@ -377,7 +429,7 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
 
             {mensajes.length === 1 && !cargando && (
               <div className="puntoax-asistente-sugerencias" aria-label="Preguntas sugeridas">
-                {PREGUNTAS_SUGERIDAS.map((sugerencia) => (
+                {(esPacienteAutenticado ? [PREGUNTA_PACIENTE, ...PREGUNTAS_SUGERIDAS] : PREGUNTAS_SUGERIDAS).map((sugerencia) => (
                   <button
                     key={sugerencia}
                     type="button"

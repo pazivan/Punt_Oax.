@@ -2,7 +2,7 @@
   position: fixed;
   right: 20px;
   bottom: 20px;
-  z-index: 1400;
+  z-index: 950;
   font-family: var(--sans, system-ui, -apple-system, sans-serif);
 }
 
@@ -487,4 +487,31 @@
     transition: none;
     animation: none;
   }
+}
+
+.puntoax-asistente-cita-estado {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.puntoax-asistente-cita-estado.is-proxima,
+.puntoax-asistente-cita-estado.is-confirmada {
+  background: #dff3ea;
+  color: #0f4c36;
+}
+
+.puntoax-asistente-cita-estado.is-completada {
+  background: #e1effb;
+  color: #164b78;
+}
+
+.puntoax-asistente-cita-estado.is-cancelada,
+.puntoax-asistente-cita-estado.is-no_asistio {
+  background: #fdeceb;
+  color: #9b2c25;
 }
