@@ -1,4 +1,5 @@
-import { validarEmail, validarTelefono } from './validaciones.js'
+import { validarEmail, validarTelefono, MENSAJE_TELEFONO } from './validaciones.js'
+import { resolverMunicipio } from './municipios.mjs'
 
 /**
  * Validación de la ficha institucional.
@@ -144,9 +145,12 @@ export function validarHorarios(horarios) {
 
 function validarFormatos(form) {
   const errores = {}
+  if (form.municipio.trim() && !resolverMunicipio(form.municipio_clave || form.municipio)) {
+    errores.municipio = 'Selecciona un municipio oficial de Oaxaca.'
+  }
 
   if (form.telefono.trim() && !validarTelefono(form.telefono)) {
-    errores.telefono = 'El teléfono debe tener al menos 10 dígitos y solo puede incluir números, espacios y los signos + ( ) . -'
+    errores.telefono = MENSAJE_TELEFONO
   }
   if (form.correo_contacto.trim() && !validarEmail(form.correo_contacto)) {
     errores.correo_contacto = 'El correo de contacto no es válido.'
@@ -185,7 +189,7 @@ export function validarFichaCompleta(form, documentos = [], ubicacion = form.ubi
   if (!form.descripcion.trim()) errores.descripcion = 'Describe brevemente tu institución.'
   if (!form.telefono.trim()) errores.telefono = 'Escribe un teléfono de contacto.'
   if (!form.correo_contacto.trim()) errores.correo_contacto = 'Escribe un correo de contacto.'
-  if (!form.municipio.trim()) errores.municipio = 'Indica el municipio.'
+  if (!resolverMunicipio(form.municipio_clave || form.municipio)) errores.municipio = 'Selecciona un municipio oficial de Oaxaca.'
   if (!form.direccion.trim()) errores.direccion = 'Indica la dirección de la sede.'
 
   const seleccionados = Object.entries(form.servicios || {})
@@ -257,7 +261,6 @@ export function construirPayloadFicha(form) {
     telefono: form.telefono.trim() || null,
     correo_contacto: form.correo_contacto.trim() || null,
     sitio_web: form.sitio_web.trim() || null,
-    municipio: form.municipio.trim() || null,
     direccion: form.direccion.trim() || null,
     codigo_postal: form.codigo_postal.trim() || null,
     ubicacion_maps_url: form.ubicacion_maps_url.trim() || null,
@@ -271,6 +274,13 @@ export function construirPayloadFicha(form) {
       es_24_horas: Boolean(horario.es_24_horas),
       cruza_medianoche: Boolean(horario.cruza_medianoche) && !horario.es_24_horas,
     })),
+  }
+  // La identidad se registra antes de la dirección: un borrador sin municipio
+  // omite el campo, pero jamás envía texto libre ni borra una relación existente.
+  if (form.municipio.trim()) {
+    const municipio = resolverMunicipio(form.municipio_clave || form.municipio)
+    payload.municipio = municipio?.nombre || form.municipio.trim()
+    if (municipio) payload.municipio_clave = municipio.cvegeo
   }
 
   // El backend exige nombre no vacío si se envía. Un borrador sin nombre se

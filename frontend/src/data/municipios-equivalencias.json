@@ -1,0 +1,7 @@
+[
+  { "variante": "Juchitán de Zaragoza", "cvegeo": "20043", "motivo": "Denominación abreviada en los CSV del proyecto" },
+  { "variante": "Miahuatlán de Porfirio Díaz", "cvegeo": "20059", "motivo": "Denominación abreviada en el CSV del proyecto" },
+  { "variante": "Oxaca de Juárez", "cvegeo": "20067", "motivo": "Errata inequívoca de Oaxaca de Juárez" },
+  { "variante": "Oaxca de Juárez", "cvegeo": "20067", "motivo": "Errata inequívoca de Oaxaca de Juárez" },
+  { "variante": "Oaxaca de Juares", "cvegeo": "20067", "motivo": "Errata inequívoca de Oaxaca de Juárez" }
+]

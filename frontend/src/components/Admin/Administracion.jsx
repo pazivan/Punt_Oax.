@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import SelectorMunicipio from '../Clinica/SelectorMunicipio.jsx'
+import CampoTelefono from '../CampoTelefono.jsx'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle, ArrowLeft, ArrowRight, Building2, CalendarDays, Check,
@@ -1678,6 +1680,7 @@ function RegistroClinicaAdmin({ onSalir }) {
     correo_contacto: '',
     sitio_web: '',
     municipio: '',
+    municipio_clave: '',
     localidad: '',
     direccion: '',
     codigo_postal: '',
@@ -1750,8 +1753,8 @@ function RegistroClinicaAdmin({ onSalir }) {
               {errores.tipo_institucion && <small className="ficha-error">{errores.tipo_institucion}</small>}
             </label>
             <label className="ficha-field">
-              <span>Teléfono *</span>
-              <input type="tel" value={form.telefono} onChange={(e) => actualizarCampo('telefono', e.target.value)} maxLength={20} />
+              <span>Teléfono de México (+52) *</span>
+              <CampoTelefono value={form.telefono} onChange={(e) => actualizarCampo('telefono', e.target.value)} />
               {errores.telefono && <small className="ficha-error">{errores.telefono}</small>}
             </label>
             <label className="ficha-field">
@@ -1764,11 +1767,14 @@ function RegistroClinicaAdmin({ onSalir }) {
               <input type="url" value={form.sitio_web} onChange={(e) => actualizarCampo('sitio_web', e.target.value)} placeholder="https://..." />
               {errores.sitio_web && <small className="ficha-error">{errores.sitio_web}</small>}
             </label>
-            <label className="ficha-field">
-              <span>Municipio *</span>
-              <input type="text" value={form.municipio} onChange={(e) => actualizarCampo('municipio', e.target.value)} maxLength={100} />
+            <div className="ficha-field">
+              <label htmlFor="admin-municipio">Municipio *</label>
+              <SelectorMunicipio id="admin-municipio" value={form.municipio_clave || form.municipio} onChange={(valor, clave) => {
+                actualizarCampo('municipio', valor)
+                actualizarCampo('municipio_clave', clave)
+              }} aria-invalid={Boolean(errores.municipio)} />
               {errores.municipio && <small className="ficha-error">{errores.municipio}</small>}
-            </label>
+            </div>
             <label className="ficha-field">
               <span>Localidad (opcional)</span>
               <input type="text" value={form.localidad} onChange={(e) => actualizarCampo('localidad', e.target.value)} maxLength={100} />

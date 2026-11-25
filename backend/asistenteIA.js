@@ -9,6 +9,7 @@
  */
 
 const { fichaPublica } = require("./catalogoPublico");
+const { resolverMunicipio } = require("../frontend/src/utils/municipios.mjs");
 const { listarEspaciosDisponibles, listarCitasUsuario } = require("./citas");
 const {
   buscarCentrosCercanos: buscarCentrosCercanosApi,
@@ -486,8 +487,10 @@ async function buscarCentros(pool, args = {}) {
   const valores = [];
 
   if (municipio) {
-    valores.push(municipio);
-    condiciones.push(`LOWER(TRIM(c.municipio)) = LOWER(TRIM($${valores.length}))`);
+    const oficial = resolverMunicipio(municipio);
+    if (!oficial) return { total: 0, centros: [], aviso: "Indica el nombre oficial completo del municipio de Oaxaca." };
+    valores.push(oficial.cvegeo);
+    condiciones.push(`c.municipio_clave = $${valores.length}`);
   }
 
   if (texto) {

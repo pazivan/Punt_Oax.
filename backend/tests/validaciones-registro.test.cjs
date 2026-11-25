@@ -21,14 +21,14 @@ test('la política de contraseña exige mayúscula, número y símbolo', () => {
   assert.match(validarPassword(`${'Aa1!'.padEnd(72, 'b')}c`), /72 caracteres/);
 });
 
-test('el teléfono requiere al menos 10 dígitos', () => {
+test('el teléfono requiere numeración mexicana de 10 dígitos', () => {
   assert.equal(contarDigitosTelefono('+52 (951) 000-0000'), 12);
   assert.equal(validarTelefono('951 000 0000'), null);
   assert.equal(validarTelefono(''), null);
   assert.match(validarTelefono('', { requerido: true }), /10 dígitos/);
   assert.match(validarTelefono('951 000'), /10 dígitos/);
   assert.match(validarTelefono('abc1234567'), /10 dígitos/);
-  assert.match(validarTelefono('1'.repeat(21)), /20 caracteres/);
+  assert.match(validarTelefono('1'.repeat(21)), /10 dígitos/);
   assert.match(validarTelefono(1234567890), /10 dígitos/);
 });
 

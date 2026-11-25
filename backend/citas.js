@@ -26,7 +26,7 @@ const {
 } = require("./validacionesCitas");
 const { festivoNacional } = require("./agendaClinica");
 const { esEstadoOperativo, respuestaNoAprobada } = require("./clinicasEstado");
-const { validarTelefono } = require("./validacionesRegistro");
+const { validarTelefono, normalizarTelefono } = require("./validacionesRegistro");
 
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ESTADOS = Array.from(ESTADOS_VALIDOS);
@@ -162,11 +162,9 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
   const idEspacio = cuerpo?.id_espacio;
   if (!esUuid(idEspacio)) return respuesta(400, { error: "Envía un 'id_espacio' válido." });
 
-  const telefonoLimpio = typeof cuerpo?.telefono === "string" ? cuerpo.telefono.trim() : "";
-  if (cuerpo?.telefono !== undefined && cuerpo?.telefono !== null && telefonoLimpio) {
-    const errorTelefono = validarTelefono(telefonoLimpio, { requerido: true });
-    if (errorTelefono) return respuesta(400, { error: errorTelefono });
-  }
+  const errorTelefono = validarTelefono(cuerpo?.telefono, { requerido: true });
+  if (errorTelefono) return respuesta(400, { error: errorTelefono });
+  const telefonoLimpio = normalizarTelefono(cuerpo.telefono);
   const nombreLimpio = typeof cuerpo?.nombre === "string" ? cuerpo.nombre.trim().slice(0, 100) : "";
   const apellidosLimpios = typeof cuerpo?.apellidos === "string" ? cuerpo.apellidos.trim().slice(0, 150) : "";
 

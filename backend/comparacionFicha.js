@@ -1,4 +1,5 @@
 const { validarCoordenadas } = require("./ubicacion");
+const { validarMunicipioEntrada } = require("../frontend/src/utils/municipios.mjs");
 
 const ETIQUETAS_TIPO = {
   publica: "Institución pública",
@@ -89,7 +90,21 @@ function calcularCambiosRevisionServidor(fichaActual, body) {
     "Selecciona un tipo de institución válido.",
     (v) => ETIQUETAS_TIPO[v] || v || "No especificado"
   );
-  revisarCampoTexto("municipio", "Municipio", 100);
+  const municipio = validarMunicipioEntrada(body);
+  if (municipio.error) errores.municipio = municipio.error;
+  else if (municipio.municipio) {
+    body = { ...body, municipio: municipio.municipio };
+    revisarCampoTexto("municipio", "Municipio", 100);
+    if (municipio.municipio_clave !== clinica.municipio_clave) {
+      if (!datosNuevos.municipio) {
+        cambios.push({ campo: "municipio_clave", etiqueta: "Clave de municipio INEGI",
+          valor_anterior: clinica.municipio_clave || "Sin clave", valor_nuevo: municipio.municipio_clave });
+      }
+      datosAnteriores.municipio_clave = clinica.municipio_clave || null;
+      datosNuevos.municipio_clave = municipio.municipio_clave;
+      datosNuevos.municipio = municipio.municipio;
+    }
+  }
   revisarCampoTexto("codigo_postal", "Código postal", 5, (v) => /^\d{5}$/.test(v), "El código postal debe tener 5 dígitos.");
   revisarCampoTexto("direccion", "Dirección", 500);
 

@@ -1,4 +1,5 @@
 // Funciones compartidas de la vista mapa/listado y la ficha.
+import { normalizarMunicipio } from './municipios.mjs'
 export const OAXACA = [17.0654, -96.7236]
 
 export function coordenadas(centro) {
@@ -52,13 +53,7 @@ export function filtrarCentros(centros, { busqueda = '', municipio = '', servici
  * (por ejemplo, "Oaxaca de Juárez" y "Oaxaca de juarez") sin alterar los datos originales.
  */
 export function claveMunicipioNormalizada(municipio) {
-  if (typeof municipio !== 'string') return ''
-  return municipio
-    .trim()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, ' ')
-    .toLocaleLowerCase('es')
+  return normalizarMunicipio(municipio)
 }
 
 /**

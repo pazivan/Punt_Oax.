@@ -456,7 +456,8 @@ export function BannerRecordatorioCitas({ sesion }) {
   const [citas, setCitas] = useState([]);
   const [ahora, setAhora] = useState(() => Date.now());
 
-  const esUsuarioNormal = !sesion?.tipo || sesion?.tipo === 'usuario';
+  const esUsuarioNormal = sesion?.tipo === 'usuario';
+  const idCuenta = sesion?.cuenta?.id;
 
   useEffect(() => {
     if (!esUsuarioNormal) return undefined;
@@ -474,7 +475,7 @@ export function BannerRecordatorioCitas({ sesion }) {
     return () => {
       activo = false;
     };
-  }, [esUsuarioNormal]);
+  }, [esUsuarioNormal, idCuenta]);
 
   const proximas = useMemo(() => filtrarCitas(citas, 'proximas', ahora), [citas, ahora]);
 
@@ -498,8 +499,7 @@ export function BannerRecordatorioCitas({ sesion }) {
             </span>
           </div>
           <h2 className="notif-banner-title">
-            {siguienteCita.nombre_servicio || 'Atención programada'} en{' '}
-            {siguienteCita.nombre_clinica || 'tu centro seleccionado'}
+            Tienes una próxima cita
           </h2>
           <p className="notif-banner-desc">
             Programada para el <strong>{formatearFechaCita(siguienteCita.fecha_hora_inicio)}</strong>

@@ -23,15 +23,18 @@ import {
   PASSWORD_MAX_BYTES,
   PASSWORD_MIN,
   validarPassword,
+  validarTelefono,
+  normalizarTelefono,
+  MENSAJE_TELEFONO,
 } from '../../utils/validaciones.js';
 import { guardarPerfilLocal, leerPerfilLocal } from '../../utils/perfilLocal.js';
 import '../../styles/Inicio.css';
+import CampoTelefono from '../CampoTelefono.jsx';
 
 const NOMBRE_MIN = 2;
 const NOMBRE_MAX = 60;
 const APELLIDOS_MIN = 2;
 const APELLIDOS_MAX = 80;
-const TELEFONO_LONGITUD = 10;
 const REGEX_SOLO_LETRAS = /^[A-Za-zÁÉÍÓÚáéíóúÜüÑñ]+(?:[ '-][A-Za-zÁÉÍÓÚáéíóúÜüÑñ]+)*$/;
 
 function limpiarTextoNombre(valor, maxLen) {
@@ -40,11 +43,6 @@ function limpiarTextoNombre(valor, maxLen) {
     .replace(/[^A-Za-zÁÉÍÓÚáéíóúÜüÑñ '-]/g, '')
     .replace(/\s{2,}/g, ' ')
     .slice(0, maxLen);
-}
-
-function limpiarTelefonoDiezDigitos(valor) {
-  if (typeof valor !== 'string') return '';
-  return valor.replace(/\D/g, '').slice(0, TELEFONO_LONGITUD);
 }
 
 /**
@@ -176,7 +174,7 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
 
     const nombreLimpio = nombre.trim();
     const apellidosLimpios = apellidos.trim();
-    const telefonoLimpio = telefono.trim();
+    const telefonoLimpio = normalizarTelefono(telefono);
 
     if (nombreLimpio) {
       if (nombreLimpio.length < NOMBRE_MIN || nombreLimpio.length > NOMBRE_MAX) {
@@ -211,10 +209,8 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
       }
     }
 
-    if (telefonoLimpio && !/^\d{10}$/.test(telefonoLimpio)) {
-      setErrorDatos(
-        `El número de teléfono debe contener exactamente ${TELEFONO_LONGITUD} dígitos numéricos.`
-      );
+    if (!validarTelefono(telefono)) {
+      setErrorDatos(MENSAJE_TELEFONO);
       return;
     }
 
@@ -552,30 +548,26 @@ export default function MiPerfil({ sesion, perfil, onSalir, sinEncabezado = fals
 
                       <div className="agendar-field-group">
                         <label htmlFor="perfil-telefono" className="agendar-label">
-                          Teléfono de contacto (10 dígitos)
+                          Teléfono de contacto de México (+52)
                         </label>
                         <div className="perfil-input-icon-wrap">
                           <span className="perfil-input-icon" aria-hidden="true">
                             <Phone size={15} color="#596763" />
                           </span>
-                          <input
+                          <CampoTelefono
                             id="perfil-telefono"
-                            type="tel"
-                            inputMode="numeric"
-                            pattern="[0-9]{10}"
-                            maxLength={TELEFONO_LONGITUD}
                             className="agendar-input perfil-input-with-icon"
                             placeholder="9510000000"
                             value={telefono}
                             onChange={(e) => {
-                              setTelefono(limpiarTelefonoDiezDigitos(e.target.value));
+                              setTelefono(e.target.value);
                               if (errorDatos) setErrorDatos('');
                               if (mensajeDatos) setMensajeDatos('');
                             }}
                           />
                         </div>
                         <span className="agendar-field-hint">
-                          Únicamente números ({telefono.length}/{TELEFONO_LONGITUD} dígitos).
+                          10 dígitos nacionales; puedes incluir +52 y separadores.
                         </span>
                       </div>
                     </>

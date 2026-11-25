@@ -170,7 +170,7 @@ test("solicitarCita rechaza con 409 si el turno ya fue tomado o cae fuera de hor
     release() {},
   };
   const poolOcupado = { connect: async () => clienteOcupado };
-  const resOcupado = await solicitarCita(poolOcupado, idUsuario, { id_espacio: idEspacio });
+  const resOcupado = await solicitarCita(poolOcupado, idUsuario, { id_espacio: idEspacio, telefono: "9511234567" });
   assert.equal(resOcupado.status, 409);
   assert.match(resOcupado.body.error, /ya fue reservado/);
 
@@ -196,7 +196,7 @@ test("solicitarCita rechaza con 409 si el turno ya fue tomado o cae fuera de hor
     release() {},
   };
   const poolChoque = { connect: async () => clienteChoque };
-  const resChoque = await solicitarCita(poolChoque, idUsuario, { id_espacio: idEspacio });
+  const resChoque = await solicitarCita(poolChoque, idUsuario, { id_espacio: idEspacio, telefono: "9511234567" });
   assert.equal(resChoque.status, 409);
   assert.match(resChoque.body.error, /Ya tienes otra cita/);
 });

@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import SelectorMunicipio from './SelectorMunicipio.jsx'
+import CampoTelefono from '../CampoTelefono.jsx'
+import { resolverMunicipio } from '../../utils/municipios.mjs'
+import { MENSAJE_TELEFONO } from '../../utils/validaciones.js'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -90,6 +94,7 @@ function estadoInicialDesdeFicha(ficha) {
     correo_contacto: ficha.clinica?.correo_contacto || '',
     sitio_web: ficha.clinica?.sitio_web || '',
     municipio: ficha.clinica?.municipio || '',
+    municipio_clave: ficha.clinica?.municipio_clave || '',
     localidad: ficha.clinica?.localidad || '',
     direccion: ficha.clinica?.direccion || '',
     codigo_postal: ficha.clinica?.codigo_postal || '',
@@ -139,6 +144,7 @@ function construirPayload(form) {
     correo_contacto: form.correo_contacto.trim() || null,
     sitio_web: form.sitio_web.trim() || null,
     municipio: form.municipio.trim() || null,
+    ...(form.municipio_clave ? { municipio_clave: form.municipio_clave } : {}),
     localidad: form.localidad?.trim() || null,
     direccion: form.direccion.trim() || null,
     codigo_postal: form.codigo_postal.trim() || null,
@@ -157,11 +163,12 @@ function construirPayload(form) {
 }
 
 function validarInformacion(form) {
+  if (!resolverMunicipio(form.municipio_clave || form.municipio)) return 'Selecciona un municipio oficial de Oaxaca.'
   if (!form.nombre.trim()) {
     return 'El nombre de la clínica es obligatorio.'
   }
   if (form.telefono.trim() && !validarTelefono(form.telefono)) {
-    return 'El teléfono debe tener al menos 10 dígitos y solo puede incluir números, espacios y los signos + ( ) . -'
+    return MENSAJE_TELEFONO
   }
   if (form.correo_contacto.trim() && !validarEmail(form.correo_contacto)) {
     return 'El correo de contacto no es válido.'
@@ -450,6 +457,10 @@ export default function PanelClinica({ sesion, onSalir }) {
     setError('')
     setMensaje('')
     setErrorSolicitud('')
+    if (!resolverMunicipio(form.municipio_clave || form.municipio)) {
+      setError('Selecciona un municipio oficial de Oaxaca.')
+      return
+    }
     if (!form.nombre.trim()) {
       setError('El nombre institucional es obligatorio.')
       return
@@ -478,6 +489,7 @@ export default function PanelClinica({ sesion, onSalir }) {
         nombre: form.nombre.trim(),
         tipo_institucion: form.tipo_institucion || null,
         municipio: form.municipio.trim() || null,
+        ...(form.municipio_clave ? { municipio_clave: form.municipio_clave } : {}),
         codigo_postal: form.codigo_postal.trim() || null,
         direccion: form.direccion.trim() || null,
         areas_servicio: Object.entries(form.servicios)
@@ -1035,14 +1047,14 @@ export default function PanelClinica({ sesion, onSalir }) {
                       <label htmlFor="panel-municipio" className="panel-clinica-label">
                         Municipio
                       </label>
-                      <input
+                      <SelectorMunicipio
                         id="panel-municipio"
-                        type="text"
-                        maxLength={100}
                         className="panel-clinica-input"
-                        value={form.municipio}
-                        onChange={(e) => actualizarCampo('municipio', e.target.value)}
-                        placeholder="Oaxaca de Juárez"
+                        value={form.municipio_clave || form.municipio}
+                        onChange={(valor, clave) => {
+                          actualizarCampo('municipio', valor)
+                          actualizarCampo('municipio_clave', clave)
+                        }}
                       />
                     </div>
                   </div>
@@ -1068,9 +1080,9 @@ export default function PanelClinica({ sesion, onSalir }) {
 
                     <div className="panel-clinica-field-col">
                       <label htmlFor="panel-telefono" className="panel-clinica-label">
-                        Teléfono de contacto
+                        Teléfono de México (+52)
                       </label>
-                      <input
+                      <CampoTelefono
                         id="panel-telefono"
                         type="tel"
                         maxLength={20}

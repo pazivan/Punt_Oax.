@@ -6071,3 +6071,26 @@ html {
 @keyframes puntoaxSpin {
   to { transform: rotate(360deg); }
 }
+.inicio-accesos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-bottom: 1.5rem;
+}
+.inicio-accesos a {
+  color: #103328;
+  background: #eef5f1;
+  border-radius: 1rem;
+  padding: .8rem 1rem;
+  min-height: 44px;
+  text-decoration: none;
+}
+.inicio-accesos a:hover, .inicio-accesos a:focus-visible {
+  background: #d6e6e0;
+  text-decoration: underline;
+}
+.selector-municipio { min-width: 0; width: 100%; }
+.selector-municipio > small { display: block; margin: .35rem 0; }
+.selector-municipio .mapa-dropdown { width: 100%; }
+.selector-municipio .mapa-dropdown-trigger { width: 100%; min-height: 44px; }
+.selector-municipio .mapa-dropdown-popover { max-width: 100%; min-width: 0; }

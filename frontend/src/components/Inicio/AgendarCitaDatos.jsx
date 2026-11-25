@@ -23,7 +23,8 @@ import PiePagina from './PiePagina.jsx';
 import FiltroDesplegable from './FiltroDesplegable.jsx';
 import { normalizarYUnificarClinicas } from '../../data/clinicasDemo.js';
 import { consultarEspaciosClinica, solicitarCita } from '../../api/auth.js';
-import { validarEmail, validarTelefono } from '../../utils/validaciones.js';
+import { validarEmail, validarTelefono, normalizarTelefono, MENSAJE_TELEFONO } from '../../utils/validaciones.js';
+import CampoTelefono from '../CampoTelefono.jsx';
 import { leerPerfilLocal, guardarPerfilLocal } from '../../utils/perfilLocal.js';
 import '../../styles/Inicio.css';
 
@@ -31,7 +32,6 @@ const NOMBRE_MIN = 2;
 const NOMBRE_MAX = 60;
 const APELLIDOS_MIN = 2;
 const APELLIDOS_MAX = 80;
-const TELEFONO_DIGITOS = 10;
 const REGEX_SOLO_LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
 
 function limpiarTextoNombre(valor, maxLen) {
@@ -39,12 +39,6 @@ function limpiarTextoNombre(valor, maxLen) {
     .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '')
     .replace(/\s{2,}/g, ' ')
     .slice(0, maxLen);
-}
-
-function limpiarTelefonoDiezDigitos(valor) {
-  return String(valor || '')
-    .replace(/\D/g, '')
-    .slice(0, TELEFONO_DIGITOS);
 }
 
 function formatearHorarioDeCentro(clinica) {
@@ -194,7 +188,7 @@ export default function AgendarCitaDatos({
   const [apellidos, setApellidos] = useState(() =>
     limpiarTextoNombre(apellidosSesion, APELLIDOS_MAX)
   );
-  const [telefono, setTelefono] = useState(() => limpiarTelefonoDiezDigitos(telefonoSesion));
+  const [telefono, setTelefono] = useState(() => telefonoSesion);
   const [correoContacto, setCorreoContacto] = useState(correoSesion);
   const correoFinal = correoSesion || correoContacto;
 
@@ -350,7 +344,6 @@ export default function AgendarCitaDatos({
 
     const nombreLimpio = nombres.trim();
     const apellidosLimpio = apellidos.trim();
-    const telefonoLimpio = telefono.trim();
     const correoLimpio = correoFinal.trim();
 
     if (!nombreLimpio || !apellidosLimpio) {
@@ -380,20 +373,13 @@ export default function AgendarCitaDatos({
       return;
     }
 
-    if (telefonoLimpio && !/^\d{10}$/.test(telefonoLimpio)) {
-      setErrorFormulario(
-        `El número de teléfono debe contener exactamente ${TELEFONO_DIGITOS} dígitos numéricos.`
-      );
-      return;
-    }
-
     if (!validarEmail(correoLimpio)) {
       setErrorFormulario('Por favor, ingresa un correo electrónico de contacto válido.');
       return;
     }
 
     if (!validarTelefono(telefono, { requerido: true })) {
-      setErrorFormulario('Ingresa un teléfono de contacto con al menos 10 dígitos.');
+      setErrorFormulario(MENSAJE_TELEFONO);
       return;
     }
 
@@ -453,7 +439,7 @@ export default function AgendarCitaDatos({
     setEnviandoCita(true);
 
     try {
-      const telefonoEnviado = telefono.trim();
+      const telefonoEnviado = normalizarTelefono(telefono);
       const nombreEnviado = nombres.trim();
       const apellidosEnviados = apellidos.trim();
       const respuesta = await solicitarCita(espacioSeleccionadoObj.id_espacio, {
@@ -769,9 +755,9 @@ export default function AgendarCitaDatos({
                       <div className="agendar-form-row">
                         <div className="agendar-field-group">
                           <label htmlFor="agendar-telefono" className="agendar-label">
-                            Teléfono (10 dígitos)
+                            Teléfono de México (+52) *
                           </label>
-                          <input
+                          <CampoTelefono
                             id="agendar-telefono"
                             type="tel"
                             inputMode="tel"
@@ -784,7 +770,7 @@ export default function AgendarCitaDatos({
                             className="agendar-input"
                           />
                           <small id="agendar-telefono-ayuda" style={{ color: '#414845', fontSize: '12px' }}>
-                            Al menos 10 dígitos.
+                            10 dígitos nacionales; puedes pegar el número con +52.
                           </small>
                         </div>
 

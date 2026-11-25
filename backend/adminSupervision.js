@@ -19,7 +19,7 @@ function fechaMexicoDesdeIso(valor) {
 }
 
 async function obtenerResumenAdmin(db) {
-  const [clinicasRes, usuariosRes, citasRes, solicitudesRes] = await Promise.all([
+  const [clinicasRes, usuariosRes, citasRes, solicitudesRes, municipiosRes] = await Promise.all([
     db.query(`
       SELECT COUNT(*)::int AS total,
              COUNT(*) FILTER (WHERE estado_publicacion = 'aprobada')::int AS aprobadas,
@@ -49,6 +49,14 @@ async function obtenerResumenAdmin(db) {
              COUNT(*) FILTER (WHERE estado = 'rechazada')::int AS rechazadas
       FROM solicitudes_clinicas
     `),
+    db.query(`
+      SELECT m.cvegeo AS municipio_clave, m.nombre AS municipio,
+             count(c.id_clinica)::int AS total,
+             count(c.id_clinica) FILTER (WHERE c.estado_publicacion = 'aprobada')::int AS publicadas
+      FROM municipios m LEFT JOIN clinicas c ON c.municipio_clave = m.cvegeo
+      GROUP BY m.cvegeo, m.nombre HAVING count(c.id_clinica) > 0
+      ORDER BY m.nombre
+    `),
   ]);
 
   return respuesta(200, {
@@ -56,6 +64,7 @@ async function obtenerResumenAdmin(db) {
     usuarios: usuariosRes.rows[0] || { total: 0, verificados: 0 },
     citas: citasRes.rows[0] || { total: 0, programadas: 0, completadas: 0, canceladas: 0, no_asistio: 0 },
     solicitudes: solicitudesRes.rows[0] || { total: 0, pendientes: 0, aprobadas: 0, rechazadas: 0 },
+    municipios: municipiosRes.rows,
   });
 }
 

@@ -21,7 +21,7 @@
  */
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const { MENSAJE_TELEFONO, validarTelefono } = require("./validacionesRegistro");
+const { validarTelefono, normalizarTelefono } = require("./validacionesRegistro");
 const { esEstadoOperativo, respuestaNoAprobada } = require("./clinicasEstado");
 const REGEX_CORREO = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 const CAMPOS_CLINICA = ["telefono", "correo_contacto", "sitio_web", "descripcion"];
@@ -59,8 +59,10 @@ function textoOpcional(valor, max, validar, mensaje) {
 }
 
 const REGLAS_CLINICA = {
-  telefono: (v) => textoOpcional(v, 20, (t) => !validarTelefono(t),
-    MENSAJE_TELEFONO),
+  telefono: (v) => {
+    const error = validarTelefono(v);
+    return error ? { error } : { valor: normalizarTelefono(v) };
+  },
   correo_contacto: (v) => textoOpcional(v, 255, (t) => REGEX_CORREO.test(t),
     "El correo de contacto no es válido."),
   sitio_web: (v) => textoOpcional(v, 1000, esUrl, "El sitio web debe iniciar con http:// o https://."),

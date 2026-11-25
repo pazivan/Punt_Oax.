@@ -941,7 +941,7 @@ export function normalizarYUnificarClinicas(lista = []) {
       ? item.municipio.trim()
       : null;
 
-    const claveUnica = `${nombreLimpio.toLowerCase()}::${(municipioLimpio || '').toLowerCase()}`;
+    const claveUnica = `${nombreLimpio.toLowerCase()}::${item.municipio_clave || (municipioLimpio || '').toLowerCase()}`;
 
     const serviciosEntrada = Array.isArray(item.servicios)
       ? item.servicios.filter((s) => typeof s === 'string' && s.trim())
@@ -968,6 +968,7 @@ export function normalizarYUnificarClinicas(lista = []) {
         nivel_atencion: item.nivel_atencion ?? null,
         tipo_institucion: item.tipo_institucion ?? null,
         municipio: municipioLimpio,
+        municipio_clave: item.municipio_clave ?? null,
         localidad: item.localidad ?? null,
         direccion: item.direccion ?? null,
         direccion_corta: item.direccion_corta || item.direccion || municipioLimpio || 'Oaxaca',

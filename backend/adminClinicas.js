@@ -249,7 +249,7 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
     if (decision === "aprobar" && esActualizacionAprobada) {
       const sets = ["estado_publicacion = 'aprobada'"];
       const valores = [];
-      for (const campo of ["nombre", "tipo_institucion", "municipio", "codigo_postal", "direccion"]) {
+      for (const campo of ["nombre", "tipo_institucion", "municipio", "municipio_clave", "codigo_postal", "direccion"]) {
         if (Object.hasOwn(datosNuevos, campo)) {
           valores.push(datosNuevos[campo]);
           sets.push(`${campo} = $${valores.length}`);

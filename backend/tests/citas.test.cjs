@@ -50,7 +50,7 @@ test("al solicitar, el id_usuario sale del token aunque el cuerpo traiga otro", 
   const otro = "11111111-1111-4111-8111-111111111111";
   await manejador(
     { usuario: { id: "22222222-2222-4222-8222-222222222222", rol: "usuario" },
-      body: { id_usuario: otro, id_espacio: "33333333-3333-4333-8333-333333333333" } },
+      body: { id_usuario: otro, id_espacio: "33333333-3333-4333-8333-333333333333", telefono: "9511234567" } },
     res
   );
   assert.equal(res.codigo, 201);
@@ -113,7 +113,7 @@ test("solicitarCita valida el teléfono cuando se envía y lo guarda en el perfi
   assert.equal(res.status, 201);
   assert.deepEqual(actualizacionUsuario, [
     "22222222-2222-4222-8222-222222222222",
-    "9511234567",
+    "+529511234567",
     "Kelly",
     "López",
   ]);

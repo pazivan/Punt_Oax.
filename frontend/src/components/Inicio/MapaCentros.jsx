@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { resolverMunicipio, normalizarMunicipio, etiquetaMunicipio } from '../../utils/municipios.mjs';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
@@ -20,7 +21,6 @@ import EncabezadoUsuario from './EncabezadoUsuario.jsx';
 import PiePagina from './PiePagina.jsx';
 import FiltroDesplegable from './FiltroDesplegable.jsx';
 import EncabezadoClinica from '../Clinica/EncabezadoClinica.jsx';
-import { claveMunicipioNormalizada } from '../../utils/centros.js';
 import {
   claveFavoritosCuenta,
   consultarClinicasCercanas,
@@ -232,19 +232,15 @@ export default function MapaCentros({
     const mapa = new Map();
     for (const c of clinicasCatalogo) {
       if (typeof c.municipio !== 'string' || !c.municipio.trim()) continue;
-      const etiqueta = c.municipio.trim().replace(/\s+/g, ' ');
-      const clave = claveMunicipioNormalizada(etiqueta);
-      const existente = mapa.get(clave);
-      // Preferir la variante que incluye tildes o mayúsculas más completas al mostrar en el filtro.
-      if (!existente || (/[áéíóúüñÁÉÍÓÚÜÑ]/.test(etiqueta) && !/[áéíóúüñÁÉÍÓÚÜÑ]/.test(existente.label))) {
-        mapa.set(clave, { value: clave, label: etiqueta });
-      }
+      const oficial = resolverMunicipio(c.municipio_clave || c.municipio);
+      if (!oficial) continue;
+      mapa.set(oficial.cvegeo, { value: oficial.cvegeo, label: etiquetaMunicipio(oficial) });
     }
     return Array.from(mapa.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
   }, [clinicasCatalogo]);
 
   const clinicasFiltradas = useMemo(() => {
-    const busqueda = terminoBusqueda.trim().toLowerCase();
+    const busqueda = normalizarMunicipio(terminoBusqueda);
 
     return clinicasCatalogo.filter((c) => {
       if (soloFavoritos && !favoritosIds.includes(c.id_clinica)) {
@@ -271,7 +267,7 @@ export default function MapaCentros({
         }
       }
 
-      if (filtroMunicipio !== 'todos' && claveMunicipioNormalizada(c.municipio) !== filtroMunicipio) {
+      if (filtroMunicipio !== 'todos' && resolverMunicipio(c.municipio_clave || c.municipio)?.cvegeo !== filtroMunicipio) {
         return false;
       }
 
@@ -291,9 +287,9 @@ export default function MapaCentros({
 
       if (!busqueda) return true;
 
-      const enNombre = (c.nombre || '').toLowerCase().includes(busqueda);
-      const enMunicipio = (c.municipio || '').toLowerCase().includes(busqueda);
-      const enDireccion = (c.direccion || '').toLowerCase().includes(busqueda);
+      const enNombre = normalizarMunicipio(c.nombre).includes(busqueda);
+      const enMunicipio = normalizarMunicipio(c.municipio).includes(busqueda);
+      const enDireccion = normalizarMunicipio(c.direccion).includes(busqueda);
       const enNivel = (c.nivel_atencion || '').toLowerCase().includes(busqueda);
       const enServiciosTexto = (c.servicios_texto || '').toLowerCase().includes(busqueda);
       const enServicios =
