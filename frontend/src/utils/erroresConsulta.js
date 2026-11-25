@@ -31,11 +31,16 @@ export function describirErrorConsulta(error, recurso = 'la información') {
       reintentar: false,
     }
   }
-  if (['TOKEN_EXPIRADO', 'TOKEN_INVALIDO', 'SESION_INVALIDA', 'SESION_REQUERIDA'].includes(codigo) ||
+  if (['TOKEN_EXPIRADO', 'TOKEN_INVALIDO', 'SESION_INVALIDA', 'SESION_REVOCADA',
+      'SESION_EXPIRADA_INACTIVIDAD', 'SESION_EXPIRADA_ABSOLUTA', 'SESION_REQUERIDA'].includes(codigo) ||
       estado === 401) {
     return {
       titulo: 'Tu sesión ya no está disponible',
-      mensaje: 'Inicia sesión de nuevo para continuar.',
+      mensaje: codigo === 'SESION_EXPIRADA_INACTIVIDAD'
+        ? 'Tu sesión expiró por inactividad. Inicia sesión de nuevo para continuar.'
+        : codigo === 'SESION_EXPIRADA_ABSOLUTA'
+          ? 'Tu sesión alcanzó la duración máxima permitida. Inicia sesión de nuevo.'
+          : 'Inicia sesión de nuevo para continuar.',
       reintentar: false,
     }
   }

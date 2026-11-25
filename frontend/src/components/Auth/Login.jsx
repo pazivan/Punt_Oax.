@@ -27,21 +27,22 @@ export default function Login({
   const navigate = useNavigate();
   const location = useLocation();
   const [avisoInicial] = useState(() => (typeof location.state?.aviso === 'string' ? location.state.aviso : ''));
+  const [destinoPostLogin] = useState(() => (typeof location.state?.from === 'string' ? location.state.from : ''));
   const [avisoDescartado, setAvisoDescartado] = useState('');
   const avisoActual = (typeof mensaje === 'string' && mensaje) || avisoInicial;
   const avisoVisible = avisoActual && avisoActual !== avisoDescartado ? avisoActual : '';
 
   useEffect(() => {
-    if (location.state?.aviso) {
+    if (location.state?.aviso || location.state?.from) {
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
-    if (!avisoVisible) return undefined;
-    const temporizador = setTimeout(() => setAvisoDescartado(avisoVisible), 5000);
+    if (!avisoVisible || destinoPostLogin) return undefined;
+    const temporizador = setTimeout(() => setAvisoDescartado(avisoVisible), 8000);
     return () => clearTimeout(temporizador);
-  }, [avisoVisible]);
+  }, [avisoVisible, destinoPostLogin]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,7 +76,7 @@ export default function Login({
           ? await iniciarSesionAdmin(email.trim(), password)
           : await iniciarSesion(email.trim(), password);
       const sesion = guardarSesion(respuesta, accountType);
-      onLogin(sesion);
+      onLogin(sesion, destinoPostLogin);
     } catch (err) {
       if (err.requiere_verificacion) navigate('/verificar-correo', { state: { rol: accountType, correo: correoLimpio } });
       else setError(err.message);

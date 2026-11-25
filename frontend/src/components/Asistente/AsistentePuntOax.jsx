@@ -18,6 +18,14 @@ import {
   formatearDistanciaKm,
   obtenerMensajeErrorGeolocalizacion,
 } from '../../utils/cercania.js'
+import {
+  bloquearScrollFondo,
+  cerrarOtrasCapas,
+  establecerCapaActiva,
+  hayCapaBloqueandoAsistente,
+  registrarCierreCapa,
+  suscribirCapasUI,
+} from '../../utils/uiOverlays.js'
 import './AsistentePuntOax.css'
 
 const PREGUNTAS_SUGERIDAS = [
@@ -124,6 +132,8 @@ function insigniaServicio(categorias = []) {
 
 export default function AsistentePuntOax({ abiertoInicial = false, sesion = null }) {
   const [abierto, setAbierto] = useState(abiertoInicial)
+  const [ocultoPorCapa, setOcultoPorCapa] = useState(hayCapaBloqueandoAsistente)
+  const [viewportEstilo, setViewportEstilo] = useState(null)
   const [pregunta, setPregunta] = useState('')
   const [mensajes, setMensajes] = useState([MENSAJE_BIENVENIDA])
   const [cargando, setCargando] = useState(false)
@@ -138,6 +148,69 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
   const claveCuentaPreviaRef = useRef(claveCuenta)
 
   useEffect(() => {
+    const desuscribir = suscribirCapasUI(() => {
+      const bloqueado = hayCapaBloqueandoAsistente()
+      setOcultoPorCapa(bloqueado)
+      if (bloqueado) setAbierto(false)
+    })
+    const desregistrarCierre = registrarCierreCapa('asistente', () => setAbierto(false))
+    return () => {
+      desuscribir()
+      desregistrarCierre()
+    }
+  }, [])
+
+  useEffect(() => {
+    establecerCapaActiva('asistente', abierto)
+    if (abierto) cerrarOtrasCapas('asistente')
+    return () => establecerCapaActiva('asistente', false)
+  }, [abierto])
+
+  // Adapta el panel al espacio visible real en móviles (incluyendo teclado virtual y barras dinámicas).
+  useEffect(() => {
+    if (!abierto || typeof window === 'undefined') {
+      setViewportEstilo(null)
+      return undefined
+    }
+
+    const esMovil = () => window.innerWidth <= 520
+    const liberarScroll = esMovil() ? bloquearScrollFondo() : () => {}
+
+    const actualizarViewport = () => {
+      if (!esMovil()) {
+        setViewportEstilo(null)
+        return
+      }
+      const vv = window.visualViewport
+      if (vv && Number.isFinite(vv.height) && vv.height > 0) {
+        setViewportEstilo({
+          '--asistente-vv-height': `${Math.round(vv.height)}px`,
+          '--asistente-vv-top': `${Math.max(0, Math.round(vv.offsetTop || 0))}px`,
+        })
+      } else {
+        setViewportEstilo({
+          '--asistente-vv-height': `${window.innerHeight}px`,
+          '--asistente-vv-top': '0px',
+        })
+      }
+    }
+
+    actualizarViewport()
+    window.addEventListener('resize', actualizarViewport)
+    window.addEventListener('orientationchange', actualizarViewport)
+    window.visualViewport?.addEventListener('resize', actualizarViewport)
+    window.visualViewport?.addEventListener('scroll', actualizarViewport)
+
+    return () => {
+      liberarScroll()
+      window.removeEventListener('resize', actualizarViewport)
+      window.removeEventListener('orientationchange', actualizarViewport)
+      window.visualViewport?.removeEventListener('resize', actualizarViewport)
+      window.visualViewport?.removeEventListener('scroll', actualizarViewport)
+    }
+  }, [abierto])
+
+  useEffect(() => {
     if (claveCuentaPreviaRef.current !== claveCuenta) {
       claveCuentaPreviaRef.current = claveCuenta
       setMensajes([MENSAJE_BIENVENIDA])
@@ -149,7 +222,10 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
 
   useEffect(() => {
     if (!abierto) return undefined
-    inputRef.current?.focus()
+    // Evita disparar el teclado virtual automáticamente en pantallas táctiles pequeñas al abrir.
+    if (typeof window !== 'undefined' && window.innerWidth > 520) {
+      inputRef.current?.focus()
+    }
     const manejarEscape = (e) => {
       if (e.key === 'Escape') {
         setAbierto(false)
@@ -246,8 +322,15 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
 
   const esPacienteAutenticado = sesion?.tipo === 'usuario'
 
+  if (!abierto && ocultoPorCapa) {
+    return null
+  }
+
   return (
-    <div className="puntoax-asistente-root">
+    <div
+      className={`puntoax-asistente-root${abierto ? ' is-open' : ''}`}
+      style={abierto && viewportEstilo ? viewportEstilo : undefined}
+    >
       {!abierto ? (
         <button
           ref={botonAbrirRef}

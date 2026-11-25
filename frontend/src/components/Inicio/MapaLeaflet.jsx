@@ -86,20 +86,35 @@ function EnfocarCentro({
 function AjustarTamanoMapa({ modoVista, pantallaCompleta }) {
   const mapa = useMap()
   useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      mapa.invalidateSize({ animate: false })
+    })
     const id = setTimeout(() => {
       mapa.invalidateSize({ animate: false })
-    }, 120)
-    return () => clearTimeout(id)
+    }, 180)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(id)
+    }
   }, [mapa, modoVista, pantallaCompleta])
 
   useEffect(() => {
     const contenedor = mapa.getContainer()
-    if (!contenedor || typeof ResizeObserver === 'undefined') return undefined
-    const observador = new ResizeObserver(() => {
-      mapa.invalidateSize({ animate: false })
-    })
-    observador.observe(contenedor)
-    return () => observador.disconnect()
+    const recalcular = () => mapa.invalidateSize({ animate: false })
+    window.addEventListener('resize', recalcular)
+    window.addEventListener('orientationchange', recalcular)
+
+    let observador = null
+    if (contenedor && typeof ResizeObserver !== 'undefined') {
+      observador = new ResizeObserver(recalcular)
+      observador.observe(contenedor)
+    }
+
+    return () => {
+      window.removeEventListener('resize', recalcular)
+      window.removeEventListener('orientationchange', recalcular)
+      observador?.disconnect()
+    }
   }, [mapa])
 
   return null

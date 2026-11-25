@@ -9,7 +9,16 @@ const { listarCitasClinica } = require("./citasClinica");
 const { fichaPublica } = require("./catalogoPublico");
 const { actualizarEnlacesInformacion } = require("./enlacesInformacion");
 const { responderErrorEsquema } = require("./erroresEsquema");
-const { hashearPassword, verificarPassword, generarToken, autenticarToken, autenticarTokenOpcional, requerirRol } = require("./auth");
+const {
+  hashearPassword,
+  verificarPassword,
+  crearSesionActiva,
+  revocarSesionesCuenta,
+  obtenerConfiguracionSesion,
+  autenticarToken,
+  autenticarTokenOpcional,
+  requerirRol,
+} = require("./auth");
 const { registrarRutasCitas } = require("./citas");
 const { registrarRutasAdminClinicas } = require("./adminClinicas");
 const { registrarRutasAdminUsuarios } = require("./adminUsuarios");
@@ -44,7 +53,7 @@ const { enviarDesafio, proveedor: proveedorCorreo, limiteIp: limiteCorreo } = re
 // Registrar las rutas estáticas de la agenda antes de /api/clinicas/:id.
 registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol });
 // Centros cercanos (Sprint 8 · #94 y #95). Debe ir antes de /api/clinicas/:id.
-registrarRutasCercania(app, { pool });
+registrarRutasCercania(app, { pool, autenticarToken });
 
 const recibirDocumentos = multer({
   storage: multer.memoryStorage(),
@@ -1076,7 +1085,8 @@ app.post(
   }
 );
 
-app.get("/api/clinicas", async (req, res) => {
+// Datos exclusivos del mapa y catálogo interactivo: requieren sesión válida.
+app.get("/api/clinicas", autenticarToken, async (req, res) => {
   try {
     const { nombre, municipio, servicios } = req.query;
 
@@ -1276,8 +1286,8 @@ app.get("/api/clinicas", async (req, res) => {
   }
 });
 
-// La ficha solo expone centros aprobados y usa el identificador real de la sede.
-app.get("/api/clinicas/:id", async (req, res) => {
+// La ficha solo expone centros aprobados para cuentas autenticadas y usa el identificador real de la sede.
+app.get("/api/clinicas/:id", autenticarToken, async (req, res) => {
   const { id } = req.params;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     return res.status(400).json({ error: "Identificador de clínica no válido" });
@@ -1579,7 +1589,7 @@ app.post("/api/auth/login-usuario", async (req, res) => {
     }
     if (!usuario.correo_verificado_en) return res.status(403).json({ error: "Verifica tu correo antes de iniciar sesión.", requiere_verificacion: true });
 
-    const token = generarToken({
+    const { token, sesion_politica } = await crearSesionActiva(pool, {
       id: usuario.id_usuario,
       correo: usuario.correo,
       rol: "usuario",
@@ -1588,6 +1598,7 @@ app.post("/api/auth/login-usuario", async (req, res) => {
 
     res.json({
       token,
+      sesion_politica,
       usuario: {
         id: usuario.id_usuario,
         nombre: usuario.nombre,
@@ -1630,7 +1641,7 @@ app.post("/api/auth/login-clinica", async (req, res) => {
     }
     if (!clinica.correo_verificado_en) return res.status(403).json({ error: "Verifica tu correo antes de iniciar sesión.", requiere_verificacion: true });
 
-    const token = generarToken({
+    const { token, sesion_politica } = await crearSesionActiva(pool, {
       id: clinica.id_clinica,
       correo: clinica.correo_acceso,
       rol: "clinica",
@@ -1639,6 +1650,7 @@ app.post("/api/auth/login-clinica", async (req, res) => {
 
     res.json({
       token,
+      sesion_politica,
       clinica: {
         id: clinica.id_clinica,
         nombre: clinica.nombre,
@@ -1679,7 +1691,7 @@ app.post("/api/auth/login-admin", async (req, res) => {
       return res.status(401).json({ error: "Credenciales inválidas." });
     }
 
-    const token = generarToken({
+    const { token, sesion_politica } = await crearSesionActiva(pool, {
       id: admin.id_administrador,
       correo: admin.correo,
       rol: "administrador",
@@ -1688,6 +1700,7 @@ app.post("/api/auth/login-admin", async (req, res) => {
 
     res.json({
       token,
+      sesion_politica,
       admin: {
         id: admin.id_administrador,
         nombre: admin.nombre,
@@ -1750,7 +1763,7 @@ app.patch("/api/auth/cambiar-password", autenticarToken, async (req, res) => {
 });
 
 // Cerrar sesión invalida todos los JWT previos de esta cuenta (también los
-// abiertos en otras ventanas o dispositivos). No modifica su rol ni contraseña.
+// abiertos en otras ventanas o dispositivos) y marca sus sesiones como revocadas.
 app.post("/api/auth/cerrar-sesion", autenticarToken, async (req, res) => {
   const cuentas = {
     usuario: ['usuarios', 'id_usuario'],
@@ -1766,10 +1779,19 @@ app.post("/api/auth/cerrar-sesion", autenticarToken, async (req, res) => {
       [req.usuario.id, req.usuario.version_sesion ?? 0]
     );
     if (!rowCount) return res.status(403).json({ error: "Sesión inválida." });
+    await revocarSesionesCuenta(pool, { rol: req.usuario.rol, id: req.usuario.id }).catch(() => {});
     return res.json({ mensaje: "Sesión cerrada." });
   } catch {
     return res.status(503).json({ error: "No se pudo cerrar la sesión en el servidor." });
   }
+});
+
+// Renovación explícita de actividad de usuario (no se invoca desde tareas en segundo plano).
+app.post("/api/auth/actividad", autenticarToken, (req, res) => {
+  return res.json({
+    ok: true,
+    sesion_politica: req.sesionPolitica || obtenerConfiguracionSesion(),
+  });
 });
 
 // 4. Ruta protegida: Consulta de perfil actual (Cualquier rol autenticado)
@@ -1777,6 +1799,7 @@ app.get("/api/auth/perfil", autenticarToken, (req, res) => {
   res.json({
     mensaje: "Token verificado con éxito.",
     usuarioAutenticado: req.usuario,
+    sesion_politica: req.sesionPolitica || obtenerConfiguracionSesion(),
   });
 });
 

@@ -44,6 +44,13 @@ import '../../styles/Inicio.css';
  * - Espacio y contrato de propiedades para el mapa de Jonathan (EspacioMapa).
  * - Al pulsar "Ver detalles" en cualquier tarjeta, muestra la ventana DetalleCentro.
  */
+const FICHAS_POR_PAGINA_MOVIL = 5;
+
+function detectarVistaMovilMapa() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(max-width: 1080px)').matches;
+}
+
 export default function MapaCentros({
   sesion,
   onSalir,
@@ -63,6 +70,21 @@ export default function MapaCentros({
   const [filtroNivel, setFiltroNivel] = useState('todos');
   const [soloFavoritos, setSoloFavoritos] = useState(false);
   const [modoVista, setModoVista] = useState('combinada');
+  const [esMovilMapa, setEsMovilMapa] = useState(detectarVistaMovilMapa);
+  const [paginacionEstado, setPaginacionEstado] = useState({ clave: '', pagina: 1 });
+  const listadoRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+    const mq = window.matchMedia('(max-width: 1080px)');
+    const actualizar = (evento) => setEsMovilMapa(Boolean(evento.matches));
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', actualizar);
+      return () => mq.removeEventListener('change', actualizar);
+    }
+    mq.addListener(actualizar);
+    return () => mq.removeListener(actualizar);
+  }, []);
 
   // Estado de geolocalización del usuario y búsqueda de centros cercanos
   const [estadoUbicacion, setEstadoUbicacion] = useState('inactivo'); // inactivo | pidiendo | concedida | error
@@ -297,6 +319,39 @@ export default function MapaCentros({
     [clinicasFiltradas, clinicaSeleccionadaId]
   );
 
+  // Reinicia automáticamente la paginación cuando cambian los filtros o el origen del catálogo.
+  const claveFiltros = `${terminoBusqueda}|${filtroServicio}|${filtroMunicipio}|${filtroHorario}|${filtroNivel}|${soloFavoritos}|${modoCercanas}|${clinicasCatalogo.length}`;
+  const paginaMovil = paginacionEstado.clave === claveFiltros ? paginacionEstado.pagina : 1;
+
+  const totalPaginasMovil = Math.max(
+    1,
+    Math.ceil(clinicasFiltradas.length / FICHAS_POR_PAGINA_MOVIL)
+  );
+  const paginaActualMovil = Math.min(paginaMovil, totalPaginasMovil);
+
+  const clinicasVisiblesListado = useMemo(() => {
+    if (!esMovilMapa) return clinicasFiltradas;
+    const inicio = (paginaActualMovil - 1) * FICHAS_POR_PAGINA_MOVIL;
+    return clinicasFiltradas.slice(inicio, inicio + FICHAS_POR_PAGINA_MOVIL);
+  }, [clinicasFiltradas, esMovilMapa, paginaActualMovil]);
+
+  const sincronizarPaginaConClinica = (clinica) => {
+    if (!esMovilMapa || !clinica?.id_clinica) return;
+    const indice = clinicasFiltradas.findIndex((c) => c.id_clinica === clinica.id_clinica);
+    if (indice >= 0) {
+      setPaginacionEstado({
+        clave: claveFiltros,
+        pagina: Math.floor(indice / FICHAS_POR_PAGINA_MOVIL) + 1,
+      });
+    }
+  };
+
+  const cambiarPaginaMovil = (nuevaPagina) => {
+    const segura = Math.max(1, Math.min(totalPaginasMovil, nuevaPagina));
+    setPaginacionEstado({ clave: claveFiltros, pagina: segura });
+    listadoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const limpiarFiltros = () => {
     setTerminoBusqueda('');
     setFiltroServicio('todos');
@@ -304,6 +359,7 @@ export default function MapaCentros({
     setFiltroHorario('todos');
     setFiltroNivel('todos');
     setSoloFavoritos(false);
+    setPaginacionEstado({ clave: '', pagina: 1 });
   };
 
   const puedeAgendar = !sesion || sesion.tipo === 'usuario';
@@ -678,7 +734,15 @@ export default function MapaCentros({
             <section className={`mapa-workspace-grid mode-${modoVista}`} aria-label="Listado de centros y mapa">
               {modoVista !== 'mapa' && (
                 <ListadoClinicas
-                  clinicas={clinicasFiltradas}
+                  contenedorRef={listadoRef}
+                  clinicas={clinicasVisiblesListado}
+                  totalClinicas={clinicasFiltradas.length}
+                  paginacion={esMovilMapa ? {
+                    paginaActual: paginaActualMovil,
+                    totalPaginas: totalPaginasMovil,
+                    porPagina: FICHAS_POR_PAGINA_MOVIL,
+                    onCambiarPagina: cambiarPaginaMovil,
+                  } : null}
                   vacioTexto={soloFavoritos
                     ? 'Aún no tienes centros agregados a favoritos en este navegador.'
                     : modoCercanas && estadoCercanas === 'error'
@@ -710,10 +774,12 @@ export default function MapaCentros({
                   clinicaSeleccionada={clinicaActiva}
                   onSeleccionarClinica={(clinica) => {
                     setClinicaSeleccionadaId(clinica.id_clinica);
+                    sincronizarPaginaConClinica(clinica);
                     setCentrarTrigger((v) => v + 1);
                   }}
                   onVerDetallesClinica={(clinica) => {
                     setClinicaSeleccionadaId(clinica.id_clinica);
+                    sincronizarPaginaConClinica(clinica);
                     setCentrarTrigger((v) => v + 1);
                     setClinicaEnDetalle(clinica);
                   }}

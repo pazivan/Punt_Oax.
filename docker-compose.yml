@@ -39,6 +39,9 @@ services:
       - DOCUMENTS_PRIVATE_DIR=/var/lib/puntoax/documentos
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      - SESSION_IDLE_TIMEOUT_MINUTES=${SESSION_IDLE_TIMEOUT_MINUTES:-15}
+      - SESSION_WARNING_SECONDS=${SESSION_WARNING_SECONDS:-60}
+      - SESSION_ABSOLUTE_TIMEOUT_HOURS=${SESSION_ABSOLUTE_TIMEOUT_HOURS:-8}
     volumes:
       - puntoax_documentos:/var/lib/puntoax
     depends_on:

@@ -711,10 +711,15 @@ export default function AgendarCitaDatos({
                             searchable
                             searchPlaceholder="Buscar por clínica o municipio…"
                             emptyMessage="No hay establecimientos habilitados que coincidan."
-                            options={catalogoCentros.map((sede) => ({
-                              value: sede.id_clinica,
-                              label: `${sede.nombre} — ${sede.municipio || 'Oaxaca'}`,
-                            }))}
+                            options={catalogoCentros.map((sede) => {
+                              const municipio = (sede.municipio || 'Oaxaca').trim();
+                              const nombre = (sede.nombre || '').trim();
+                              const yaIncluyeMunicipio = municipio && nombre.toLocaleLowerCase('es').includes(municipio.toLocaleLowerCase('es'));
+                              return {
+                                value: sede.id_clinica,
+                                label: yaIncluyeMunicipio ? nombre : `${nombre} — ${municipio}`,
+                              };
+                            })}
                           />
                         )}
                       </div>

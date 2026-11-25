@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -14,17 +15,29 @@ import {
   filtrarCitas,
   formatearFechaCita,
 } from '../../utils/citasClinica.js';
+import {
+  bloquearScrollFondo,
+  cerrarOtrasCapas,
+  establecerCapaActiva,
+  registrarCierreCapa,
+} from '../../utils/uiOverlays.js';
+
+function detectarMovilNotif() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(max-width: 768px)').matches;
+}
 
 /**
  * CampanaNotificaciones - Módulo de notificaciones y recordatorios de citas próximas
  * en el encabezado para pacientes autenticados.
- * Calcula en el frontend cuánto tiempo falta para cada cita confirmada a partir
- * de los datos devueltos por GET /api/citas (consultarCitasUsuario).
+ * En móvil se presenta como panel centrado en portal para evitar recortes laterales
+ * o interferencias con el encabezado y el asistente IA.
  */
 export default function CampanaNotificaciones({ sesion, citasPreCargadas = null, enPostulacion = false }) {
   const esUsuarioNormal = !sesion?.tipo || sesion?.tipo === 'usuario';
   const esClinica = sesion?.tipo === 'clinica';
   const [abierto, setAbierto] = useState(false);
+  const [esMovil, setEsMovil] = useState(detectarMovilNotif);
   const [citasInternas, setCitasInternas] = useState([]);
   const [solicitudesClinica, setSolicitudesClinica] = useState([]);
   const [errorCitas, setErrorCitas] = useState(false);
@@ -33,6 +46,37 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null,
   );
   const [ahora, setAhora] = useState(() => Date.now());
   const contenedorRef = useRef(null);
+  const botonCampanaRef = useRef(null);
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const actualizar = (ev) => setEsMovil(Boolean(ev.matches));
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', actualizar);
+      return () => mq.removeEventListener('change', actualizar);
+    }
+    mq.addListener(actualizar);
+    return () => mq.removeListener(actualizar);
+  }, []);
+
+  useEffect(() => {
+    const desregistrar = registrarCierreCapa('notificaciones', () => setAbierto(false));
+    return () => {
+      desregistrar();
+      establecerCapaActiva('notificaciones', false);
+    };
+  }, []);
+
+  useEffect(() => {
+    establecerCapaActiva('notificaciones', abierto);
+    if (abierto) cerrarOtrasCapas('notificaciones');
+    if (abierto && esMovil) {
+      return bloquearScrollFondo();
+    }
+    return undefined;
+  }, [abierto, esMovil]);
 
   useEffect(() => {
     if (esClinica) {
@@ -58,7 +102,7 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null,
     if (!esUsuarioNormal || Array.isArray(citasPreCargadas)) return undefined;
 
     let activo = true;
-    consultarCitasUsuario({ forzar: abierto })
+    consultarCitasUsuario({ forzar: abierto, segundoPlano: !abierto })
       .then((res) => {
         if (!activo) return;
         setCitasInternas(Array.isArray(res?.citas) ? res.citas : []);
@@ -88,12 +132,17 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null,
   useEffect(() => {
     if (!abierto) return undefined;
     function manejarClickFuera(e) {
-      if (contenedorRef.current && !contenedorRef.current.contains(e.target)) {
+      const dentroBoton = contenedorRef.current?.contains(e.target);
+      const dentroPanel = panelRef.current?.contains(e.target);
+      if (!dentroBoton && !dentroPanel) {
         setAbierto(false);
       }
     }
     function manejarEscape(e) {
-      if (e.key === 'Escape') setAbierto(false);
+      if (e.key === 'Escape') {
+        setAbierto(false);
+        botonCampanaRef.current?.focus();
+      }
     }
     document.addEventListener('mousedown', manejarClickFuera);
     document.addEventListener('keydown', manejarEscape);
@@ -102,6 +151,33 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null,
       document.removeEventListener('keydown', manejarEscape);
     };
   }, [abierto]);
+
+  const cerrarPanel = () => {
+    setAbierto(false);
+    botonCampanaRef.current?.focus();
+  };
+
+  const renderPanelEnCapa = (contenidoPanel) => {
+    if (!abierto) return null;
+    if (esMovil && typeof document !== 'undefined' && document.body) {
+      return createPortal(
+        <div
+          className="notif-mobile-backdrop"
+          role="presentation"
+          onClick={cerrarPanel}
+        >
+          <div
+            className="notif-mobile-sheet-wrap"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {contenidoPanel}
+          </div>
+        </div>,
+        document.body
+      );
+    }
+    return contenidoPanel;
+  };
 
   const fuenteCitas = Array.isArray(citasPreCargadas) ? citasPreCargadas : citasInternas;
   const citasProximas = useMemo(
@@ -121,6 +197,7 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null,
     return (
       <div className="notif-wrapper" ref={contenedorRef}>
         <button
+          ref={botonCampanaRef}
           type="button"
           className={`notif-bell-btn${abierto ? ' is-open' : ''}`}
           onClick={() => {
@@ -146,21 +223,23 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null,
           )}
         </button>
 
-        {abierto && (
+        {renderPanelEnCapa(
           <section
-            className="notif-dropdown"
+            ref={panelRef}
+            className={`notif-dropdown${esMovil ? ' is-mobile-sheet' : ''}`}
             role="dialog"
+            aria-modal={esMovil ? 'true' : undefined}
             aria-label="Resoluciones de solicitudes"
           >
             <header className="notif-dropdown-header">
-              <div>
+              <div className="notif-dropdown-header-text">
                 <span className="notif-dropdown-eyebrow">SEGUIMIENTO ADMINISTRATIVO</span>
                 <h3 className="notif-dropdown-title">Solicitudes resueltas</h3>
               </div>
               <button
                 type="button"
                 className="notif-close-btn"
-                onClick={() => setAbierto(false)}
+                onClick={cerrarPanel}
                 aria-label="Cerrar notificaciones"
               >
                 <X size={16} color="#414845" />
@@ -184,7 +263,7 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null,
                 </div>
               ) : (
                 <ul className="notif-list">
-                  {solicitudesResueltas.slice(0, 5).map((sol) => (
+                  {solicitudesResueltas.map((sol) => (
                     <li key={sol.id_solicitud} className="notif-item">
                       <Link
                         to={enPostulacion ? '/mi-clinica' : `/panel-clinica?vista=solicitudes&solicitud=${encodeURIComponent(sol.id_solicitud)}`}
@@ -241,6 +320,7 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null,
   return (
     <div className="notif-wrapper" ref={contenedorRef}>
       <button
+        ref={botonCampanaRef}
         type="button"
         className={`notif-bell-btn${abierto ? ' is-open' : ''}`}
         onClick={() => {
@@ -267,21 +347,23 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null,
         )}
       </button>
 
-      {abierto && (
+      {renderPanelEnCapa(
         <section
-          className="notif-dropdown"
+          ref={panelRef}
+          className={`notif-dropdown${esMovil ? ' is-mobile-sheet' : ''}`}
           role="dialog"
+          aria-modal={esMovil ? 'true' : undefined}
           aria-label="Recordatorios de citas próximas"
         >
           <header className="notif-dropdown-header">
-            <div>
+            <div className="notif-dropdown-header-text">
               <span className="notif-dropdown-eyebrow">RECORDATORIOS</span>
               <h3 className="notif-dropdown-title">Tus citas próximas</h3>
             </div>
             <button
               type="button"
               className="notif-close-btn"
-              onClick={() => setAbierto(false)}
+              onClick={cerrarPanel}
               aria-label="Cerrar notificaciones"
             >
               <X size={16} color="#414845" />
@@ -311,7 +393,7 @@ export default function CampanaNotificaciones({ sesion, citasPreCargadas = null,
               </div>
             ) : (
               <ul className="notif-list">
-                {citasProximas.slice(0, 4).map((cita) => {
+                {citasProximas.map((cita) => {
                   const tiempo = calcularTiempoRestanteCita(cita.fecha_hora_inicio, ahora);
                   return (
                     <li key={cita.id_cita} className="notif-item">
@@ -379,7 +461,7 @@ export function BannerRecordatorioCitas({ sesion }) {
   useEffect(() => {
     if (!esUsuarioNormal) return undefined;
     let activo = true;
-    consultarCitasUsuario()
+    consultarCitasUsuario({ segundoPlano: true })
       .then((res) => {
         if (!activo) return;
         setCitas(Array.isArray(res?.citas) ? res.citas : []);

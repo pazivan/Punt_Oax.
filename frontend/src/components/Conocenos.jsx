@@ -32,7 +32,20 @@ export default function Conocenos({ sesion, onSalir, sinEncabezado = false }) {
           <span className="conocenos-eyebrow">CONÓCENOS · SALUD EN OAXACA</span>
           <h1>Información para encontrar atención con confianza.</h1>
           <p>PuntOax reúne información sobre centros y servicios de atención de ITS e interrupción legal del embarazo (ILE) en Oaxaca. Inicia sesión para consultar el mapa y las fichas de los centros.</p>
-          <Link to="/mapa" className="conocenos-cta">Explorar el mapa <ArrowRight size={18} aria-hidden="true" /></Link>
+          {sesion ? (
+            <Link to="/mapa" className="conocenos-cta">Explorar el mapa <ArrowRight size={18} aria-hidden="true" /></Link>
+          ) : (
+            <Link
+              to="/login"
+              state={{
+                aviso: 'Necesitas iniciar sesión o crear una cuenta para ver el mapa de centros de salud.',
+                from: '/mapa',
+              }}
+              className="conocenos-cta"
+            >
+              Iniciar sesión para ver el mapa <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+          )}
         </div>
         <div className="conocenos-preview" aria-hidden="true">
           <img

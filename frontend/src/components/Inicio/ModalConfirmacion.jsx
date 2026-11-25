@@ -1,18 +1,11 @@
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertCircle } from 'lucide-react';
+import { bloquearScrollFondo } from '../../utils/uiOverlays.js';
 import '../../styles/Inicio.css';
 
 /**
  * ModalConfirmacion - Componente reutilizable de ventana emergente de advertencia / confirmación.
- *
- * Contrato de propiedades (Props):
- * @param {Object} props
- * @param {boolean} props.abierto - Indica si el modal se muestra en pantalla.
- * @param {string} [props.titulo='¿Estás seguro de que quieres salir?'] - Título principal del aviso.
- * @param {string} [props.mensaje='Se cerrará tu sesión actual y serás dirigido a la página de iniciar sesión.'] - Texto descriptivo.
- * @param {string} [props.textoCancelar='Cancelar'] - Etiqueta del botón secundario para cancelar.
- * @param {string} [props.textoConfirmar='Sí, salir'] - Etiqueta del botón principal para confirmar.
- * @param {() => void} props.onCancelar - Callback al pulsar el botón de cancelar o cerrar el aviso.
- * @param {() => void} props.onConfirmar - Callback al confirmar la acción.
  */
 export default function ModalConfirmacion({
   abierto,
@@ -22,10 +15,16 @@ export default function ModalConfirmacion({
   textoConfirmar = 'Sí, salir',
   onCancelar,
   onConfirmar,
+  deshabilitarAcciones = false,
 }) {
+  useEffect(() => {
+    if (!abierto) return undefined;
+    return bloquearScrollFondo();
+  }, [abierto]);
+
   if (!abierto) return null;
 
-  return (
+  const contenido = (
     <div
       className="inicio-logout-modal-overlay"
       role="dialog"
@@ -48,6 +47,7 @@ export default function ModalConfirmacion({
             type="button"
             className="inicio-logout-btn-cancel"
             onClick={onCancelar}
+            disabled={deshabilitarAcciones}
           >
             {textoCancelar}
           </button>
@@ -55,6 +55,7 @@ export default function ModalConfirmacion({
             type="button"
             className="inicio-logout-btn-confirm"
             onClick={onConfirmar}
+            disabled={deshabilitarAcciones}
           >
             {textoConfirmar}
           </button>
@@ -62,4 +63,9 @@ export default function ModalConfirmacion({
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(contenido, document.body);
+  }
+  return contenido;
 }
