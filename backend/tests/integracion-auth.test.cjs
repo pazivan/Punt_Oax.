@@ -15,7 +15,8 @@ if (process.env.PUNTOAX_TEST_DB !== '1' ||
 if (process.env.PGPORT === '55441' || process.env.PGPORT === '5432') {
   throw new Error('No uses los puertos de la base de desarrollo ni de Sprint 3 para las pruebas.');
 }
-if (!process.env.DOCUMENTS_PRIVATE_DIR?.startsWith('/tmp/opencode/')) {
+if (!process.env.DOCUMENTS_PRIVATE_DIR?.startsWith('/tmp/opencode/') &&
+    !process.env.DOCUMENTS_PRIVATE_DIR?.startsWith('/tmp/puntoax-qa-')) {
   throw new Error('Configura DOCUMENTS_PRIVATE_DIR dentro de /tmp/opencode/ para esta prueba aislada.');
 }
 

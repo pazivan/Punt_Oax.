@@ -115,6 +115,10 @@ export function compararFichaConFormulario(ficha, form) {
     (v) => ETIQUETAS_TIPO[v] || v || 'No especificado'
   )
   revisarTexto(cambiosRevision, 'municipio', 'Municipio', clinicaBase.municipio, form.municipio)
+  if (form.municipio_clave && form.municipio_clave !== clinicaBase.municipio_clave &&
+      normalizarTexto(clinicaBase.municipio) === normalizarTexto(form.municipio)) {
+    revisarTexto(cambiosRevision, 'municipio_clave', 'Clave de municipio INEGI', clinicaBase.municipio_clave, form.municipio_clave)
+  }
   revisarTexto(cambiosRevision, 'codigo_postal', 'Código postal', clinicaBase.codigo_postal, form.codigo_postal)
   revisarTexto(cambiosRevision, 'direccion', 'Dirección', clinicaBase.direccion, form.direccion)
 

@@ -8,19 +8,18 @@
  * Reglas:
  *  - Contraseña: mínimo 8 caracteres, máximo 72 bytes (límite de bcrypt),
  *    al menos una mayúscula, un número y un símbolo.
- *  - Teléfono: solo números, espacios y los signos + ( ) . - , con al menos
- *    10 dígitos.
+ *  - Teléfono: numeración mexicana de 10 dígitos, prefijo +52 opcional.
  *  - Correo: además del formato, se comprueba que el dominio exista (MX o A).
  *    Si el DNS no responde se deja pasar: un fallo de red no debe impedir el
  *    registro. Se puede desactivar con PUNTOAX_VERIFICAR_DOMINIO_CORREO=0.
  */
 
 const dns = require("node:dns/promises");
+const telefonoMx = require("./telefonoMx");
 
 const PASSWORD_MIN = 8;
 const PASSWORD_MAX_BYTES = 72;
 const TELEFONO_MIN_DIGITOS = 10;
-const REGEX_TELEFONO = /^[+\d()\s.-]+$/;
 const REGEX_MAYUSCULA = /[A-ZÁÉÍÓÚÜÑ]/;
 const REGEX_SIMBOLO = /[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ\s]/;
 const REGEX_CORREO = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
@@ -28,9 +27,7 @@ const REGEX_CORREO = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 const MENSAJE_PASSWORD =
   "La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo.";
 const MENSAJE_PASSWORD_LARGA = "La contraseña no puede superar los 72 caracteres.";
-const MENSAJE_TELEFONO =
-  "El teléfono debe tener al menos 10 dígitos y solo puede incluir números, espacios y los signos + ( ) . -.";
-const MENSAJE_TELEFONO_LARGO = "El teléfono no puede superar los 20 caracteres.";
+const { MENSAJE_TELEFONO, normalizarTelefono } = telefonoMx;
 const MENSAJE_DOMINIO =
   "El dominio del correo no existe. Usa un correo real donde puedas recibir avisos.";
 
@@ -77,16 +74,7 @@ function contarDigitosTelefono(valor) {
  * o el mensaje de error.
  */
 function validarTelefono(valor, { requerido = false } = {}) {
-  if (valor === null || valor === undefined || valor === "") {
-    return requerido ? MENSAJE_TELEFONO : null;
-  }
-  if (typeof valor !== "string") return MENSAJE_TELEFONO;
-  const limpio = valor.trim();
-  if (!limpio) return requerido ? MENSAJE_TELEFONO : null;
-  if (limpio.length > 20) return MENSAJE_TELEFONO_LARGO;
-  if (!REGEX_TELEFONO.test(limpio)) return MENSAJE_TELEFONO;
-  if (contarDigitosTelefono(limpio) < TELEFONO_MIN_DIGITOS) return MENSAJE_TELEFONO;
-  return null;
+  return telefonoMx.validarTelefono(valor, { requerido }) ? null : MENSAJE_TELEFONO;
 }
 
 function dominioDeCorreo(correo) {
@@ -173,6 +161,7 @@ module.exports = {
   validarPassword,
   contarDigitosTelefono,
   validarTelefono,
+  normalizarTelefono,
   dominioDeCorreo,
   verificarDominioCorreo,
 };

@@ -23,6 +23,8 @@ import '../../styles/Inicio.css';
  * - Footer (112px): Texto institucional centrado.
  */
 export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
+  const esPaciente = sesion?.tipo === 'usuario';
+  const puedeAgendar = !sesion || esPaciente;
   return (
     <div className="inicio-page inicio-home-page">
       {!sinEncabezado && <EncabezadoUsuario sesion={sesion} onSalir={onSalir} seccionActiva="inicio" />}
@@ -31,6 +33,11 @@ export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
       <main className="inicio-main">
         <div className="inicio-container">
           <BannerRecordatorioCitas sesion={sesion} />
+          <nav className="inicio-accesos" aria-label="Accesos rápidos">
+            {esPaciente && <Link to="/mis-citas">Mis citas</Link>}
+            <Link to="/conocenos">Conócenos</Link>
+            <Link to="/asistente">Asistente de IA</Link>
+          </nav>
 
           {/* Bloque superior (1232px x 368px) */}
           <section className="inicio-hero-section" aria-labelledby="inicio-hero-heading">
@@ -151,7 +158,7 @@ export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
                 </div>
 
                 <div className="inicio-feature-heading-wrap">
-                  <h3 className="inicio-feature-heading">Información útil</h3>
+                  <h3 className="inicio-feature-heading">Información sobre ITS</h3>
                 </div>
 
                 <div className="inicio-feature-desc-wrap">
@@ -172,7 +179,7 @@ export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
             </Link>
 
             {/* Tarjeta 3: Agenda tu visita */}
-            <Link to="/agendar-cita" className="inicio-feature-card">
+            {puedeAgendar && <Link to="/agendar-cita" className="inicio-feature-card">
               <div className="inicio-feature-card-body">
                 <div className="inicio-feature-icon-box" aria-hidden="true">
                   <Calendar size={16} color="#001D14" />
@@ -197,7 +204,7 @@ export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
                   </span>
                 </div>
               </div>
-            </Link>
+            </Link>}
           </section>
         </div>
       </main>

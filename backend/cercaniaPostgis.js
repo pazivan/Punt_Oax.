@@ -21,6 +21,7 @@ const CONSULTA_CENTROS_CERCANOS = `
     c.descripcion,
     c.tipo_institucion,
     c.municipio,
+    c.municipio_clave,
     c.localidad,
     c.direccion,
     c.codigo_postal,

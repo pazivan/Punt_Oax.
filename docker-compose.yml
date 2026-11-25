@@ -21,6 +21,7 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     environment:
+      - NODE_ENV=production
       - DB_HOST=db
       - DB_USER=postgres
       - DB_PASSWORD=${SPRINT4_DB_PASSWORD:?Configura SPRINT4_DB_PASSWORD en el entorno}

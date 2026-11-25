@@ -17,6 +17,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const pool = require("../db");
 const { resolverIdentidad } = require("./identidad-catalogo");
+const { resolverMunicipioHeredado } = require("../../frontend/src/utils/municipios.mjs");
 
 const CATEGORIAS_CANONICAS = ["ITS", "ILE"];
 const CAMPOS_TEXTO = [
@@ -380,6 +381,8 @@ function validarFila(registro, { catalogoIle = false } = {}) {
 
   if (!nombre) return { ok: false, motivo: "sin nombre de la unidad" };
   if (nombre.length > 255) return { ok: false, motivo: "nombre mayor a 255 caracteres" };
+  const municipioOficial = resolverMunicipioHeredado(limpiar(obtener(registro, "municipio")));
+  if (!municipioOficial) return { ok: false, motivo: "municipio no identificado inequívocamente en INEGI; requiere revisión" };
 
   const categorias = categoriasDe(registro);
   if (categorias.size === 0) {
@@ -401,7 +404,7 @@ function validarFila(registro, { catalogoIle = false } = {}) {
       punto,
       situacion_ubicacion: situacion,
       verificacion_datos: "verificado",
-      municipio: limpiar(obtener(registro, "municipio")) || null,
+      municipio: municipioOficial.nombre,
       localidad: limpiar(obtener(registro, "localidad")) || null,
       direccion: limpiar(obtener(registro, "direccion")) || null,
       codigo_postal: normalizarCodigoPostal(obtener(registro, "codigo_postal")),

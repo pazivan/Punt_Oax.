@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Search } from 'lucide-react';
+import { normalizarMunicipio } from '../../utils/municipios.mjs';
 
 /**
  * FiltroDesplegable - Selector desplegable accesible y estilizado con la identidad PuntOax.
@@ -16,6 +17,9 @@ export default function FiltroDesplegable({
   emptyMessage = 'No se encontraron coincidencias.',
   disabled = false,
   className = '',
+  id,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedby,
 }) {
   const [abierto, setAbierto] = useState(false);
   const [indiceActivo, setIndiceActivo] = useState(0);
@@ -28,8 +32,8 @@ export default function FiltroDesplegable({
   const opcionActual = options.find((opt) => opt.value === value) || null;
   const opcionesFiltradas = useMemo(() => {
     if (!searchable || !busqueda.trim()) return options;
-    const q = busqueda.trim().toLocaleLowerCase('es');
-    return options.filter((opt) => String(opt.label || '').toLocaleLowerCase('es').includes(q));
+    const q = normalizarMunicipio(busqueda);
+    return options.filter((opt) => normalizarMunicipio(String(opt.label || '')).includes(q));
   }, [options, searchable, busqueda]);
 
   const indiceSeleccionado = Math.max(
@@ -68,6 +72,21 @@ export default function FiltroDesplegable({
     botonRef.current?.focus();
   };
 
+  useEffect(() => {
+    if (abierto) document.getElementById(`${listaId}-${indiceActivo}`)?.scrollIntoView?.({ block: 'nearest' });
+  }, [indiceActivo, abierto, listaId]);
+
+  const manejarTecladoBusqueda = (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setIndiceActivo((i) => Math.max(0, Math.min(opcionesFiltradas.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1))));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const opt = opcionesFiltradas[indiceActivo];
+      if (opt) seleccionar(opt.value);
+    }
+  };
+
   const manejarTecladoBoton = (e) => {
     if (disabled) return;
     if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
@@ -91,9 +110,15 @@ export default function FiltroDesplegable({
     <div
       ref={contenedorRef}
       className={`mapa-dropdown ${abierto ? 'is-open' : ''} ${disabled ? 'is-disabled' : ''} ${className}`.trim()}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setAbierto(false);
+      }}
     >
       <button
         ref={botonRef}
+        id={id}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedby}
         type="button"
         className={`mapa-dropdown-trigger ${!opcionActual ? 'is-placeholder' : ''}`}
         aria-label={ariaLabel}
@@ -121,6 +146,12 @@ export default function FiltroDesplegable({
               <input
                 ref={inputBusquedaRef}
                 type="search"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={abierto}
+                aria-controls={listaId}
+                aria-activedescendant={opcionesFiltradas[indiceActivo] ? `${listaId}-${indiceActivo}` : undefined}
+                onKeyDown={manejarTecladoBusqueda}
                 value={busqueda}
                 onChange={(e) => {
                   setBusqueda(e.target.value);
@@ -147,10 +178,12 @@ export default function FiltroDesplegable({
                 return (
                   <li
                     key={opt.value}
+                    id={`${listaId}-${idx}`}
                     role="option"
                     aria-selected={seleccionada}
                     className={`mapa-dropdown-option ${seleccionada ? 'is-selected' : ''} ${enfocada ? 'is-focused' : ''}`}
                     onMouseEnter={() => setIndiceActivo(idx)}
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => seleccionar(opt.value)}
                   >
                     <span className="mapa-dropdown-option-text">{opt.label}</span>

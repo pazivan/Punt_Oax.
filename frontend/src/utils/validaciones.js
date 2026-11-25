@@ -3,6 +3,10 @@
 // Se conservan las ideas de validación reutilizable y los mensajes claros;
 // los límites se alinean con el esquema PostgreSQL y con el backend real.
 // No se incorporan sus sesiones simuladas, tokens de ejemplo ni setTimeout.
+import { parsePhoneNumberFromString } from 'libphonenumber-js/max'
+import { crearValidadorTelefono } from './telefonoMx.mjs'
+export { MENSAJE_TELEFONO } from './telefonoMx.mjs'
+export const { validarTelefono, normalizarTelefono } = crearValidadorTelefono(parsePhoneNumberFromString)
 
 export const NOMBRE_MAX = 255
 export const CORREO_MAX = 255
@@ -39,19 +43,6 @@ export function validarPassword(password) {
 
 export function contarDigitosTelefono(valor) {
   return typeof valor === 'string' ? (valor.match(/\d/g) || []).length : 0
-}
-
-/**
- * Valida un teléfono con el mismo criterio que el backend: solo números,
- * espacios y los signos + ( ) . - , y al menos 10 dígitos.
- */
-export function validarTelefono(valor, { requerido = false } = {}) {
-  if (typeof valor !== 'string') return false
-  const limpio = valor.trim()
-  if (!limpio) return !requerido
-  if (limpio.length > 20) return false
-  if (!/^[+\d()\s.-]+$/.test(limpio)) return false
-  return contarDigitosTelefono(limpio) >= TELEFONO_MIN_DIGITOS
 }
 
 export function validarNombreClinica(nombre) {

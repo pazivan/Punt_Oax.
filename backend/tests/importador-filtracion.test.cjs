@@ -43,6 +43,7 @@ test('conserva el id_origen como texto y valida longitudes', () => {
   const regValido = {
     __cabeceras: new Set(['id_origen', 'nombre', 'servicios']),
     id_origen: 'coesdia 11.1',
+    municipio: 'Santa Cruz Xoxocotlán',
     nombre: 'Consultorio Municipal',
     servicios: 'Detección de ITS',
   };
@@ -64,6 +65,7 @@ test('deduce el nombre de la unidad si viene vacío a partir de la dirección o 
   const reg1 = {
     __cabeceras: new Set(['id_origen', 'direccion', 'servicios']),
     id_origen: 'coesdia 11',
+    municipio: 'Oaxaca de Juárez',
     direccion: 'Blvd. Eduardo Vasconcelos 517, Barrio de Jalatlaco, C.P. 68080 (IMEDI)',
     servicios: 'Detección de VIH y Sífilis',
   };
@@ -74,6 +76,7 @@ test('deduce el nombre de la unidad si viene vacío a partir de la dirección o 
   const reg2 = {
     __cabeceras: new Set(['id_origen', 'direccion', 'servicios']),
     id_origen: 'coesdia 11.2',
+    municipio: 'Santa Cruz Xoxocotlán',
     direccion: 'Casa de Salud - Col. Lomas de San Javier, Santa Cruz Xoxocotlán',
     servicios: 'Detección de VIH',
   };
@@ -84,6 +87,7 @@ test('deduce el nombre de la unidad si viene vacío a partir de la dirección o 
   const reg3 = {
     __cabeceras: new Set(['id_origen', 'direccion', 'servicios']),
     id_origen: 'coesdia 1',
+    municipio: 'Oaxaca de Juárez',
     direccion: 'Mártires de Tacubaya 315, Centro, 68000 Oaxaca de Juárez, Oax.',
     servicios: 'Detección de VIH, Sífilis y Hepatitis C',
   };
@@ -174,6 +178,7 @@ test('filtra por seleccionado y verificacion_datos cuando las columnas están pr
     __cabeceras: cabeceras,
     id_origen: '3',
     nombre: 'Centro Z',
+    municipio: 'Oaxaca de Juárez',
     servicios: 'ITS',
     seleccionado: 'si',
     verificacion_datos: 'verificado',
@@ -243,7 +248,7 @@ its-1,Centro ITS,ITS,Detección de ITS,Lunes a viernes 08:00 a 16:00,17.06,-96.7
 ile-1,Centro ILE,ILE,Aborto seguro,Lunes a viernes 08:00 a 16:00,17.06,-96.72
 its-2,Centro sin punto,ITS,Detección de ITS,Lunes a viernes 08:00 a 16:00,,
 its-3,Centro ITS e ILE,ITS,Detección de ITS e ILE,Lunes a viernes 08:00 a 16:00,17.07,-96.73`;
-  const resultado = await procesarImportacion(leerRegistros(csv), { connect: async () => client }, {
+  const resultado = await procesarImportacion(leerRegistros(csv).map((r) => ({ ...r, municipio: 'Oaxaca de Juárez' })), { connect: async () => client }, {
     soloItsCoordenadas: true, aplicar: false,
   });
   assert.equal(resultado.centrosUnicos, 2);

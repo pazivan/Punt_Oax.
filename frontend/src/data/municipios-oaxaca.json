@@ -1,0 +1,3428 @@
+{
+  "fuente": "https://gaia.inegi.org.mx/wscatgeo/v2/mgem/20",
+  "documentacion": "https://www.inegi.org.mx/servicios/catalogoUnico.html",
+  "obtenido_en": "2026-11-25T05:51:11.998Z",
+  "sha256_respuesta": "39c2b503a15eddf5c3bef56b16892ff896a5aa7ba57ae151dadc0f3c7db72fdc",
+  "municipios": [
+    {
+      "cvegeo": "20001",
+      "cve_ent": "20",
+      "cve_mun": "001",
+      "nombre": "Abejones"
+    },
+    {
+      "cvegeo": "20002",
+      "cve_ent": "20",
+      "cve_mun": "002",
+      "nombre": "Acatlán de Pérez Figueroa"
+    },
+    {
+      "cvegeo": "20003",
+      "cve_ent": "20",
+      "cve_mun": "003",
+      "nombre": "Asunción Cacalotepec"
+    },
+    {
+      "cvegeo": "20004",
+      "cve_ent": "20",
+      "cve_mun": "004",
+      "nombre": "Asunción Cuyotepeji"
+    },
+    {
+      "cvegeo": "20005",
+      "cve_ent": "20",
+      "cve_mun": "005",
+      "nombre": "Asunción Ixtaltepec"
+    },
+    {
+      "cvegeo": "20006",
+      "cve_ent": "20",
+      "cve_mun": "006",
+      "nombre": "Asunción Nochixtlán"
+    },
+    {
+      "cvegeo": "20007",
+      "cve_ent": "20",
+      "cve_mun": "007",
+      "nombre": "Asunción Ocotlán"
+    },
+    {
+      "cvegeo": "20008",
+      "cve_ent": "20",
+      "cve_mun": "008",
+      "nombre": "Asunción Tlacolulita"
+    },
+    {
+      "cvegeo": "20009",
+      "cve_ent": "20",
+      "cve_mun": "009",
+      "nombre": "Ayotzintepec"
+    },
+    {
+      "cvegeo": "20010",
+      "cve_ent": "20",
+      "cve_mun": "010",
+      "nombre": "El Barrio de la Soledad"
+    },
+    {
+      "cvegeo": "20011",
+      "cve_ent": "20",
+      "cve_mun": "011",
+      "nombre": "Calihualá"
+    },
+    {
+      "cvegeo": "20012",
+      "cve_ent": "20",
+      "cve_mun": "012",
+      "nombre": "Candelaria Loxicha"
+    },
+    {
+      "cvegeo": "20013",
+      "cve_ent": "20",
+      "cve_mun": "013",
+      "nombre": "Ciénega de Zimatlán"
+    },
+    {
+      "cvegeo": "20014",
+      "cve_ent": "20",
+      "cve_mun": "014",
+      "nombre": "Ciudad Ixtepec"
+    },
+    {
+      "cvegeo": "20015",
+      "cve_ent": "20",
+      "cve_mun": "015",
+      "nombre": "Coatecas Altas"
+    },
+    {
+      "cvegeo": "20016",
+      "cve_ent": "20",
+      "cve_mun": "016",
+      "nombre": "Coicoyán de las Flores"
+    },
+    {
+      "cvegeo": "20017",
+      "cve_ent": "20",
+      "cve_mun": "017",
+      "nombre": "La Compañía"
+    },
+    {
+      "cvegeo": "20018",
+      "cve_ent": "20",
+      "cve_mun": "018",
+      "nombre": "Concepción Buenavista"
+    },
+    {
+      "cvegeo": "20019",
+      "cve_ent": "20",
+      "cve_mun": "019",
+      "nombre": "Concepción Pápalo"
+    },
+    {
+      "cvegeo": "20020",
+      "cve_ent": "20",
+      "cve_mun": "020",
+      "nombre": "Constancia del Rosario"
+    },
+    {
+      "cvegeo": "20021",
+      "cve_ent": "20",
+      "cve_mun": "021",
+      "nombre": "Cosolapa"
+    },
+    {
+      "cvegeo": "20022",
+      "cve_ent": "20",
+      "cve_mun": "022",
+      "nombre": "Cosoltepec"
+    },
+    {
+      "cvegeo": "20023",
+      "cve_ent": "20",
+      "cve_mun": "023",
+      "nombre": "Cuilápam de Guerrero"
+    },
+    {
+      "cvegeo": "20024",
+      "cve_ent": "20",
+      "cve_mun": "024",
+      "nombre": "Cuyamecalco Villa de Zaragoza"
+    },
+    {
+      "cvegeo": "20025",
+      "cve_ent": "20",
+      "cve_mun": "025",
+      "nombre": "Chahuites"
+    },
+    {
+      "cvegeo": "20026",
+      "cve_ent": "20",
+      "cve_mun": "026",
+      "nombre": "Chalcatongo de Hidalgo"
+    },
+    {
+      "cvegeo": "20027",
+      "cve_ent": "20",
+      "cve_mun": "027",
+      "nombre": "Chiquihuitlán de Benito Juárez"
+    },
+    {
+      "cvegeo": "20028",
+      "cve_ent": "20",
+      "cve_mun": "028",
+      "nombre": "Heroica Ciudad de Ejutla de Crespo"
+    },
+    {
+      "cvegeo": "20029",
+      "cve_ent": "20",
+      "cve_mun": "029",
+      "nombre": "Eloxochitlán de Flores Magón"
+    },
+    {
+      "cvegeo": "20030",
+      "cve_ent": "20",
+      "cve_mun": "030",
+      "nombre": "El Espinal"
+    },
+    {
+      "cvegeo": "20031",
+      "cve_ent": "20",
+      "cve_mun": "031",
+      "nombre": "Tamazulápam del Espíritu Santo"
+    },
+    {
+      "cvegeo": "20032",
+      "cve_ent": "20",
+      "cve_mun": "032",
+      "nombre": "Fresnillo de Trujano"
+    },
+    {
+      "cvegeo": "20033",
+      "cve_ent": "20",
+      "cve_mun": "033",
+      "nombre": "Guadalupe Etla"
+    },
+    {
+      "cvegeo": "20034",
+      "cve_ent": "20",
+      "cve_mun": "034",
+      "nombre": "Guadalupe de Ramírez"
+    },
+    {
+      "cvegeo": "20035",
+      "cve_ent": "20",
+      "cve_mun": "035",
+      "nombre": "Guelatao de Juárez"
+    },
+    {
+      "cvegeo": "20036",
+      "cve_ent": "20",
+      "cve_mun": "036",
+      "nombre": "Guevea de Humboldt"
+    },
+    {
+      "cvegeo": "20037",
+      "cve_ent": "20",
+      "cve_mun": "037",
+      "nombre": "Mesones Hidalgo"
+    },
+    {
+      "cvegeo": "20038",
+      "cve_ent": "20",
+      "cve_mun": "038",
+      "nombre": "Villa Hidalgo Yalálag"
+    },
+    {
+      "cvegeo": "20039",
+      "cve_ent": "20",
+      "cve_mun": "039",
+      "nombre": "Heroica Ciudad de Huajuapan de León"
+    },
+    {
+      "cvegeo": "20040",
+      "cve_ent": "20",
+      "cve_mun": "040",
+      "nombre": "Huautepec"
+    },
+    {
+      "cvegeo": "20041",
+      "cve_ent": "20",
+      "cve_mun": "041",
+      "nombre": "Huautla de Jiménez"
+    },
+    {
+      "cvegeo": "20042",
+      "cve_ent": "20",
+      "cve_mun": "042",
+      "nombre": "Ixtlán de Juárez"
+    },
+    {
+      "cvegeo": "20043",
+      "cve_ent": "20",
+      "cve_mun": "043",
+      "nombre": "Heroica Ciudad de Juchitán de Zaragoza"
+    },
+    {
+      "cvegeo": "20044",
+      "cve_ent": "20",
+      "cve_mun": "044",
+      "nombre": "Loma Bonita"
+    },
+    {
+      "cvegeo": "20045",
+      "cve_ent": "20",
+      "cve_mun": "045",
+      "nombre": "Magdalena Apazco"
+    },
+    {
+      "cvegeo": "20046",
+      "cve_ent": "20",
+      "cve_mun": "046",
+      "nombre": "Magdalena Jaltepec"
+    },
+    {
+      "cvegeo": "20047",
+      "cve_ent": "20",
+      "cve_mun": "047",
+      "nombre": "Santa Magdalena Jicotlán"
+    },
+    {
+      "cvegeo": "20048",
+      "cve_ent": "20",
+      "cve_mun": "048",
+      "nombre": "Magdalena Mixtepec"
+    },
+    {
+      "cvegeo": "20049",
+      "cve_ent": "20",
+      "cve_mun": "049",
+      "nombre": "Magdalena Ocotlán"
+    },
+    {
+      "cvegeo": "20050",
+      "cve_ent": "20",
+      "cve_mun": "050",
+      "nombre": "Magdalena Peñasco"
+    },
+    {
+      "cvegeo": "20051",
+      "cve_ent": "20",
+      "cve_mun": "051",
+      "nombre": "Magdalena Teitipac"
+    },
+    {
+      "cvegeo": "20052",
+      "cve_ent": "20",
+      "cve_mun": "052",
+      "nombre": "Magdalena Tequisistlán"
+    },
+    {
+      "cvegeo": "20053",
+      "cve_ent": "20",
+      "cve_mun": "053",
+      "nombre": "Magdalena Tlacotepec"
+    },
+    {
+      "cvegeo": "20054",
+      "cve_ent": "20",
+      "cve_mun": "054",
+      "nombre": "Magdalena Zahuatlán"
+    },
+    {
+      "cvegeo": "20055",
+      "cve_ent": "20",
+      "cve_mun": "055",
+      "nombre": "Mariscala de Juárez"
+    },
+    {
+      "cvegeo": "20056",
+      "cve_ent": "20",
+      "cve_mun": "056",
+      "nombre": "Mártires de Tacubaya"
+    },
+    {
+      "cvegeo": "20057",
+      "cve_ent": "20",
+      "cve_mun": "057",
+      "nombre": "Matías Romero Avendaño"
+    },
+    {
+      "cvegeo": "20058",
+      "cve_ent": "20",
+      "cve_mun": "058",
+      "nombre": "Mazatlán Villa de Flores"
+    },
+    {
+      "cvegeo": "20059",
+      "cve_ent": "20",
+      "cve_mun": "059",
+      "nombre": "Heroica Ciudad de Miahuatlán de Porfirio Díaz"
+    },
+    {
+      "cvegeo": "20060",
+      "cve_ent": "20",
+      "cve_mun": "060",
+      "nombre": "Mixistlán de la Reforma"
+    },
+    {
+      "cvegeo": "20061",
+      "cve_ent": "20",
+      "cve_mun": "061",
+      "nombre": "Monjas"
+    },
+    {
+      "cvegeo": "20062",
+      "cve_ent": "20",
+      "cve_mun": "062",
+      "nombre": "Natividad"
+    },
+    {
+      "cvegeo": "20063",
+      "cve_ent": "20",
+      "cve_mun": "063",
+      "nombre": "Nazareno Etla"
+    },
+    {
+      "cvegeo": "20064",
+      "cve_ent": "20",
+      "cve_mun": "064",
+      "nombre": "Nejapa de Madero"
+    },
+    {
+      "cvegeo": "20065",
+      "cve_ent": "20",
+      "cve_mun": "065",
+      "nombre": "Ixpantepec Nieves"
+    },
+    {
+      "cvegeo": "20066",
+      "cve_ent": "20",
+      "cve_mun": "066",
+      "nombre": "Santiago Niltepec"
+    },
+    {
+      "cvegeo": "20067",
+      "cve_ent": "20",
+      "cve_mun": "067",
+      "nombre": "Oaxaca de Juárez"
+    },
+    {
+      "cvegeo": "20068",
+      "cve_ent": "20",
+      "cve_mun": "068",
+      "nombre": "Ocotlán de Morelos"
+    },
+    {
+      "cvegeo": "20069",
+      "cve_ent": "20",
+      "cve_mun": "069",
+      "nombre": "La Pe"
+    },
+    {
+      "cvegeo": "20070",
+      "cve_ent": "20",
+      "cve_mun": "070",
+      "nombre": "Pinotepa de Don Luis"
+    },
+    {
+      "cvegeo": "20071",
+      "cve_ent": "20",
+      "cve_mun": "071",
+      "nombre": "Pluma Hidalgo"
+    },
+    {
+      "cvegeo": "20072",
+      "cve_ent": "20",
+      "cve_mun": "072",
+      "nombre": "San José del Progreso"
+    },
+    {
+      "cvegeo": "20073",
+      "cve_ent": "20",
+      "cve_mun": "073",
+      "nombre": "Putla Villa de Guerrero"
+    },
+    {
+      "cvegeo": "20074",
+      "cve_ent": "20",
+      "cve_mun": "074",
+      "nombre": "Santa Catarina Quioquitani"
+    },
+    {
+      "cvegeo": "20075",
+      "cve_ent": "20",
+      "cve_mun": "075",
+      "nombre": "Reforma de Pineda"
+    },
+    {
+      "cvegeo": "20076",
+      "cve_ent": "20",
+      "cve_mun": "076",
+      "nombre": "La Reforma"
+    },
+    {
+      "cvegeo": "20077",
+      "cve_ent": "20",
+      "cve_mun": "077",
+      "nombre": "Reyes Etla"
+    },
+    {
+      "cvegeo": "20078",
+      "cve_ent": "20",
+      "cve_mun": "078",
+      "nombre": "Rojas de Cuauhtémoc"
+    },
+    {
+      "cvegeo": "20079",
+      "cve_ent": "20",
+      "cve_mun": "079",
+      "nombre": "Salina Cruz"
+    },
+    {
+      "cvegeo": "20080",
+      "cve_ent": "20",
+      "cve_mun": "080",
+      "nombre": "San Agustín Amatengo"
+    },
+    {
+      "cvegeo": "20081",
+      "cve_ent": "20",
+      "cve_mun": "081",
+      "nombre": "San Agustín Atenango"
+    },
+    {
+      "cvegeo": "20082",
+      "cve_ent": "20",
+      "cve_mun": "082",
+      "nombre": "San Agustín Chayuco"
+    },
+    {
+      "cvegeo": "20083",
+      "cve_ent": "20",
+      "cve_mun": "083",
+      "nombre": "San Agustín de las Juntas"
+    },
+    {
+      "cvegeo": "20084",
+      "cve_ent": "20",
+      "cve_mun": "084",
+      "nombre": "San Agustín Etla"
+    },
+    {
+      "cvegeo": "20085",
+      "cve_ent": "20",
+      "cve_mun": "085",
+      "nombre": "San Agustín Loxicha"
+    },
+    {
+      "cvegeo": "20086",
+      "cve_ent": "20",
+      "cve_mun": "086",
+      "nombre": "San Agustín Tlacotepec"
+    },
+    {
+      "cvegeo": "20087",
+      "cve_ent": "20",
+      "cve_mun": "087",
+      "nombre": "San Agustín Yatareni"
+    },
+    {
+      "cvegeo": "20088",
+      "cve_ent": "20",
+      "cve_mun": "088",
+      "nombre": "San Andrés Cabecera Nueva"
+    },
+    {
+      "cvegeo": "20089",
+      "cve_ent": "20",
+      "cve_mun": "089",
+      "nombre": "San Andrés Dinicuiti"
+    },
+    {
+      "cvegeo": "20090",
+      "cve_ent": "20",
+      "cve_mun": "090",
+      "nombre": "San Andrés Huaxpaltepec"
+    },
+    {
+      "cvegeo": "20091",
+      "cve_ent": "20",
+      "cve_mun": "091",
+      "nombre": "San Andrés Huayápam"
+    },
+    {
+      "cvegeo": "20092",
+      "cve_ent": "20",
+      "cve_mun": "092",
+      "nombre": "San Andrés Ixtlahuaca"
+    },
+    {
+      "cvegeo": "20093",
+      "cve_ent": "20",
+      "cve_mun": "093",
+      "nombre": "San Andrés Lagunas"
+    },
+    {
+      "cvegeo": "20094",
+      "cve_ent": "20",
+      "cve_mun": "094",
+      "nombre": "San Andrés Nuxiño"
+    },
+    {
+      "cvegeo": "20095",
+      "cve_ent": "20",
+      "cve_mun": "095",
+      "nombre": "San Andrés Paxtlán"
+    },
+    {
+      "cvegeo": "20096",
+      "cve_ent": "20",
+      "cve_mun": "096",
+      "nombre": "San Andrés Sinaxtla"
+    },
+    {
+      "cvegeo": "20097",
+      "cve_ent": "20",
+      "cve_mun": "097",
+      "nombre": "San Andrés Solaga"
+    },
+    {
+      "cvegeo": "20098",
+      "cve_ent": "20",
+      "cve_mun": "098",
+      "nombre": "San Andrés Teotilálpam"
+    },
+    {
+      "cvegeo": "20099",
+      "cve_ent": "20",
+      "cve_mun": "099",
+      "nombre": "San Andrés Tepetlapa"
+    },
+    {
+      "cvegeo": "20100",
+      "cve_ent": "20",
+      "cve_mun": "100",
+      "nombre": "San Andrés Yaá"
+    },
+    {
+      "cvegeo": "20101",
+      "cve_ent": "20",
+      "cve_mun": "101",
+      "nombre": "San Andrés Zabache"
+    },
+    {
+      "cvegeo": "20102",
+      "cve_ent": "20",
+      "cve_mun": "102",
+      "nombre": "San Andrés Zautla"
+    },
+    {
+      "cvegeo": "20103",
+      "cve_ent": "20",
+      "cve_mun": "103",
+      "nombre": "San Antonino Castillo Velasco"
+    },
+    {
+      "cvegeo": "20104",
+      "cve_ent": "20",
+      "cve_mun": "104",
+      "nombre": "San Antonino el Alto"
+    },
+    {
+      "cvegeo": "20105",
+      "cve_ent": "20",
+      "cve_mun": "105",
+      "nombre": "San Antonino Monte Verde"
+    },
+    {
+      "cvegeo": "20106",
+      "cve_ent": "20",
+      "cve_mun": "106",
+      "nombre": "San Antonio Acutla"
+    },
+    {
+      "cvegeo": "20107",
+      "cve_ent": "20",
+      "cve_mun": "107",
+      "nombre": "San Antonio de la Cal"
+    },
+    {
+      "cvegeo": "20108",
+      "cve_ent": "20",
+      "cve_mun": "108",
+      "nombre": "San Antonio Huitepec"
+    },
+    {
+      "cvegeo": "20109",
+      "cve_ent": "20",
+      "cve_mun": "109",
+      "nombre": "San Antonio Nanahuatípam"
+    },
+    {
+      "cvegeo": "20110",
+      "cve_ent": "20",
+      "cve_mun": "110",
+      "nombre": "San Antonio Sinicahua"
+    },
+    {
+      "cvegeo": "20111",
+      "cve_ent": "20",
+      "cve_mun": "111",
+      "nombre": "San Antonio Tepetlapa"
+    },
+    {
+      "cvegeo": "20112",
+      "cve_ent": "20",
+      "cve_mun": "112",
+      "nombre": "San Baltazar Chichicápam"
+    },
+    {
+      "cvegeo": "20113",
+      "cve_ent": "20",
+      "cve_mun": "113",
+      "nombre": "San Baltazar Loxicha"
+    },
+    {
+      "cvegeo": "20114",
+      "cve_ent": "20",
+      "cve_mun": "114",
+      "nombre": "San Baltazar Yatzachi el Bajo"
+    },
+    {
+      "cvegeo": "20115",
+      "cve_ent": "20",
+      "cve_mun": "115",
+      "nombre": "San Bartolo Coyotepec"
+    },
+    {
+      "cvegeo": "20116",
+      "cve_ent": "20",
+      "cve_mun": "116",
+      "nombre": "San Bartolomé Ayautla"
+    },
+    {
+      "cvegeo": "20117",
+      "cve_ent": "20",
+      "cve_mun": "117",
+      "nombre": "San Bartolomé Loxicha"
+    },
+    {
+      "cvegeo": "20118",
+      "cve_ent": "20",
+      "cve_mun": "118",
+      "nombre": "San Bartolomé Quialana"
+    },
+    {
+      "cvegeo": "20119",
+      "cve_ent": "20",
+      "cve_mun": "119",
+      "nombre": "San Bartolomé Yucuañe"
+    },
+    {
+      "cvegeo": "20120",
+      "cve_ent": "20",
+      "cve_mun": "120",
+      "nombre": "San Bartolomé Zoogocho"
+    },
+    {
+      "cvegeo": "20121",
+      "cve_ent": "20",
+      "cve_mun": "121",
+      "nombre": "San Bartolo Soyaltepec"
+    },
+    {
+      "cvegeo": "20122",
+      "cve_ent": "20",
+      "cve_mun": "122",
+      "nombre": "San Bartolo Yautepec"
+    },
+    {
+      "cvegeo": "20123",
+      "cve_ent": "20",
+      "cve_mun": "123",
+      "nombre": "San Bernardo Mixtepec"
+    },
+    {
+      "cvegeo": "20124",
+      "cve_ent": "20",
+      "cve_mun": "124",
+      "nombre": "Heroica Villa de San Blas Atempa"
+    },
+    {
+      "cvegeo": "20125",
+      "cve_ent": "20",
+      "cve_mun": "125",
+      "nombre": "San Carlos Yautepec"
+    },
+    {
+      "cvegeo": "20126",
+      "cve_ent": "20",
+      "cve_mun": "126",
+      "nombre": "San Cristóbal Amatlán"
+    },
+    {
+      "cvegeo": "20127",
+      "cve_ent": "20",
+      "cve_mun": "127",
+      "nombre": "San Cristóbal Amoltepec"
+    },
+    {
+      "cvegeo": "20128",
+      "cve_ent": "20",
+      "cve_mun": "128",
+      "nombre": "San Cristóbal Lachirioag"
+    },
+    {
+      "cvegeo": "20129",
+      "cve_ent": "20",
+      "cve_mun": "129",
+      "nombre": "San Cristóbal Suchixtlahuaca"
+    },
+    {
+      "cvegeo": "20130",
+      "cve_ent": "20",
+      "cve_mun": "130",
+      "nombre": "San Dionisio del Mar"
+    },
+    {
+      "cvegeo": "20131",
+      "cve_ent": "20",
+      "cve_mun": "131",
+      "nombre": "San Dionisio Ocotepec"
+    },
+    {
+      "cvegeo": "20132",
+      "cve_ent": "20",
+      "cve_mun": "132",
+      "nombre": "San Dionisio Ocotlán"
+    },
+    {
+      "cvegeo": "20133",
+      "cve_ent": "20",
+      "cve_mun": "133",
+      "nombre": "San Esteban Atatlahuca"
+    },
+    {
+      "cvegeo": "20134",
+      "cve_ent": "20",
+      "cve_mun": "134",
+      "nombre": "San Felipe Jalapa de Díaz"
+    },
+    {
+      "cvegeo": "20135",
+      "cve_ent": "20",
+      "cve_mun": "135",
+      "nombre": "San Felipe Tejalápam"
+    },
+    {
+      "cvegeo": "20136",
+      "cve_ent": "20",
+      "cve_mun": "136",
+      "nombre": "San Felipe Usila"
+    },
+    {
+      "cvegeo": "20137",
+      "cve_ent": "20",
+      "cve_mun": "137",
+      "nombre": "San Francisco Cahuacuá"
+    },
+    {
+      "cvegeo": "20138",
+      "cve_ent": "20",
+      "cve_mun": "138",
+      "nombre": "San Francisco Cajonos"
+    },
+    {
+      "cvegeo": "20139",
+      "cve_ent": "20",
+      "cve_mun": "139",
+      "nombre": "San Francisco Chapulapa"
+    },
+    {
+      "cvegeo": "20140",
+      "cve_ent": "20",
+      "cve_mun": "140",
+      "nombre": "San Francisco Chindúa"
+    },
+    {
+      "cvegeo": "20141",
+      "cve_ent": "20",
+      "cve_mun": "141",
+      "nombre": "San Francisco del Mar"
+    },
+    {
+      "cvegeo": "20142",
+      "cve_ent": "20",
+      "cve_mun": "142",
+      "nombre": "San Francisco Huehuetlán"
+    },
+    {
+      "cvegeo": "20143",
+      "cve_ent": "20",
+      "cve_mun": "143",
+      "nombre": "San Francisco Ixhuatán"
+    },
+    {
+      "cvegeo": "20144",
+      "cve_ent": "20",
+      "cve_mun": "144",
+      "nombre": "San Francisco Jaltepetongo"
+    },
+    {
+      "cvegeo": "20145",
+      "cve_ent": "20",
+      "cve_mun": "145",
+      "nombre": "San Francisco Lachigoló"
+    },
+    {
+      "cvegeo": "20146",
+      "cve_ent": "20",
+      "cve_mun": "146",
+      "nombre": "San Francisco Logueche"
+    },
+    {
+      "cvegeo": "20147",
+      "cve_ent": "20",
+      "cve_mun": "147",
+      "nombre": "San Francisco Nuxaño"
+    },
+    {
+      "cvegeo": "20148",
+      "cve_ent": "20",
+      "cve_mun": "148",
+      "nombre": "San Francisco Ozolotepec"
+    },
+    {
+      "cvegeo": "20149",
+      "cve_ent": "20",
+      "cve_mun": "149",
+      "nombre": "San Francisco Sola"
+    },
+    {
+      "cvegeo": "20150",
+      "cve_ent": "20",
+      "cve_mun": "150",
+      "nombre": "San Francisco Telixtlahuaca"
+    },
+    {
+      "cvegeo": "20151",
+      "cve_ent": "20",
+      "cve_mun": "151",
+      "nombre": "San Francisco Teopan"
+    },
+    {
+      "cvegeo": "20152",
+      "cve_ent": "20",
+      "cve_mun": "152",
+      "nombre": "San Francisco Tlapancingo"
+    },
+    {
+      "cvegeo": "20153",
+      "cve_ent": "20",
+      "cve_mun": "153",
+      "nombre": "San Gabriel Mixtepec"
+    },
+    {
+      "cvegeo": "20154",
+      "cve_ent": "20",
+      "cve_mun": "154",
+      "nombre": "San Ildefonso Amatlán"
+    },
+    {
+      "cvegeo": "20155",
+      "cve_ent": "20",
+      "cve_mun": "155",
+      "nombre": "San Ildefonso Sola"
+    },
+    {
+      "cvegeo": "20156",
+      "cve_ent": "20",
+      "cve_mun": "156",
+      "nombre": "San Ildefonso Villa Alta"
+    },
+    {
+      "cvegeo": "20157",
+      "cve_ent": "20",
+      "cve_mun": "157",
+      "nombre": "San Jacinto Amilpas"
+    },
+    {
+      "cvegeo": "20158",
+      "cve_ent": "20",
+      "cve_mun": "158",
+      "nombre": "San Jacinto Tlacotepec"
+    },
+    {
+      "cvegeo": "20159",
+      "cve_ent": "20",
+      "cve_mun": "159",
+      "nombre": "San Jerónimo Coatlán"
+    },
+    {
+      "cvegeo": "20160",
+      "cve_ent": "20",
+      "cve_mun": "160",
+      "nombre": "San Jerónimo Silacayoapilla"
+    },
+    {
+      "cvegeo": "20161",
+      "cve_ent": "20",
+      "cve_mun": "161",
+      "nombre": "San Jerónimo Sosola"
+    },
+    {
+      "cvegeo": "20162",
+      "cve_ent": "20",
+      "cve_mun": "162",
+      "nombre": "San Jerónimo Taviche"
+    },
+    {
+      "cvegeo": "20163",
+      "cve_ent": "20",
+      "cve_mun": "163",
+      "nombre": "San Jerónimo Tecóatl"
+    },
+    {
+      "cvegeo": "20164",
+      "cve_ent": "20",
+      "cve_mun": "164",
+      "nombre": "San Jorge Nuchita"
+    },
+    {
+      "cvegeo": "20165",
+      "cve_ent": "20",
+      "cve_mun": "165",
+      "nombre": "San José Ayuquila"
+    },
+    {
+      "cvegeo": "20166",
+      "cve_ent": "20",
+      "cve_mun": "166",
+      "nombre": "San José Chiltepec"
+    },
+    {
+      "cvegeo": "20167",
+      "cve_ent": "20",
+      "cve_mun": "167",
+      "nombre": "San José del Peñasco"
+    },
+    {
+      "cvegeo": "20168",
+      "cve_ent": "20",
+      "cve_mun": "168",
+      "nombre": "San José Estancia Grande"
+    },
+    {
+      "cvegeo": "20169",
+      "cve_ent": "20",
+      "cve_mun": "169",
+      "nombre": "San José Independencia"
+    },
+    {
+      "cvegeo": "20170",
+      "cve_ent": "20",
+      "cve_mun": "170",
+      "nombre": "San José Lachiguiri"
+    },
+    {
+      "cvegeo": "20171",
+      "cve_ent": "20",
+      "cve_mun": "171",
+      "nombre": "San José Tenango"
+    },
+    {
+      "cvegeo": "20172",
+      "cve_ent": "20",
+      "cve_mun": "172",
+      "nombre": "San Juan Achiutla"
+    },
+    {
+      "cvegeo": "20173",
+      "cve_ent": "20",
+      "cve_mun": "173",
+      "nombre": "San Juan Atepec"
+    },
+    {
+      "cvegeo": "20174",
+      "cve_ent": "20",
+      "cve_mun": "174",
+      "nombre": "Ánimas Trujano"
+    },
+    {
+      "cvegeo": "20175",
+      "cve_ent": "20",
+      "cve_mun": "175",
+      "nombre": "San Juan Bautista Atatlahuca"
+    },
+    {
+      "cvegeo": "20176",
+      "cve_ent": "20",
+      "cve_mun": "176",
+      "nombre": "San Juan Bautista Coixtlahuaca"
+    },
+    {
+      "cvegeo": "20177",
+      "cve_ent": "20",
+      "cve_mun": "177",
+      "nombre": "San Juan Bautista Cuicatlán"
+    },
+    {
+      "cvegeo": "20178",
+      "cve_ent": "20",
+      "cve_mun": "178",
+      "nombre": "San Juan Bautista Guelache"
+    },
+    {
+      "cvegeo": "20179",
+      "cve_ent": "20",
+      "cve_mun": "179",
+      "nombre": "San Juan Bautista Jayacatlán"
+    },
+    {
+      "cvegeo": "20180",
+      "cve_ent": "20",
+      "cve_mun": "180",
+      "nombre": "San Juan Bautista Lo de Soto"
+    },
+    {
+      "cvegeo": "20181",
+      "cve_ent": "20",
+      "cve_mun": "181",
+      "nombre": "San Juan Bautista Suchitepec"
+    },
+    {
+      "cvegeo": "20182",
+      "cve_ent": "20",
+      "cve_mun": "182",
+      "nombre": "San Juan Bautista Tlacoatzintepec"
+    },
+    {
+      "cvegeo": "20183",
+      "cve_ent": "20",
+      "cve_mun": "183",
+      "nombre": "San Juan Bautista Tlachichilco"
+    },
+    {
+      "cvegeo": "20184",
+      "cve_ent": "20",
+      "cve_mun": "184",
+      "nombre": "San Juan Bautista Tuxtepec"
+    },
+    {
+      "cvegeo": "20185",
+      "cve_ent": "20",
+      "cve_mun": "185",
+      "nombre": "San Juan Cacahuatepec"
+    },
+    {
+      "cvegeo": "20186",
+      "cve_ent": "20",
+      "cve_mun": "186",
+      "nombre": "San Juan Cieneguilla"
+    },
+    {
+      "cvegeo": "20187",
+      "cve_ent": "20",
+      "cve_mun": "187",
+      "nombre": "San Juan Coatzóspam"
+    },
+    {
+      "cvegeo": "20188",
+      "cve_ent": "20",
+      "cve_mun": "188",
+      "nombre": "San Juan Colorado"
+    },
+    {
+      "cvegeo": "20189",
+      "cve_ent": "20",
+      "cve_mun": "189",
+      "nombre": "San Juan Comaltepec"
+    },
+    {
+      "cvegeo": "20190",
+      "cve_ent": "20",
+      "cve_mun": "190",
+      "nombre": "San Juan Cotzocón"
+    },
+    {
+      "cvegeo": "20191",
+      "cve_ent": "20",
+      "cve_mun": "191",
+      "nombre": "San Juan Chicomezúchil"
+    },
+    {
+      "cvegeo": "20192",
+      "cve_ent": "20",
+      "cve_mun": "192",
+      "nombre": "San Juan Chilateca"
+    },
+    {
+      "cvegeo": "20193",
+      "cve_ent": "20",
+      "cve_mun": "193",
+      "nombre": "San Juan del Estado"
+    },
+    {
+      "cvegeo": "20194",
+      "cve_ent": "20",
+      "cve_mun": "194",
+      "nombre": "San Juan del Río"
+    },
+    {
+      "cvegeo": "20195",
+      "cve_ent": "20",
+      "cve_mun": "195",
+      "nombre": "San Juan Diuxi"
+    },
+    {
+      "cvegeo": "20196",
+      "cve_ent": "20",
+      "cve_mun": "196",
+      "nombre": "San Juan Evangelista Analco"
+    },
+    {
+      "cvegeo": "20197",
+      "cve_ent": "20",
+      "cve_mun": "197",
+      "nombre": "San Juan Guelavía"
+    },
+    {
+      "cvegeo": "20198",
+      "cve_ent": "20",
+      "cve_mun": "198",
+      "nombre": "San Juan Guichicovi"
+    },
+    {
+      "cvegeo": "20199",
+      "cve_ent": "20",
+      "cve_mun": "199",
+      "nombre": "San Juan Ihualtepec"
+    },
+    {
+      "cvegeo": "20200",
+      "cve_ent": "20",
+      "cve_mun": "200",
+      "nombre": "San Juan Juquila Mixes"
+    },
+    {
+      "cvegeo": "20201",
+      "cve_ent": "20",
+      "cve_mun": "201",
+      "nombre": "San Juan Juquila Vijanos"
+    },
+    {
+      "cvegeo": "20202",
+      "cve_ent": "20",
+      "cve_mun": "202",
+      "nombre": "San Juan Lachao"
+    },
+    {
+      "cvegeo": "20203",
+      "cve_ent": "20",
+      "cve_mun": "203",
+      "nombre": "San Juan Lachigalla"
+    },
+    {
+      "cvegeo": "20204",
+      "cve_ent": "20",
+      "cve_mun": "204",
+      "nombre": "San Juan Lajarcia"
+    },
+    {
+      "cvegeo": "20205",
+      "cve_ent": "20",
+      "cve_mun": "205",
+      "nombre": "San Juan Lalana"
+    },
+    {
+      "cvegeo": "20206",
+      "cve_ent": "20",
+      "cve_mun": "206",
+      "nombre": "San Juan de los Cués"
+    },
+    {
+      "cvegeo": "20207",
+      "cve_ent": "20",
+      "cve_mun": "207",
+      "nombre": "San Juan Mazatlán"
+    },
+    {
+      "cvegeo": "20208",
+      "cve_ent": "20",
+      "cve_mun": "208",
+      "nombre": "San Juan Mixtepec"
+    },
+    {
+      "cvegeo": "20209",
+      "cve_ent": "20",
+      "cve_mun": "209",
+      "nombre": "San Juan Mixtepec"
+    },
+    {
+      "cvegeo": "20210",
+      "cve_ent": "20",
+      "cve_mun": "210",
+      "nombre": "San Juan Ñumí"
+    },
+    {
+      "cvegeo": "20211",
+      "cve_ent": "20",
+      "cve_mun": "211",
+      "nombre": "San Juan Ozolotepec"
+    },
+    {
+      "cvegeo": "20212",
+      "cve_ent": "20",
+      "cve_mun": "212",
+      "nombre": "San Juan Petlapa"
+    },
+    {
+      "cvegeo": "20213",
+      "cve_ent": "20",
+      "cve_mun": "213",
+      "nombre": "San Juan Quiahije"
+    },
+    {
+      "cvegeo": "20214",
+      "cve_ent": "20",
+      "cve_mun": "214",
+      "nombre": "San Juan Quiotepec"
+    },
+    {
+      "cvegeo": "20215",
+      "cve_ent": "20",
+      "cve_mun": "215",
+      "nombre": "San Juan Sayultepec"
+    },
+    {
+      "cvegeo": "20216",
+      "cve_ent": "20",
+      "cve_mun": "216",
+      "nombre": "San Juan Tabaá"
+    },
+    {
+      "cvegeo": "20217",
+      "cve_ent": "20",
+      "cve_mun": "217",
+      "nombre": "San Juan Tamazola"
+    },
+    {
+      "cvegeo": "20218",
+      "cve_ent": "20",
+      "cve_mun": "218",
+      "nombre": "San Juan Teita"
+    },
+    {
+      "cvegeo": "20219",
+      "cve_ent": "20",
+      "cve_mun": "219",
+      "nombre": "San Juan Teitipac"
+    },
+    {
+      "cvegeo": "20220",
+      "cve_ent": "20",
+      "cve_mun": "220",
+      "nombre": "San Juan Tepeuxila"
+    },
+    {
+      "cvegeo": "20221",
+      "cve_ent": "20",
+      "cve_mun": "221",
+      "nombre": "San Juan Teposcolula"
+    },
+    {
+      "cvegeo": "20222",
+      "cve_ent": "20",
+      "cve_mun": "222",
+      "nombre": "San Juan Yaeé"
+    },
+    {
+      "cvegeo": "20223",
+      "cve_ent": "20",
+      "cve_mun": "223",
+      "nombre": "San Juan Yatzona"
+    },
+    {
+      "cvegeo": "20224",
+      "cve_ent": "20",
+      "cve_mun": "224",
+      "nombre": "San Juan Yucuita"
+    },
+    {
+      "cvegeo": "20225",
+      "cve_ent": "20",
+      "cve_mun": "225",
+      "nombre": "San Lorenzo"
+    },
+    {
+      "cvegeo": "20226",
+      "cve_ent": "20",
+      "cve_mun": "226",
+      "nombre": "San Lorenzo Albarradas"
+    },
+    {
+      "cvegeo": "20227",
+      "cve_ent": "20",
+      "cve_mun": "227",
+      "nombre": "San Lorenzo Cacaotepec"
+    },
+    {
+      "cvegeo": "20228",
+      "cve_ent": "20",
+      "cve_mun": "228",
+      "nombre": "San Lorenzo Cuaunecuiltitla"
+    },
+    {
+      "cvegeo": "20229",
+      "cve_ent": "20",
+      "cve_mun": "229",
+      "nombre": "San Lorenzo Texmelúcan"
+    },
+    {
+      "cvegeo": "20230",
+      "cve_ent": "20",
+      "cve_mun": "230",
+      "nombre": "San Lorenzo Victoria"
+    },
+    {
+      "cvegeo": "20231",
+      "cve_ent": "20",
+      "cve_mun": "231",
+      "nombre": "San Lucas Camotlán"
+    },
+    {
+      "cvegeo": "20232",
+      "cve_ent": "20",
+      "cve_mun": "232",
+      "nombre": "San Lucas Ojitlán"
+    },
+    {
+      "cvegeo": "20233",
+      "cve_ent": "20",
+      "cve_mun": "233",
+      "nombre": "San Lucas Quiaviní"
+    },
+    {
+      "cvegeo": "20234",
+      "cve_ent": "20",
+      "cve_mun": "234",
+      "nombre": "San Lucas Zoquiápam"
+    },
+    {
+      "cvegeo": "20235",
+      "cve_ent": "20",
+      "cve_mun": "235",
+      "nombre": "San Luis Amatlán"
+    },
+    {
+      "cvegeo": "20236",
+      "cve_ent": "20",
+      "cve_mun": "236",
+      "nombre": "San Marcial Ozolotepec"
+    },
+    {
+      "cvegeo": "20237",
+      "cve_ent": "20",
+      "cve_mun": "237",
+      "nombre": "San Marcos Arteaga"
+    },
+    {
+      "cvegeo": "20238",
+      "cve_ent": "20",
+      "cve_mun": "238",
+      "nombre": "Heroico San Martín de los Cansecos"
+    },
+    {
+      "cvegeo": "20239",
+      "cve_ent": "20",
+      "cve_mun": "239",
+      "nombre": "San Martín Huamelúlpam"
+    },
+    {
+      "cvegeo": "20240",
+      "cve_ent": "20",
+      "cve_mun": "240",
+      "nombre": "San Martín Itunyoso"
+    },
+    {
+      "cvegeo": "20241",
+      "cve_ent": "20",
+      "cve_mun": "241",
+      "nombre": "San Martín Lachilá"
+    },
+    {
+      "cvegeo": "20242",
+      "cve_ent": "20",
+      "cve_mun": "242",
+      "nombre": "San Martín Peras"
+    },
+    {
+      "cvegeo": "20243",
+      "cve_ent": "20",
+      "cve_mun": "243",
+      "nombre": "San Martín Tilcajete"
+    },
+    {
+      "cvegeo": "20244",
+      "cve_ent": "20",
+      "cve_mun": "244",
+      "nombre": "San Martín Toxpalan"
+    },
+    {
+      "cvegeo": "20245",
+      "cve_ent": "20",
+      "cve_mun": "245",
+      "nombre": "San Martín Zacatepec"
+    },
+    {
+      "cvegeo": "20246",
+      "cve_ent": "20",
+      "cve_mun": "246",
+      "nombre": "San Mateo Cajonos"
+    },
+    {
+      "cvegeo": "20247",
+      "cve_ent": "20",
+      "cve_mun": "247",
+      "nombre": "Capulálpam de Méndez"
+    },
+    {
+      "cvegeo": "20248",
+      "cve_ent": "20",
+      "cve_mun": "248",
+      "nombre": "San Mateo del Mar"
+    },
+    {
+      "cvegeo": "20249",
+      "cve_ent": "20",
+      "cve_mun": "249",
+      "nombre": "San Mateo Yoloxochitlán"
+    },
+    {
+      "cvegeo": "20250",
+      "cve_ent": "20",
+      "cve_mun": "250",
+      "nombre": "San Mateo Etlatongo"
+    },
+    {
+      "cvegeo": "20251",
+      "cve_ent": "20",
+      "cve_mun": "251",
+      "nombre": "San Mateo Nejápam"
+    },
+    {
+      "cvegeo": "20252",
+      "cve_ent": "20",
+      "cve_mun": "252",
+      "nombre": "San Mateo Peñasco"
+    },
+    {
+      "cvegeo": "20253",
+      "cve_ent": "20",
+      "cve_mun": "253",
+      "nombre": "San Mateo Piñas"
+    },
+    {
+      "cvegeo": "20254",
+      "cve_ent": "20",
+      "cve_mun": "254",
+      "nombre": "San Mateo Río Hondo"
+    },
+    {
+      "cvegeo": "20255",
+      "cve_ent": "20",
+      "cve_mun": "255",
+      "nombre": "San Mateo Sindihui"
+    },
+    {
+      "cvegeo": "20256",
+      "cve_ent": "20",
+      "cve_mun": "256",
+      "nombre": "San Mateo Tlapiltepec"
+    },
+    {
+      "cvegeo": "20257",
+      "cve_ent": "20",
+      "cve_mun": "257",
+      "nombre": "San Melchor Betaza"
+    },
+    {
+      "cvegeo": "20258",
+      "cve_ent": "20",
+      "cve_mun": "258",
+      "nombre": "San Miguel Achiutla"
+    },
+    {
+      "cvegeo": "20259",
+      "cve_ent": "20",
+      "cve_mun": "259",
+      "nombre": "San Miguel Ahuehuetitlán"
+    },
+    {
+      "cvegeo": "20260",
+      "cve_ent": "20",
+      "cve_mun": "260",
+      "nombre": "San Miguel Aloápam"
+    },
+    {
+      "cvegeo": "20261",
+      "cve_ent": "20",
+      "cve_mun": "261",
+      "nombre": "San Miguel Amatitlán"
+    },
+    {
+      "cvegeo": "20262",
+      "cve_ent": "20",
+      "cve_mun": "262",
+      "nombre": "San Miguel Amatlán"
+    },
+    {
+      "cvegeo": "20263",
+      "cve_ent": "20",
+      "cve_mun": "263",
+      "nombre": "San Miguel Coatlán"
+    },
+    {
+      "cvegeo": "20264",
+      "cve_ent": "20",
+      "cve_mun": "264",
+      "nombre": "San Miguel Chicahua"
+    },
+    {
+      "cvegeo": "20265",
+      "cve_ent": "20",
+      "cve_mun": "265",
+      "nombre": "San Miguel Chimalapa"
+    },
+    {
+      "cvegeo": "20266",
+      "cve_ent": "20",
+      "cve_mun": "266",
+      "nombre": "San Miguel del Puerto"
+    },
+    {
+      "cvegeo": "20267",
+      "cve_ent": "20",
+      "cve_mun": "267",
+      "nombre": "San Miguel del Río"
+    },
+    {
+      "cvegeo": "20268",
+      "cve_ent": "20",
+      "cve_mun": "268",
+      "nombre": "San Miguel Ejutla"
+    },
+    {
+      "cvegeo": "20269",
+      "cve_ent": "20",
+      "cve_mun": "269",
+      "nombre": "San Miguel el Grande"
+    },
+    {
+      "cvegeo": "20270",
+      "cve_ent": "20",
+      "cve_mun": "270",
+      "nombre": "San Miguel Huautla"
+    },
+    {
+      "cvegeo": "20271",
+      "cve_ent": "20",
+      "cve_mun": "271",
+      "nombre": "San Miguel Mixtepec"
+    },
+    {
+      "cvegeo": "20272",
+      "cve_ent": "20",
+      "cve_mun": "272",
+      "nombre": "San Miguel Panixtlahuaca"
+    },
+    {
+      "cvegeo": "20273",
+      "cve_ent": "20",
+      "cve_mun": "273",
+      "nombre": "San Miguel Peras"
+    },
+    {
+      "cvegeo": "20274",
+      "cve_ent": "20",
+      "cve_mun": "274",
+      "nombre": "San Miguel Piedras"
+    },
+    {
+      "cvegeo": "20275",
+      "cve_ent": "20",
+      "cve_mun": "275",
+      "nombre": "San Miguel Quetzaltepec"
+    },
+    {
+      "cvegeo": "20276",
+      "cve_ent": "20",
+      "cve_mun": "276",
+      "nombre": "San Miguel Santa Flor"
+    },
+    {
+      "cvegeo": "20277",
+      "cve_ent": "20",
+      "cve_mun": "277",
+      "nombre": "Villa Sola de Vega"
+    },
+    {
+      "cvegeo": "20278",
+      "cve_ent": "20",
+      "cve_mun": "278",
+      "nombre": "San Miguel Soyaltepec"
+    },
+    {
+      "cvegeo": "20279",
+      "cve_ent": "20",
+      "cve_mun": "279",
+      "nombre": "San Miguel Suchixtepec"
+    },
+    {
+      "cvegeo": "20280",
+      "cve_ent": "20",
+      "cve_mun": "280",
+      "nombre": "Villa Talea de Castro"
+    },
+    {
+      "cvegeo": "20281",
+      "cve_ent": "20",
+      "cve_mun": "281",
+      "nombre": "San Miguel Tecomatlán"
+    },
+    {
+      "cvegeo": "20282",
+      "cve_ent": "20",
+      "cve_mun": "282",
+      "nombre": "San Miguel Tenango"
+    },
+    {
+      "cvegeo": "20283",
+      "cve_ent": "20",
+      "cve_mun": "283",
+      "nombre": "San Miguel Tequixtepec"
+    },
+    {
+      "cvegeo": "20284",
+      "cve_ent": "20",
+      "cve_mun": "284",
+      "nombre": "San Miguel Tilquiápam"
+    },
+    {
+      "cvegeo": "20285",
+      "cve_ent": "20",
+      "cve_mun": "285",
+      "nombre": "San Miguel Tlacamama"
+    },
+    {
+      "cvegeo": "20286",
+      "cve_ent": "20",
+      "cve_mun": "286",
+      "nombre": "San Miguel Tlacotepec"
+    },
+    {
+      "cvegeo": "20287",
+      "cve_ent": "20",
+      "cve_mun": "287",
+      "nombre": "San Miguel Tulancingo"
+    },
+    {
+      "cvegeo": "20288",
+      "cve_ent": "20",
+      "cve_mun": "288",
+      "nombre": "San Miguel Yotao"
+    },
+    {
+      "cvegeo": "20289",
+      "cve_ent": "20",
+      "cve_mun": "289",
+      "nombre": "San Nicolás"
+    },
+    {
+      "cvegeo": "20290",
+      "cve_ent": "20",
+      "cve_mun": "290",
+      "nombre": "San Nicolás Hidalgo"
+    },
+    {
+      "cvegeo": "20291",
+      "cve_ent": "20",
+      "cve_mun": "291",
+      "nombre": "San Pablo Coatlán"
+    },
+    {
+      "cvegeo": "20292",
+      "cve_ent": "20",
+      "cve_mun": "292",
+      "nombre": "San Pablo Cuatro Venados"
+    },
+    {
+      "cvegeo": "20293",
+      "cve_ent": "20",
+      "cve_mun": "293",
+      "nombre": "San Pablo Etla"
+    },
+    {
+      "cvegeo": "20294",
+      "cve_ent": "20",
+      "cve_mun": "294",
+      "nombre": "San Pablo Huitzo"
+    },
+    {
+      "cvegeo": "20295",
+      "cve_ent": "20",
+      "cve_mun": "295",
+      "nombre": "San Pablo Huixtepec"
+    },
+    {
+      "cvegeo": "20296",
+      "cve_ent": "20",
+      "cve_mun": "296",
+      "nombre": "San Pablo Macuiltianguis"
+    },
+    {
+      "cvegeo": "20297",
+      "cve_ent": "20",
+      "cve_mun": "297",
+      "nombre": "San Pablo Tijaltepec"
+    },
+    {
+      "cvegeo": "20298",
+      "cve_ent": "20",
+      "cve_mun": "298",
+      "nombre": "San Pablo Villa de Mitla"
+    },
+    {
+      "cvegeo": "20299",
+      "cve_ent": "20",
+      "cve_mun": "299",
+      "nombre": "San Pablo Yaganiza"
+    },
+    {
+      "cvegeo": "20300",
+      "cve_ent": "20",
+      "cve_mun": "300",
+      "nombre": "San Pedro Amuzgos"
+    },
+    {
+      "cvegeo": "20301",
+      "cve_ent": "20",
+      "cve_mun": "301",
+      "nombre": "San Pedro Apóstol"
+    },
+    {
+      "cvegeo": "20302",
+      "cve_ent": "20",
+      "cve_mun": "302",
+      "nombre": "San Pedro Atoyac"
+    },
+    {
+      "cvegeo": "20303",
+      "cve_ent": "20",
+      "cve_mun": "303",
+      "nombre": "San Pedro Cajonos"
+    },
+    {
+      "cvegeo": "20304",
+      "cve_ent": "20",
+      "cve_mun": "304",
+      "nombre": "San Pedro Coxcaltepec Cántaros"
+    },
+    {
+      "cvegeo": "20305",
+      "cve_ent": "20",
+      "cve_mun": "305",
+      "nombre": "San Pedro Comitancillo"
+    },
+    {
+      "cvegeo": "20306",
+      "cve_ent": "20",
+      "cve_mun": "306",
+      "nombre": "San Pedro el Alto"
+    },
+    {
+      "cvegeo": "20307",
+      "cve_ent": "20",
+      "cve_mun": "307",
+      "nombre": "San Pedro Huamelula"
+    },
+    {
+      "cvegeo": "20308",
+      "cve_ent": "20",
+      "cve_mun": "308",
+      "nombre": "San Pedro Huilotepec"
+    },
+    {
+      "cvegeo": "20309",
+      "cve_ent": "20",
+      "cve_mun": "309",
+      "nombre": "San Pedro Ixcatlán"
+    },
+    {
+      "cvegeo": "20310",
+      "cve_ent": "20",
+      "cve_mun": "310",
+      "nombre": "San Pedro Ixtlahuaca"
+    },
+    {
+      "cvegeo": "20311",
+      "cve_ent": "20",
+      "cve_mun": "311",
+      "nombre": "San Pedro Jaltepetongo"
+    },
+    {
+      "cvegeo": "20312",
+      "cve_ent": "20",
+      "cve_mun": "312",
+      "nombre": "San Pedro Jicayán"
+    },
+    {
+      "cvegeo": "20313",
+      "cve_ent": "20",
+      "cve_mun": "313",
+      "nombre": "San Pedro Jocotipac"
+    },
+    {
+      "cvegeo": "20314",
+      "cve_ent": "20",
+      "cve_mun": "314",
+      "nombre": "San Pedro Juchatengo"
+    },
+    {
+      "cvegeo": "20315",
+      "cve_ent": "20",
+      "cve_mun": "315",
+      "nombre": "San Pedro Mártir"
+    },
+    {
+      "cvegeo": "20316",
+      "cve_ent": "20",
+      "cve_mun": "316",
+      "nombre": "San Pedro Mártir Quiechapa"
+    },
+    {
+      "cvegeo": "20317",
+      "cve_ent": "20",
+      "cve_mun": "317",
+      "nombre": "San Pedro Mártir Yucuxaco"
+    },
+    {
+      "cvegeo": "20318",
+      "cve_ent": "20",
+      "cve_mun": "318",
+      "nombre": "San Pedro Mixtepec"
+    },
+    {
+      "cvegeo": "20319",
+      "cve_ent": "20",
+      "cve_mun": "319",
+      "nombre": "San Pedro Mixtepec"
+    },
+    {
+      "cvegeo": "20320",
+      "cve_ent": "20",
+      "cve_mun": "320",
+      "nombre": "San Pedro Molinos"
+    },
+    {
+      "cvegeo": "20321",
+      "cve_ent": "20",
+      "cve_mun": "321",
+      "nombre": "San Pedro Nopala"
+    },
+    {
+      "cvegeo": "20322",
+      "cve_ent": "20",
+      "cve_mun": "322",
+      "nombre": "San Pedro Ocopetatillo"
+    },
+    {
+      "cvegeo": "20323",
+      "cve_ent": "20",
+      "cve_mun": "323",
+      "nombre": "San Pedro Ocotepec"
+    },
+    {
+      "cvegeo": "20324",
+      "cve_ent": "20",
+      "cve_mun": "324",
+      "nombre": "San Pedro Pochutla"
+    },
+    {
+      "cvegeo": "20325",
+      "cve_ent": "20",
+      "cve_mun": "325",
+      "nombre": "San Pedro Quiatoni"
+    },
+    {
+      "cvegeo": "20326",
+      "cve_ent": "20",
+      "cve_mun": "326",
+      "nombre": "San Pedro Sochiápam"
+    },
+    {
+      "cvegeo": "20327",
+      "cve_ent": "20",
+      "cve_mun": "327",
+      "nombre": "San Pedro Tapanatepec"
+    },
+    {
+      "cvegeo": "20328",
+      "cve_ent": "20",
+      "cve_mun": "328",
+      "nombre": "San Pedro Taviche"
+    },
+    {
+      "cvegeo": "20329",
+      "cve_ent": "20",
+      "cve_mun": "329",
+      "nombre": "San Pedro Teozacoalco"
+    },
+    {
+      "cvegeo": "20330",
+      "cve_ent": "20",
+      "cve_mun": "330",
+      "nombre": "San Pedro Teutila"
+    },
+    {
+      "cvegeo": "20331",
+      "cve_ent": "20",
+      "cve_mun": "331",
+      "nombre": "San Pedro Tidaá"
+    },
+    {
+      "cvegeo": "20332",
+      "cve_ent": "20",
+      "cve_mun": "332",
+      "nombre": "San Pedro Topiltepec"
+    },
+    {
+      "cvegeo": "20333",
+      "cve_ent": "20",
+      "cve_mun": "333",
+      "nombre": "San Pedro Totolápam"
+    },
+    {
+      "cvegeo": "20334",
+      "cve_ent": "20",
+      "cve_mun": "334",
+      "nombre": "Villa de Tututepec"
+    },
+    {
+      "cvegeo": "20335",
+      "cve_ent": "20",
+      "cve_mun": "335",
+      "nombre": "San Pedro Yaneri"
+    },
+    {
+      "cvegeo": "20336",
+      "cve_ent": "20",
+      "cve_mun": "336",
+      "nombre": "San Pedro Yólox"
+    },
+    {
+      "cvegeo": "20337",
+      "cve_ent": "20",
+      "cve_mun": "337",
+      "nombre": "San Pedro y San Pablo Ayutla"
+    },
+    {
+      "cvegeo": "20338",
+      "cve_ent": "20",
+      "cve_mun": "338",
+      "nombre": "Villa de Etla"
+    },
+    {
+      "cvegeo": "20339",
+      "cve_ent": "20",
+      "cve_mun": "339",
+      "nombre": "San Pedro y San Pablo Teposcolula"
+    },
+    {
+      "cvegeo": "20340",
+      "cve_ent": "20",
+      "cve_mun": "340",
+      "nombre": "San Pedro y San Pablo Tequixtepec"
+    },
+    {
+      "cvegeo": "20341",
+      "cve_ent": "20",
+      "cve_mun": "341",
+      "nombre": "San Pedro Yucunama"
+    },
+    {
+      "cvegeo": "20342",
+      "cve_ent": "20",
+      "cve_mun": "342",
+      "nombre": "San Raymundo Jalpan"
+    },
+    {
+      "cvegeo": "20343",
+      "cve_ent": "20",
+      "cve_mun": "343",
+      "nombre": "San Sebastián Abasolo"
+    },
+    {
+      "cvegeo": "20344",
+      "cve_ent": "20",
+      "cve_mun": "344",
+      "nombre": "San Sebastián Coatlán"
+    },
+    {
+      "cvegeo": "20345",
+      "cve_ent": "20",
+      "cve_mun": "345",
+      "nombre": "San Sebastián Ixcapa"
+    },
+    {
+      "cvegeo": "20346",
+      "cve_ent": "20",
+      "cve_mun": "346",
+      "nombre": "San Sebastián Nicananduta"
+    },
+    {
+      "cvegeo": "20347",
+      "cve_ent": "20",
+      "cve_mun": "347",
+      "nombre": "San Sebastián Río Hondo"
+    },
+    {
+      "cvegeo": "20348",
+      "cve_ent": "20",
+      "cve_mun": "348",
+      "nombre": "San Sebastián Tecomaxtlahuaca"
+    },
+    {
+      "cvegeo": "20349",
+      "cve_ent": "20",
+      "cve_mun": "349",
+      "nombre": "San Sebastián Teitipac"
+    },
+    {
+      "cvegeo": "20350",
+      "cve_ent": "20",
+      "cve_mun": "350",
+      "nombre": "San Sebastián Tutla"
+    },
+    {
+      "cvegeo": "20351",
+      "cve_ent": "20",
+      "cve_mun": "351",
+      "nombre": "San Simón Almolongas"
+    },
+    {
+      "cvegeo": "20352",
+      "cve_ent": "20",
+      "cve_mun": "352",
+      "nombre": "San Simón Zahuatlán"
+    },
+    {
+      "cvegeo": "20353",
+      "cve_ent": "20",
+      "cve_mun": "353",
+      "nombre": "Santa Ana"
+    },
+    {
+      "cvegeo": "20354",
+      "cve_ent": "20",
+      "cve_mun": "354",
+      "nombre": "Santa Ana Ateixtlahuaca"
+    },
+    {
+      "cvegeo": "20355",
+      "cve_ent": "20",
+      "cve_mun": "355",
+      "nombre": "Santa Ana Cuauhtémoc"
+    },
+    {
+      "cvegeo": "20356",
+      "cve_ent": "20",
+      "cve_mun": "356",
+      "nombre": "Santa Ana del Valle"
+    },
+    {
+      "cvegeo": "20357",
+      "cve_ent": "20",
+      "cve_mun": "357",
+      "nombre": "Santa Ana Tavela"
+    },
+    {
+      "cvegeo": "20358",
+      "cve_ent": "20",
+      "cve_mun": "358",
+      "nombre": "Santa Ana Tlapacoyan"
+    },
+    {
+      "cvegeo": "20359",
+      "cve_ent": "20",
+      "cve_mun": "359",
+      "nombre": "Santa Ana Yareni"
+    },
+    {
+      "cvegeo": "20360",
+      "cve_ent": "20",
+      "cve_mun": "360",
+      "nombre": "Santa Ana Zegache"
+    },
+    {
+      "cvegeo": "20361",
+      "cve_ent": "20",
+      "cve_mun": "361",
+      "nombre": "Santa Catalina Quierí"
+    },
+    {
+      "cvegeo": "20362",
+      "cve_ent": "20",
+      "cve_mun": "362",
+      "nombre": "Santa Catarina Cuixtla"
+    },
+    {
+      "cvegeo": "20363",
+      "cve_ent": "20",
+      "cve_mun": "363",
+      "nombre": "Santa Catarina Ixtepeji"
+    },
+    {
+      "cvegeo": "20364",
+      "cve_ent": "20",
+      "cve_mun": "364",
+      "nombre": "Santa Catarina Juquila"
+    },
+    {
+      "cvegeo": "20365",
+      "cve_ent": "20",
+      "cve_mun": "365",
+      "nombre": "Santa Catarina Lachatao"
+    },
+    {
+      "cvegeo": "20366",
+      "cve_ent": "20",
+      "cve_mun": "366",
+      "nombre": "Santa Catarina Loxicha"
+    },
+    {
+      "cvegeo": "20367",
+      "cve_ent": "20",
+      "cve_mun": "367",
+      "nombre": "Santa Catarina Mechoacán"
+    },
+    {
+      "cvegeo": "20368",
+      "cve_ent": "20",
+      "cve_mun": "368",
+      "nombre": "Santa Catarina Minas"
+    },
+    {
+      "cvegeo": "20369",
+      "cve_ent": "20",
+      "cve_mun": "369",
+      "nombre": "Santa Catarina Quiané"
+    },
+    {
+      "cvegeo": "20370",
+      "cve_ent": "20",
+      "cve_mun": "370",
+      "nombre": "Santa Catarina Tayata"
+    },
+    {
+      "cvegeo": "20371",
+      "cve_ent": "20",
+      "cve_mun": "371",
+      "nombre": "Santa Catarina Ticuá"
+    },
+    {
+      "cvegeo": "20372",
+      "cve_ent": "20",
+      "cve_mun": "372",
+      "nombre": "Santa Catarina Yosonotú"
+    },
+    {
+      "cvegeo": "20373",
+      "cve_ent": "20",
+      "cve_mun": "373",
+      "nombre": "Santa Catarina Zapoquila"
+    },
+    {
+      "cvegeo": "20374",
+      "cve_ent": "20",
+      "cve_mun": "374",
+      "nombre": "Santa Cruz Acatepec"
+    },
+    {
+      "cvegeo": "20375",
+      "cve_ent": "20",
+      "cve_mun": "375",
+      "nombre": "Santa Cruz Amilpas"
+    },
+    {
+      "cvegeo": "20376",
+      "cve_ent": "20",
+      "cve_mun": "376",
+      "nombre": "Santa Cruz de Bravo"
+    },
+    {
+      "cvegeo": "20377",
+      "cve_ent": "20",
+      "cve_mun": "377",
+      "nombre": "Santa Cruz Itundujia"
+    },
+    {
+      "cvegeo": "20378",
+      "cve_ent": "20",
+      "cve_mun": "378",
+      "nombre": "Santa Cruz Mixtepec"
+    },
+    {
+      "cvegeo": "20379",
+      "cve_ent": "20",
+      "cve_mun": "379",
+      "nombre": "Santa Cruz Nundaco"
+    },
+    {
+      "cvegeo": "20380",
+      "cve_ent": "20",
+      "cve_mun": "380",
+      "nombre": "Santa Cruz Papalutla"
+    },
+    {
+      "cvegeo": "20381",
+      "cve_ent": "20",
+      "cve_mun": "381",
+      "nombre": "Santa Cruz Tacache de Mina"
+    },
+    {
+      "cvegeo": "20382",
+      "cve_ent": "20",
+      "cve_mun": "382",
+      "nombre": "Santa Cruz Tacahua"
+    },
+    {
+      "cvegeo": "20383",
+      "cve_ent": "20",
+      "cve_mun": "383",
+      "nombre": "Santa Cruz Tayata"
+    },
+    {
+      "cvegeo": "20384",
+      "cve_ent": "20",
+      "cve_mun": "384",
+      "nombre": "Santa Cruz Xitla"
+    },
+    {
+      "cvegeo": "20385",
+      "cve_ent": "20",
+      "cve_mun": "385",
+      "nombre": "Santa Cruz Xoxocotlán"
+    },
+    {
+      "cvegeo": "20386",
+      "cve_ent": "20",
+      "cve_mun": "386",
+      "nombre": "Santa Cruz Zenzontepec"
+    },
+    {
+      "cvegeo": "20387",
+      "cve_ent": "20",
+      "cve_mun": "387",
+      "nombre": "Santa Gertrudis"
+    },
+    {
+      "cvegeo": "20388",
+      "cve_ent": "20",
+      "cve_mun": "388",
+      "nombre": "Santa Inés del Monte"
+    },
+    {
+      "cvegeo": "20389",
+      "cve_ent": "20",
+      "cve_mun": "389",
+      "nombre": "Santa Inés Yatzeche"
+    },
+    {
+      "cvegeo": "20390",
+      "cve_ent": "20",
+      "cve_mun": "390",
+      "nombre": "Santa Lucía del Camino"
+    },
+    {
+      "cvegeo": "20391",
+      "cve_ent": "20",
+      "cve_mun": "391",
+      "nombre": "Santa Lucía Miahuatlán"
+    },
+    {
+      "cvegeo": "20392",
+      "cve_ent": "20",
+      "cve_mun": "392",
+      "nombre": "Santa Lucía Monteverde"
+    },
+    {
+      "cvegeo": "20393",
+      "cve_ent": "20",
+      "cve_mun": "393",
+      "nombre": "Santa Lucía Ocotlán"
+    },
+    {
+      "cvegeo": "20394",
+      "cve_ent": "20",
+      "cve_mun": "394",
+      "nombre": "Santa María Alotepec"
+    },
+    {
+      "cvegeo": "20395",
+      "cve_ent": "20",
+      "cve_mun": "395",
+      "nombre": "Santa María Apazco"
+    },
+    {
+      "cvegeo": "20396",
+      "cve_ent": "20",
+      "cve_mun": "396",
+      "nombre": "Santa María la Asunción"
+    },
+    {
+      "cvegeo": "20397",
+      "cve_ent": "20",
+      "cve_mun": "397",
+      "nombre": "Heroica Ciudad de Tlaxiaco"
+    },
+    {
+      "cvegeo": "20398",
+      "cve_ent": "20",
+      "cve_mun": "398",
+      "nombre": "Ayoquezco de Aldama"
+    },
+    {
+      "cvegeo": "20399",
+      "cve_ent": "20",
+      "cve_mun": "399",
+      "nombre": "Santa María Atzompa"
+    },
+    {
+      "cvegeo": "20400",
+      "cve_ent": "20",
+      "cve_mun": "400",
+      "nombre": "Santa María Camotlán"
+    },
+    {
+      "cvegeo": "20401",
+      "cve_ent": "20",
+      "cve_mun": "401",
+      "nombre": "Santa María Colotepec"
+    },
+    {
+      "cvegeo": "20402",
+      "cve_ent": "20",
+      "cve_mun": "402",
+      "nombre": "Santa María Cortijo"
+    },
+    {
+      "cvegeo": "20403",
+      "cve_ent": "20",
+      "cve_mun": "403",
+      "nombre": "Santa María Coyotepec"
+    },
+    {
+      "cvegeo": "20404",
+      "cve_ent": "20",
+      "cve_mun": "404",
+      "nombre": "Santa María Chachoápam"
+    },
+    {
+      "cvegeo": "20405",
+      "cve_ent": "20",
+      "cve_mun": "405",
+      "nombre": "Villa de Chilapa de Díaz"
+    },
+    {
+      "cvegeo": "20406",
+      "cve_ent": "20",
+      "cve_mun": "406",
+      "nombre": "Santa María Chilchotla"
+    },
+    {
+      "cvegeo": "20407",
+      "cve_ent": "20",
+      "cve_mun": "407",
+      "nombre": "Santa María Chimalapa"
+    },
+    {
+      "cvegeo": "20408",
+      "cve_ent": "20",
+      "cve_mun": "408",
+      "nombre": "Santa María del Rosario"
+    },
+    {
+      "cvegeo": "20409",
+      "cve_ent": "20",
+      "cve_mun": "409",
+      "nombre": "Santa María del Tule"
+    },
+    {
+      "cvegeo": "20410",
+      "cve_ent": "20",
+      "cve_mun": "410",
+      "nombre": "Santa María Ecatepec"
+    },
+    {
+      "cvegeo": "20411",
+      "cve_ent": "20",
+      "cve_mun": "411",
+      "nombre": "Santa María Guelacé"
+    },
+    {
+      "cvegeo": "20412",
+      "cve_ent": "20",
+      "cve_mun": "412",
+      "nombre": "Santa María Guienagati"
+    },
+    {
+      "cvegeo": "20413",
+      "cve_ent": "20",
+      "cve_mun": "413",
+      "nombre": "Santa María Huatulco"
+    },
+    {
+      "cvegeo": "20414",
+      "cve_ent": "20",
+      "cve_mun": "414",
+      "nombre": "Santa María Huazolotitlán"
+    },
+    {
+      "cvegeo": "20415",
+      "cve_ent": "20",
+      "cve_mun": "415",
+      "nombre": "Santa María Ipalapa"
+    },
+    {
+      "cvegeo": "20416",
+      "cve_ent": "20",
+      "cve_mun": "416",
+      "nombre": "Santa María Ixcatlán"
+    },
+    {
+      "cvegeo": "20417",
+      "cve_ent": "20",
+      "cve_mun": "417",
+      "nombre": "Santa María Jacatepec"
+    },
+    {
+      "cvegeo": "20418",
+      "cve_ent": "20",
+      "cve_mun": "418",
+      "nombre": "Santa María Jalapa del Marqués"
+    },
+    {
+      "cvegeo": "20419",
+      "cve_ent": "20",
+      "cve_mun": "419",
+      "nombre": "Santa María Jaltianguis"
+    },
+    {
+      "cvegeo": "20420",
+      "cve_ent": "20",
+      "cve_mun": "420",
+      "nombre": "Santa María Lachixío"
+    },
+    {
+      "cvegeo": "20421",
+      "cve_ent": "20",
+      "cve_mun": "421",
+      "nombre": "Santa María Mixtequilla"
+    },
+    {
+      "cvegeo": "20422",
+      "cve_ent": "20",
+      "cve_mun": "422",
+      "nombre": "Santa María Nativitas"
+    },
+    {
+      "cvegeo": "20423",
+      "cve_ent": "20",
+      "cve_mun": "423",
+      "nombre": "Santa María Nduayaco"
+    },
+    {
+      "cvegeo": "20424",
+      "cve_ent": "20",
+      "cve_mun": "424",
+      "nombre": "Santa María Ozolotepec"
+    },
+    {
+      "cvegeo": "20425",
+      "cve_ent": "20",
+      "cve_mun": "425",
+      "nombre": "Santa María Pápalo"
+    },
+    {
+      "cvegeo": "20426",
+      "cve_ent": "20",
+      "cve_mun": "426",
+      "nombre": "Santa María Peñoles"
+    },
+    {
+      "cvegeo": "20427",
+      "cve_ent": "20",
+      "cve_mun": "427",
+      "nombre": "Santa María Petapa"
+    },
+    {
+      "cvegeo": "20428",
+      "cve_ent": "20",
+      "cve_mun": "428",
+      "nombre": "Santa María Quiegolani"
+    },
+    {
+      "cvegeo": "20429",
+      "cve_ent": "20",
+      "cve_mun": "429",
+      "nombre": "Santa María Sola"
+    },
+    {
+      "cvegeo": "20430",
+      "cve_ent": "20",
+      "cve_mun": "430",
+      "nombre": "Santa María Tataltepec"
+    },
+    {
+      "cvegeo": "20431",
+      "cve_ent": "20",
+      "cve_mun": "431",
+      "nombre": "Santa María Tecomavaca"
+    },
+    {
+      "cvegeo": "20432",
+      "cve_ent": "20",
+      "cve_mun": "432",
+      "nombre": "Santa María Temaxcalapa"
+    },
+    {
+      "cvegeo": "20433",
+      "cve_ent": "20",
+      "cve_mun": "433",
+      "nombre": "Santa María Temaxcaltepec"
+    },
+    {
+      "cvegeo": "20434",
+      "cve_ent": "20",
+      "cve_mun": "434",
+      "nombre": "Santa María Teopoxco"
+    },
+    {
+      "cvegeo": "20435",
+      "cve_ent": "20",
+      "cve_mun": "435",
+      "nombre": "Santa María Tepantlali"
+    },
+    {
+      "cvegeo": "20436",
+      "cve_ent": "20",
+      "cve_mun": "436",
+      "nombre": "Santa María Texcatitlán"
+    },
+    {
+      "cvegeo": "20437",
+      "cve_ent": "20",
+      "cve_mun": "437",
+      "nombre": "Santa María Tlahuitoltepec"
+    },
+    {
+      "cvegeo": "20438",
+      "cve_ent": "20",
+      "cve_mun": "438",
+      "nombre": "Santa María Tlalixtac"
+    },
+    {
+      "cvegeo": "20439",
+      "cve_ent": "20",
+      "cve_mun": "439",
+      "nombre": "Santa María Tonameca"
+    },
+    {
+      "cvegeo": "20440",
+      "cve_ent": "20",
+      "cve_mun": "440",
+      "nombre": "Santa María Totolapilla"
+    },
+    {
+      "cvegeo": "20441",
+      "cve_ent": "20",
+      "cve_mun": "441",
+      "nombre": "Santa María Xadani"
+    },
+    {
+      "cvegeo": "20442",
+      "cve_ent": "20",
+      "cve_mun": "442",
+      "nombre": "Santa María Yalina"
+    },
+    {
+      "cvegeo": "20443",
+      "cve_ent": "20",
+      "cve_mun": "443",
+      "nombre": "Santa María Yavesía"
+    },
+    {
+      "cvegeo": "20444",
+      "cve_ent": "20",
+      "cve_mun": "444",
+      "nombre": "Santa María Yolotepec"
+    },
+    {
+      "cvegeo": "20445",
+      "cve_ent": "20",
+      "cve_mun": "445",
+      "nombre": "Santa María Yosoyúa"
+    },
+    {
+      "cvegeo": "20446",
+      "cve_ent": "20",
+      "cve_mun": "446",
+      "nombre": "Santa María Yucuhiti"
+    },
+    {
+      "cvegeo": "20447",
+      "cve_ent": "20",
+      "cve_mun": "447",
+      "nombre": "Santa María Zacatepec"
+    },
+    {
+      "cvegeo": "20448",
+      "cve_ent": "20",
+      "cve_mun": "448",
+      "nombre": "Santa María Zaniza"
+    },
+    {
+      "cvegeo": "20449",
+      "cve_ent": "20",
+      "cve_mun": "449",
+      "nombre": "Santa María Zoquitlán"
+    },
+    {
+      "cvegeo": "20450",
+      "cve_ent": "20",
+      "cve_mun": "450",
+      "nombre": "Santiago Amoltepec"
+    },
+    {
+      "cvegeo": "20451",
+      "cve_ent": "20",
+      "cve_mun": "451",
+      "nombre": "Santiago Apoala"
+    },
+    {
+      "cvegeo": "20452",
+      "cve_ent": "20",
+      "cve_mun": "452",
+      "nombre": "Santiago Apóstol"
+    },
+    {
+      "cvegeo": "20453",
+      "cve_ent": "20",
+      "cve_mun": "453",
+      "nombre": "Santiago Astata"
+    },
+    {
+      "cvegeo": "20454",
+      "cve_ent": "20",
+      "cve_mun": "454",
+      "nombre": "Santiago Atitlán"
+    },
+    {
+      "cvegeo": "20455",
+      "cve_ent": "20",
+      "cve_mun": "455",
+      "nombre": "Santiago Ayuquililla"
+    },
+    {
+      "cvegeo": "20456",
+      "cve_ent": "20",
+      "cve_mun": "456",
+      "nombre": "Santiago Cacaloxtepec"
+    },
+    {
+      "cvegeo": "20457",
+      "cve_ent": "20",
+      "cve_mun": "457",
+      "nombre": "Santiago Camotlán"
+    },
+    {
+      "cvegeo": "20458",
+      "cve_ent": "20",
+      "cve_mun": "458",
+      "nombre": "Santiago Comaltepec"
+    },
+    {
+      "cvegeo": "20459",
+      "cve_ent": "20",
+      "cve_mun": "459",
+      "nombre": "Villa de Santiago Chazumba"
+    },
+    {
+      "cvegeo": "20460",
+      "cve_ent": "20",
+      "cve_mun": "460",
+      "nombre": "Santiago Choápam"
+    },
+    {
+      "cvegeo": "20461",
+      "cve_ent": "20",
+      "cve_mun": "461",
+      "nombre": "Santiago del Río"
+    },
+    {
+      "cvegeo": "20462",
+      "cve_ent": "20",
+      "cve_mun": "462",
+      "nombre": "Santiago Huajolotitlán"
+    },
+    {
+      "cvegeo": "20463",
+      "cve_ent": "20",
+      "cve_mun": "463",
+      "nombre": "Santiago Huauclilla"
+    },
+    {
+      "cvegeo": "20464",
+      "cve_ent": "20",
+      "cve_mun": "464",
+      "nombre": "Santiago Ihuitlán Plumas"
+    },
+    {
+      "cvegeo": "20465",
+      "cve_ent": "20",
+      "cve_mun": "465",
+      "nombre": "Santiago Ixcuintepec"
+    },
+    {
+      "cvegeo": "20466",
+      "cve_ent": "20",
+      "cve_mun": "466",
+      "nombre": "Santiago Ixtayutla"
+    },
+    {
+      "cvegeo": "20467",
+      "cve_ent": "20",
+      "cve_mun": "467",
+      "nombre": "Santiago Jamiltepec"
+    },
+    {
+      "cvegeo": "20468",
+      "cve_ent": "20",
+      "cve_mun": "468",
+      "nombre": "Santiago Jocotepec"
+    },
+    {
+      "cvegeo": "20469",
+      "cve_ent": "20",
+      "cve_mun": "469",
+      "nombre": "Santiago Juxtlahuaca"
+    },
+    {
+      "cvegeo": "20470",
+      "cve_ent": "20",
+      "cve_mun": "470",
+      "nombre": "Santiago Lachiguiri"
+    },
+    {
+      "cvegeo": "20471",
+      "cve_ent": "20",
+      "cve_mun": "471",
+      "nombre": "Santiago Lalopa"
+    },
+    {
+      "cvegeo": "20472",
+      "cve_ent": "20",
+      "cve_mun": "472",
+      "nombre": "Santiago Laollaga"
+    },
+    {
+      "cvegeo": "20473",
+      "cve_ent": "20",
+      "cve_mun": "473",
+      "nombre": "Santiago Laxopa"
+    },
+    {
+      "cvegeo": "20474",
+      "cve_ent": "20",
+      "cve_mun": "474",
+      "nombre": "Santiago Llano Grande"
+    },
+    {
+      "cvegeo": "20475",
+      "cve_ent": "20",
+      "cve_mun": "475",
+      "nombre": "Santiago Matatlán"
+    },
+    {
+      "cvegeo": "20476",
+      "cve_ent": "20",
+      "cve_mun": "476",
+      "nombre": "Santiago Miltepec"
+    },
+    {
+      "cvegeo": "20477",
+      "cve_ent": "20",
+      "cve_mun": "477",
+      "nombre": "Santiago Minas"
+    },
+    {
+      "cvegeo": "20478",
+      "cve_ent": "20",
+      "cve_mun": "478",
+      "nombre": "Santiago Nacaltepec"
+    },
+    {
+      "cvegeo": "20479",
+      "cve_ent": "20",
+      "cve_mun": "479",
+      "nombre": "Santiago Nejapilla"
+    },
+    {
+      "cvegeo": "20480",
+      "cve_ent": "20",
+      "cve_mun": "480",
+      "nombre": "Santiago Nundiche"
+    },
+    {
+      "cvegeo": "20481",
+      "cve_ent": "20",
+      "cve_mun": "481",
+      "nombre": "Santiago Nuyoó"
+    },
+    {
+      "cvegeo": "20482",
+      "cve_ent": "20",
+      "cve_mun": "482",
+      "nombre": "Santiago Pinotepa Nacional"
+    },
+    {
+      "cvegeo": "20483",
+      "cve_ent": "20",
+      "cve_mun": "483",
+      "nombre": "Santiago Suchilquitongo"
+    },
+    {
+      "cvegeo": "20484",
+      "cve_ent": "20",
+      "cve_mun": "484",
+      "nombre": "Santiago Tamazola"
+    },
+    {
+      "cvegeo": "20485",
+      "cve_ent": "20",
+      "cve_mun": "485",
+      "nombre": "Santiago Tapextla"
+    },
+    {
+      "cvegeo": "20486",
+      "cve_ent": "20",
+      "cve_mun": "486",
+      "nombre": "Villa Tejúpam de la Unión"
+    },
+    {
+      "cvegeo": "20487",
+      "cve_ent": "20",
+      "cve_mun": "487",
+      "nombre": "Santiago Tenango"
+    },
+    {
+      "cvegeo": "20488",
+      "cve_ent": "20",
+      "cve_mun": "488",
+      "nombre": "Santiago Tepetlapa"
+    },
+    {
+      "cvegeo": "20489",
+      "cve_ent": "20",
+      "cve_mun": "489",
+      "nombre": "Santiago Tetepec"
+    },
+    {
+      "cvegeo": "20490",
+      "cve_ent": "20",
+      "cve_mun": "490",
+      "nombre": "Santiago Texcalcingo"
+    },
+    {
+      "cvegeo": "20491",
+      "cve_ent": "20",
+      "cve_mun": "491",
+      "nombre": "Santiago Textitlán"
+    },
+    {
+      "cvegeo": "20492",
+      "cve_ent": "20",
+      "cve_mun": "492",
+      "nombre": "Santiago Tilantongo"
+    },
+    {
+      "cvegeo": "20493",
+      "cve_ent": "20",
+      "cve_mun": "493",
+      "nombre": "Santiago Tillo"
+    },
+    {
+      "cvegeo": "20494",
+      "cve_ent": "20",
+      "cve_mun": "494",
+      "nombre": "Santiago Tlazoyaltepec"
+    },
+    {
+      "cvegeo": "20495",
+      "cve_ent": "20",
+      "cve_mun": "495",
+      "nombre": "Santiago Xanica"
+    },
+    {
+      "cvegeo": "20496",
+      "cve_ent": "20",
+      "cve_mun": "496",
+      "nombre": "Santiago Xiacuí"
+    },
+    {
+      "cvegeo": "20497",
+      "cve_ent": "20",
+      "cve_mun": "497",
+      "nombre": "Santiago Yaitepec"
+    },
+    {
+      "cvegeo": "20498",
+      "cve_ent": "20",
+      "cve_mun": "498",
+      "nombre": "Santiago Yaveo"
+    },
+    {
+      "cvegeo": "20499",
+      "cve_ent": "20",
+      "cve_mun": "499",
+      "nombre": "Santiago Yolomécatl"
+    },
+    {
+      "cvegeo": "20500",
+      "cve_ent": "20",
+      "cve_mun": "500",
+      "nombre": "Santiago Yosondúa"
+    },
+    {
+      "cvegeo": "20501",
+      "cve_ent": "20",
+      "cve_mun": "501",
+      "nombre": "Santiago Yucuyachi"
+    },
+    {
+      "cvegeo": "20502",
+      "cve_ent": "20",
+      "cve_mun": "502",
+      "nombre": "Santiago Zacatepec"
+    },
+    {
+      "cvegeo": "20503",
+      "cve_ent": "20",
+      "cve_mun": "503",
+      "nombre": "Santiago Zoochila"
+    },
+    {
+      "cvegeo": "20504",
+      "cve_ent": "20",
+      "cve_mun": "504",
+      "nombre": "Nuevo Zoquiápam"
+    },
+    {
+      "cvegeo": "20505",
+      "cve_ent": "20",
+      "cve_mun": "505",
+      "nombre": "Santo Domingo Ingenio"
+    },
+    {
+      "cvegeo": "20506",
+      "cve_ent": "20",
+      "cve_mun": "506",
+      "nombre": "Santo Domingo Albarradas"
+    },
+    {
+      "cvegeo": "20507",
+      "cve_ent": "20",
+      "cve_mun": "507",
+      "nombre": "Santo Domingo Armenta"
+    },
+    {
+      "cvegeo": "20508",
+      "cve_ent": "20",
+      "cve_mun": "508",
+      "nombre": "Santo Domingo Chihuitán"
+    },
+    {
+      "cvegeo": "20509",
+      "cve_ent": "20",
+      "cve_mun": "509",
+      "nombre": "Santo Domingo de Morelos"
+    },
+    {
+      "cvegeo": "20510",
+      "cve_ent": "20",
+      "cve_mun": "510",
+      "nombre": "Santo Domingo Ixcatlán"
+    },
+    {
+      "cvegeo": "20511",
+      "cve_ent": "20",
+      "cve_mun": "511",
+      "nombre": "Santo Domingo Nuxaá"
+    },
+    {
+      "cvegeo": "20512",
+      "cve_ent": "20",
+      "cve_mun": "512",
+      "nombre": "Santo Domingo Ozolotepec"
+    },
+    {
+      "cvegeo": "20513",
+      "cve_ent": "20",
+      "cve_mun": "513",
+      "nombre": "Santo Domingo Petapa"
+    },
+    {
+      "cvegeo": "20514",
+      "cve_ent": "20",
+      "cve_mun": "514",
+      "nombre": "Santo Domingo Roayaga"
+    },
+    {
+      "cvegeo": "20515",
+      "cve_ent": "20",
+      "cve_mun": "515",
+      "nombre": "Santo Domingo Tehuantepec"
+    },
+    {
+      "cvegeo": "20516",
+      "cve_ent": "20",
+      "cve_mun": "516",
+      "nombre": "Santo Domingo Teojomulco"
+    },
+    {
+      "cvegeo": "20517",
+      "cve_ent": "20",
+      "cve_mun": "517",
+      "nombre": "Santo Domingo Tepuxtepec"
+    },
+    {
+      "cvegeo": "20518",
+      "cve_ent": "20",
+      "cve_mun": "518",
+      "nombre": "Santo Domingo Tlatayápam"
+    },
+    {
+      "cvegeo": "20519",
+      "cve_ent": "20",
+      "cve_mun": "519",
+      "nombre": "Santo Domingo Tomaltepec"
+    },
+    {
+      "cvegeo": "20520",
+      "cve_ent": "20",
+      "cve_mun": "520",
+      "nombre": "Santo Domingo Tonalá"
+    },
+    {
+      "cvegeo": "20521",
+      "cve_ent": "20",
+      "cve_mun": "521",
+      "nombre": "Santo Domingo Tonaltepec"
+    },
+    {
+      "cvegeo": "20522",
+      "cve_ent": "20",
+      "cve_mun": "522",
+      "nombre": "Santo Domingo Xagacía"
+    },
+    {
+      "cvegeo": "20523",
+      "cve_ent": "20",
+      "cve_mun": "523",
+      "nombre": "Santo Domingo Yanhuitlán"
+    },
+    {
+      "cvegeo": "20524",
+      "cve_ent": "20",
+      "cve_mun": "524",
+      "nombre": "Santo Domingo Yodohino"
+    },
+    {
+      "cvegeo": "20525",
+      "cve_ent": "20",
+      "cve_mun": "525",
+      "nombre": "Santo Domingo Zanatepec"
+    },
+    {
+      "cvegeo": "20526",
+      "cve_ent": "20",
+      "cve_mun": "526",
+      "nombre": "Santos Reyes Nopala"
+    },
+    {
+      "cvegeo": "20527",
+      "cve_ent": "20",
+      "cve_mun": "527",
+      "nombre": "Santos Reyes Pápalo"
+    },
+    {
+      "cvegeo": "20528",
+      "cve_ent": "20",
+      "cve_mun": "528",
+      "nombre": "Santos Reyes Tepejillo"
+    },
+    {
+      "cvegeo": "20529",
+      "cve_ent": "20",
+      "cve_mun": "529",
+      "nombre": "Santos Reyes Yucuná"
+    },
+    {
+      "cvegeo": "20530",
+      "cve_ent": "20",
+      "cve_mun": "530",
+      "nombre": "Santo Tomás Jalieza"
+    },
+    {
+      "cvegeo": "20531",
+      "cve_ent": "20",
+      "cve_mun": "531",
+      "nombre": "Santo Tomás Mazaltepec"
+    },
+    {
+      "cvegeo": "20532",
+      "cve_ent": "20",
+      "cve_mun": "532",
+      "nombre": "Santo Tomás Ocotepec"
+    },
+    {
+      "cvegeo": "20533",
+      "cve_ent": "20",
+      "cve_mun": "533",
+      "nombre": "Santo Tomás Tamazulapan"
+    },
+    {
+      "cvegeo": "20534",
+      "cve_ent": "20",
+      "cve_mun": "534",
+      "nombre": "San Vicente Coatlán"
+    },
+    {
+      "cvegeo": "20535",
+      "cve_ent": "20",
+      "cve_mun": "535",
+      "nombre": "San Vicente Lachixío"
+    },
+    {
+      "cvegeo": "20536",
+      "cve_ent": "20",
+      "cve_mun": "536",
+      "nombre": "San Vicente Nuñú"
+    },
+    {
+      "cvegeo": "20537",
+      "cve_ent": "20",
+      "cve_mun": "537",
+      "nombre": "Silacayoápam"
+    },
+    {
+      "cvegeo": "20538",
+      "cve_ent": "20",
+      "cve_mun": "538",
+      "nombre": "Sitio de Xitlapehua"
+    },
+    {
+      "cvegeo": "20539",
+      "cve_ent": "20",
+      "cve_mun": "539",
+      "nombre": "Soledad Etla"
+    },
+    {
+      "cvegeo": "20540",
+      "cve_ent": "20",
+      "cve_mun": "540",
+      "nombre": "Villa de Tamazulápam del Progreso"
+    },
+    {
+      "cvegeo": "20541",
+      "cve_ent": "20",
+      "cve_mun": "541",
+      "nombre": "Tanetze de Zaragoza"
+    },
+    {
+      "cvegeo": "20542",
+      "cve_ent": "20",
+      "cve_mun": "542",
+      "nombre": "Taniche"
+    },
+    {
+      "cvegeo": "20543",
+      "cve_ent": "20",
+      "cve_mun": "543",
+      "nombre": "Tataltepec de Valdés"
+    },
+    {
+      "cvegeo": "20544",
+      "cve_ent": "20",
+      "cve_mun": "544",
+      "nombre": "Teococuilco de Marcos Pérez"
+    },
+    {
+      "cvegeo": "20545",
+      "cve_ent": "20",
+      "cve_mun": "545",
+      "nombre": "Teotitlán de Flores Magón"
+    },
+    {
+      "cvegeo": "20546",
+      "cve_ent": "20",
+      "cve_mun": "546",
+      "nombre": "Teotitlán del Valle"
+    },
+    {
+      "cvegeo": "20547",
+      "cve_ent": "20",
+      "cve_mun": "547",
+      "nombre": "Teotongo"
+    },
+    {
+      "cvegeo": "20548",
+      "cve_ent": "20",
+      "cve_mun": "548",
+      "nombre": "Tepelmeme Villa de Morelos"
+    },
+    {
+      "cvegeo": "20549",
+      "cve_ent": "20",
+      "cve_mun": "549",
+      "nombre": "Heroica Villa Tezoatlán de Segura y Luna, Cuna de la Independencia de Oaxaca"
+    },
+    {
+      "cvegeo": "20550",
+      "cve_ent": "20",
+      "cve_mun": "550",
+      "nombre": "San Jerónimo Tlacochahuaya"
+    },
+    {
+      "cvegeo": "20551",
+      "cve_ent": "20",
+      "cve_mun": "551",
+      "nombre": "Tlacolula de Matamoros"
+    },
+    {
+      "cvegeo": "20552",
+      "cve_ent": "20",
+      "cve_mun": "552",
+      "nombre": "Tlacotepec Plumas"
+    },
+    {
+      "cvegeo": "20553",
+      "cve_ent": "20",
+      "cve_mun": "553",
+      "nombre": "Tlalixtac de Cabrera"
+    },
+    {
+      "cvegeo": "20554",
+      "cve_ent": "20",
+      "cve_mun": "554",
+      "nombre": "Totontepec Villa de Morelos"
+    },
+    {
+      "cvegeo": "20555",
+      "cve_ent": "20",
+      "cve_mun": "555",
+      "nombre": "Trinidad Zaachila"
+    },
+    {
+      "cvegeo": "20556",
+      "cve_ent": "20",
+      "cve_mun": "556",
+      "nombre": "La Trinidad Vista Hermosa"
+    },
+    {
+      "cvegeo": "20557",
+      "cve_ent": "20",
+      "cve_mun": "557",
+      "nombre": "Unión Hidalgo"
+    },
+    {
+      "cvegeo": "20558",
+      "cve_ent": "20",
+      "cve_mun": "558",
+      "nombre": "Valerio Trujano"
+    },
+    {
+      "cvegeo": "20559",
+      "cve_ent": "20",
+      "cve_mun": "559",
+      "nombre": "San Juan Bautista Valle Nacional"
+    },
+    {
+      "cvegeo": "20560",
+      "cve_ent": "20",
+      "cve_mun": "560",
+      "nombre": "Villa Díaz Ordaz"
+    },
+    {
+      "cvegeo": "20561",
+      "cve_ent": "20",
+      "cve_mun": "561",
+      "nombre": "Yaxe"
+    },
+    {
+      "cvegeo": "20562",
+      "cve_ent": "20",
+      "cve_mun": "562",
+      "nombre": "Magdalena Yodocono de Porfirio Díaz"
+    },
+    {
+      "cvegeo": "20563",
+      "cve_ent": "20",
+      "cve_mun": "563",
+      "nombre": "Yogana"
+    },
+    {
+      "cvegeo": "20564",
+      "cve_ent": "20",
+      "cve_mun": "564",
+      "nombre": "Yutanduchi de Guerrero"
+    },
+    {
+      "cvegeo": "20565",
+      "cve_ent": "20",
+      "cve_mun": "565",
+      "nombre": "Villa de Zaachila"
+    },
+    {
+      "cvegeo": "20566",
+      "cve_ent": "20",
+      "cve_mun": "566",
+      "nombre": "San Mateo Yucutindoo"
+    },
+    {
+      "cvegeo": "20567",
+      "cve_ent": "20",
+      "cve_mun": "567",
+      "nombre": "Zapotitlán Lagunas"
+    },
+    {
+      "cvegeo": "20568",
+      "cve_ent": "20",
+      "cve_mun": "568",
+      "nombre": "Zapotitlán Palmas"
+    },
+    {
+      "cvegeo": "20569",
+      "cve_ent": "20",
+      "cve_mun": "569",
+      "nombre": "Santa Inés de Zaragoza"
+    },
+    {
+      "cvegeo": "20570",
+      "cve_ent": "20",
+      "cve_mun": "570",
+      "nombre": "Zimatlán de Álvarez"
+    }
+  ]
+}

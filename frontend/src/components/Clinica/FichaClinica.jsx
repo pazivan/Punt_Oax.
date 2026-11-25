@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import CampoTelefono from '../CampoTelefono.jsx'
+import SelectorMunicipio from './SelectorMunicipio.jsx'
 import { Link } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -79,6 +81,7 @@ function estadoInicialDesdeFicha(ficha) {
     correo_contacto: ficha.clinica?.correo_contacto || '',
     sitio_web: ficha.clinica?.sitio_web || '',
     municipio: ficha.clinica?.municipio || '',
+    municipio_clave: ficha.clinica?.municipio_clave || '',
     direccion: ficha.clinica?.direccion || '',
     codigo_postal: ficha.clinica?.codigo_postal || '',
     ubicacion_maps_url: ficha.clinica?.ubicacion_maps_url || '',
@@ -715,8 +718,8 @@ export default function FichaClinica({ sesion, onSalir }) {
                   <ErrorCampo errores={errores} campo="tipo_institucion" />
                 </div>
                 <div className={`ficha-field ${errores.telefono ? 'has-error' : ''}`}>
-                  <label htmlFor="ficha-telefono">Teléfono *</label>
-                  <input
+                  <label htmlFor="ficha-telefono">Teléfono de México (+52) *</label>
+                  <CampoTelefono
                     id="ficha-telefono"
                     className={`ficha-input ${errores.telefono ? 'is-invalid' : ''}`}
                     type="tel"
@@ -790,16 +793,16 @@ export default function FichaClinica({ sesion, onSalir }) {
               <div className="ficha-grid">
                 <div className={`ficha-field ${errores.municipio ? 'has-error' : ''}`}>
                   <label htmlFor="ficha-municipio">Municipio *</label>
-                  <input
+                  <SelectorMunicipio
                     id="ficha-municipio"
                     className={`ficha-input ${errores.municipio ? 'is-invalid' : ''}`}
-                    type="text"
-                    maxLength={100}
-                    value={form.municipio}
+                    value={form.municipio_clave || form.municipio}
                     aria-invalid={Boolean(errores.municipio)}
                     aria-describedby={errores.municipio ? idError('municipio') : undefined}
-                    onChange={(evento) => actualizarCampo('municipio', evento.target.value)}
-                    placeholder="Oaxaca de Juárez"
+                    onChange={(valor, clave) => {
+                      actualizarCampo('municipio', valor)
+                      actualizarCampo('municipio_clave', clave)
+                    }}
                   />
                   <ErrorCampo errores={errores} campo="municipio" />
                 </div>

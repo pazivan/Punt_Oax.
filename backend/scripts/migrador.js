@@ -58,7 +58,7 @@ async function migrarUp() {
     // Los datos demo incluyen contraseñas públicas: nunca sembrarlos por defecto.
     const pendientes = disponibles.filter((m) =>
       !versionesAplicadas.has(m.version) &&
-      (m.version !== '002' || process.env.ALLOW_DEMO_SEEDS === '1')
+      (m.version !== '002' || (process.env.ALLOW_DEMO_SEEDS === '1' && process.env.NODE_ENV !== 'production'))
     );
 
     if (pendientes.length === 0) {

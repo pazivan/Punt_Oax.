@@ -29,6 +29,7 @@ const { registrarRutasCercania } = require("./cercania");
 const { registrarRutasDatosClinica } = require("./datosClinica");
 const { calcularCambiosRevisionServidor } = require("./comparacionFicha");
 const { validarCoordenadas } = require("./ubicacion");
+const { municipios, fuenteMunicipios, resolverMunicipio, validarMunicipioEntrada } = require("../frontend/src/utils/municipios.mjs");
 const {
   consultarEstadoClinica,
   esEstadoOperativo,
@@ -36,9 +37,9 @@ const {
 } = require("./clinicasEstado");
 const { registrarRutasCorreo, permitido } = require("./correo");
 const {
-  MENSAJE_TELEFONO,
   validarPassword,
   validarTelefono,
+  normalizarTelefono,
   verificarDominioCorreo,
 } = require("./validacionesRegistro");
 
@@ -49,6 +50,7 @@ const PUERTO = process.env.PORT || 3000;
 app.set("trust proxy", "loopback, linklocal, uniquelocal");
 app.use(cors());
 app.use(express.json());
+app.get("/api/municipios", (_req, res) => res.json({ ...fuenteMunicipios, municipios }));
 const { enviarDesafio, proveedor: proveedorCorreo, limiteIp: limiteCorreo } = registrarRutasCorreo(app, { pool, hashearPassword, validarPassword });
 // Registrar las rutas estáticas de la agenda antes de /api/clinicas/:id.
 registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol });
@@ -229,7 +231,11 @@ function validarEntradaFicha(body) {
 
   opcional("tipo_institucion", 30, (v) => TIPOS_INSTITUCION.has(v), "Selecciona un tipo de institución válido.");
   opcional("descripcion", 2000);
-  opcional("telefono", 20, (v) => !validarTelefono(v, { requerido: true }), MENSAJE_TELEFONO);
+  if (tiene("telefono")) {
+    const error = validarTelefono(body.telefono);
+    if (error) errores.telefono = error;
+    else cambios.telefono = normalizarTelefono(body.telefono);
+  }
   opcional("correo_contacto", 255, (v) => REGEX_CORREO.test(v), "El correo de contacto no es válido.");
   opcional("sitio_web", 1000, (v) => {
     try {
@@ -238,7 +244,9 @@ function validarEntradaFicha(body) {
       return false;
     }
   }, "El sitio web debe iniciar con http:// o https://.");
-  opcional("municipio", 100);
+  const municipioValidado = validarMunicipioEntrada(body);
+  if (municipioValidado.error) errores.municipio = municipioValidado.error;
+  else Object.assign(cambios, municipioValidado);
   opcional("localidad", 100);
   opcional("direccion", 500);
   opcional("codigo_postal", 5, (v) => /^\d{5}$/.test(v), "El código postal debe tener 5 dígitos.");
@@ -282,9 +290,9 @@ function evaluarFaltantes(clinica, servicios, horarios, documentos) {
   if (!clinica.nombre) faltantes.push("Nombre de la clínica");
   if (!clinica.tipo_institucion) faltantes.push("Tipo de institución");
   if (!clinica.descripcion) faltantes.push("Descripción de la clínica");
-  if (!clinica.telefono) faltantes.push("Teléfono de contacto");
+  if (validarTelefono(clinica.telefono, { requerido: true })) faltantes.push("Teléfono de contacto válido (+52)");
   if (!clinica.correo_contacto) faltantes.push("Correo de contacto");
-  if (!clinica.municipio) faltantes.push("Municipio");
+  if (!resolverMunicipio(clinica.municipio_clave || clinica.municipio)) faltantes.push("Municipio oficial de Oaxaca");
   if (!clinica.direccion) faltantes.push("Dirección");
   if (clinica.latitud == null || clinica.longitud == null) {
     faltantes.push("Confirma la ubicación de la clínica en el mapa");
@@ -301,7 +309,7 @@ function evaluarFaltantes(clinica, servicios, horarios, documentos) {
 async function cargarFicha(idClinica, db = pool) {
   const clinicaResultado = await db.query(
     `SELECT c.id_clinica, c.nombre, c.correo_acceso, c.descripcion, c.tipo_institucion,
-       c.telefono, c.correo_contacto, c.sitio_web, c.municipio, c.localidad, c.direccion,
+       c.telefono, c.correo_contacto, c.sitio_web, c.municipio, c.municipio_clave, c.localidad, c.direccion,
        c.codigo_postal, c.ubicacion_maps_url, c.enlaces_informacion,
        c.estado_publicacion, c.fecha_registro,
        ST_Y(c.ubicacion_geo::geometry) AS latitud,
@@ -1088,10 +1096,10 @@ app.post(
 // Datos exclusivos del mapa y catálogo interactivo: requieren sesión válida.
 app.get("/api/clinicas", autenticarToken, async (req, res) => {
   try {
-    const { nombre, municipio, servicios } = req.query;
+    const { nombre, municipio, municipio_clave, servicios } = req.query;
 
     // Validar parámetros
-    if (Array.isArray(nombre) || Array.isArray(municipio) || Array.isArray(servicios)) {
+    if (Array.isArray(nombre) || Array.isArray(municipio) || Array.isArray(servicios) || Array.isArray(municipio_clave)) {
       return res.status(400).json({
         error: "Los parámetros nombre, municipio y servicios deben enviarse una sola vez.",
       });
@@ -1107,9 +1115,12 @@ app.get("/api/clinicas", autenticarToken, async (req, res) => {
     }
 
     // Filtro por municipio
-    if (typeof municipio === "string" && municipio.trim()) {
-      valores.push(municipio.trim());
-      condiciones.push(`LOWER(TRIM(c.municipio)) = LOWER(TRIM($${valores.length}))`);
+    if (municipio_clave !== undefined || (typeof municipio === "string" && municipio.trim())) {
+      const entrada = { ...(municipio_clave !== undefined ? { municipio_clave } : {}), ...(municipio ? { municipio } : {}) };
+      const validado = validarMunicipioEntrada(entrada);
+      if (validado.error) return res.status(400).json({ error: validado.error });
+      valores.push(validado.municipio_clave);
+      condiciones.push(`c.municipio_clave = $${valores.length}`);
     }
 
     // Filtro por uno o varios servicios.
@@ -1174,7 +1185,7 @@ app.get("/api/clinicas", autenticarToken, async (req, res) => {
         c.correo_contacto,
         c.sitio_web,
         c.imagen_portada_url,
-        c.municipio,
+        c.municipio, c.municipio_clave,
         c.localidad,
         c.direccion,
         c.codigo_postal,
@@ -1296,7 +1307,7 @@ app.get("/api/clinicas/:id", autenticarToken, async (req, res) => {
     const resultado = await pool.query(`
       SELECT c.id_clinica, c.nombre, c.descripcion, c.tipo_institucion,
         c.telefono, c.correo_contacto, c.sitio_web,
-        c.municipio, c.localidad, c.direccion, c.codigo_postal,
+        c.municipio, c.municipio_clave, c.localidad, c.direccion, c.codigo_postal,
         c.id_origen, c.clues, c.revision_catalogo, c.region, c.fuente_origen AS fuente,
         c.enlaces_informacion,
         c.horario_texto AS horario, c.ubicacion_maps_url AS ubicacion_maps,
@@ -1423,7 +1434,7 @@ app.post("/api/auth/registro-usuario", async (req, res) => {
         apellidos,
         correo,
         hash,
-        typeof telefono === "string" ? telefono.trim() || null : null,
+        normalizarTelefono(telefono),
       ]
     );
 
@@ -1805,14 +1816,9 @@ app.get("/api/auth/perfil", autenticarToken, (req, res) => {
 
 app.patch("/api/auth/perfil", autenticarToken, requerirRol(["usuario"]), async (req, res) => {
   const { nombre, apellidos, telefono } = req.body || {};
-  const telefonoLimpio = typeof telefono === "string" ? telefono.trim() : "";
-
-  if (telefono !== undefined && telefono !== null && telefonoLimpio) {
-    const errorTelefono = validarTelefono(telefonoLimpio, { requerido: true });
-    if (errorTelefono) {
-      return res.status(400).json({ error: errorTelefono });
-    }
-  }
+  const errorTelefono = validarTelefono(telefono);
+  if (errorTelefono) return res.status(400).json({ error: errorTelefono });
+  const telefonoLimpio = normalizarTelefono(telefono);
 
   const nombreLimpio = typeof nombre === "string" ? nombre.trim() : null;
   const apellidosLimpios = typeof apellidos === "string" ? apellidos.trim() : null;
