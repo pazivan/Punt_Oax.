@@ -186,7 +186,8 @@ test('registro, inicio de sesión y permisos reales contra API y BD aisladas', a
     assert.equal(edicion.status, 200);
     assert.equal((await edicion.json()).clinica.municipio, 'Oaxaca de Juárez');
     assert.equal((await llamar('/api/admin/panel-prueba', { token: clinica.cuerpo.token })).status, 403);
-    const directorio = await llamar('/api/clinicas');
+    assert.equal((await llamar('/api/clinicas')).status, 401, 'el mapa y directorio exigen sesión autenticada');
+    const directorio = await llamar('/api/clinicas', { token: usuario.cuerpo.token });
     assert.equal(directorio.status, 200);
     assert.equal(directorio.cuerpo.some(c => c.id_clinica === clinicaId), false);
     const otraClinica = await llamar('/api/auth/login-clinica', { datos: { correo: correoClinicaNormalizado, password } });

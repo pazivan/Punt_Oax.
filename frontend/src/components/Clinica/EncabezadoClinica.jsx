@@ -1,8 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, User, X } from 'lucide-react'
 import { consultarMiFicha } from '../../api/auth'
 import CampanaNotificaciones from '../Inicio/CampanaNotificaciones.jsx'
+import {
+  bloquearScrollFondo,
+  cerrarOtrasCapas,
+  establecerCapaActiva,
+  registrarCierreCapa,
+} from '../../utils/uiOverlays.js'
 import '../../styles/Inicio.css'
 
 export default function EncabezadoClinica({
@@ -23,7 +30,16 @@ export default function EncabezadoClinica({
   // cuando la vista no lo conoce (mapa, conócenos, información útil), se
   // consulta la ficha una vez, sin depender del almacenamiento de la sesión.
   const [estadoDetectado, setEstadoDetectado] = useState(null)
-  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false)
+  const claveRuta = `${pathname}${search}`
+  const [rutaMenuAbierto, setRutaMenuAbierto] = useState(null)
+  const menuMovilAbierto = rutaMenuAbierto === claveRuta
+  const setMenuMovilAbierto = (valor) => {
+    setRutaMenuAbierto((prev) => {
+      const actual = prev === claveRuta
+      const siguiente = typeof valor === 'function' ? valor(actual) : Boolean(valor)
+      return siguiente ? claveRuta : null
+    })
+  }
   const [indicador, setIndicador] = useState({ left: 0, width: 0, visible: false })
   const botonMenuRef = useRef(null)
   const navRef = useRef(null)
@@ -126,15 +142,29 @@ export default function EncabezadoClinica({
   }, [enPostulacion, activaId, elementosAprobada.length])
 
   useEffect(() => {
+    const desregistrar = registrarCierreCapa('menu-movil', () => setRutaMenuAbierto(null))
+    return () => {
+      desregistrar()
+      establecerCapaActiva('menu-movil', false)
+    }
+  }, [])
+
+  useEffect(() => {
+    establecerCapaActiva('menu-movil', menuMovilAbierto)
     if (!menuMovilAbierto) return undefined
+    cerrarOtrasCapas('menu-movil')
+    const liberarScroll = bloquearScrollFondo()
     const manejarTecla = (e) => {
       if (e.key === 'Escape') {
-        setMenuMovilAbierto(false)
+        setRutaMenuAbierto(null)
         botonMenuRef.current?.focus()
       }
     }
     window.addEventListener('keydown', manejarTecla)
-    return () => window.removeEventListener('keydown', manejarTecla)
+    return () => {
+      liberarScroll()
+      window.removeEventListener('keydown', manejarTecla)
+    }
   }, [menuMovilAbierto])
 
   if (enPostulacion) {
@@ -345,63 +375,71 @@ export default function EncabezadoClinica({
         </div>
       </div>
 
-      {menuMovilAbierto && (
-        <div
-          className="inicio-mobile-backdrop"
-          role="presentation"
-          onClick={cerrarMenu}
-        >
-          <aside
-            id="menu-movil-clinica"
-            className="inicio-mobile-drawer"
-            aria-label="Menú de navegación móvil"
-            onClick={(e) => e.stopPropagation()}
+      {menuMovilAbierto && (() => {
+        const cajonClinica = (
+          <div
+            className="inicio-mobile-backdrop"
+            role="presentation"
+            onClick={cerrarMenu}
           >
-            <div className="inicio-mobile-drawer-header">
-              <span className="inicio-brand">
-                <img src="/logo-puntoax.svg" alt="" className="inicio-brand-logo" aria-hidden="true" />
-                <span>PuntOax</span>
-              </span>
-              <button
-                type="button"
-                className="inicio-mobile-close-btn"
-                aria-label="Cerrar menú"
-                onClick={() => {
-                  cerrarMenu()
-                  botonMenuRef.current?.focus()
-                }}
-              >
-                <X size={20} aria-hidden="true" />
-              </button>
-            </div>
+            <aside
+              id="menu-movil-clinica"
+              className="inicio-mobile-drawer"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menú de navegación móvil"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="inicio-mobile-drawer-header">
+                <span className="inicio-brand">
+                  <img src="/logo-puntoax.svg" alt="" className="inicio-brand-logo" aria-hidden="true" />
+                  <span>PuntOax</span>
+                </span>
+                <button
+                  type="button"
+                  className="inicio-mobile-close-btn"
+                  aria-label="Cerrar menú"
+                  onClick={() => {
+                    cerrarMenu()
+                    botonMenuRef.current?.focus()
+                  }}
+                >
+                  <X size={20} aria-hidden="true" />
+                </button>
+              </div>
 
-            <nav className="inicio-mobile-nav-list" aria-label="Opciones de navegación">
-              {elementosAprobada.map((item) => renderEnlaceNav(item, true))}
-            </nav>
+              <nav className="inicio-mobile-nav-list" aria-label="Opciones de navegación">
+                {elementosAprobada.map((item) => renderEnlaceNav(item, true))}
+              </nav>
 
-            <div className="inicio-mobile-drawer-footer">
-              <Link
-                to="/mi-perfil"
-                onClick={cerrarMenu}
-                className={`inicio-mobile-nav-link ${pathname === '/mi-perfil' ? 'active' : ''}`}
-                aria-current={pathname === '/mi-perfil' ? 'page' : undefined}
-              >
-                Mi perfil
-              </Link>
-              <button
-                type="button"
-                className="inicio-mobile-logout-btn"
-                onClick={() => {
-                  cerrarMenu()
-                  onSalir?.()
-                }}
-              >
-                Cerrar sesión
-              </button>
-            </div>
-          </aside>
-        </div>
-      )}
+              <div className="inicio-mobile-drawer-footer">
+                <Link
+                  to="/mi-perfil"
+                  onClick={cerrarMenu}
+                  className={`inicio-mobile-nav-link inicio-mobile-profile-link ${pathname === '/mi-perfil' ? 'active' : ''}`}
+                  aria-current={pathname === '/mi-perfil' ? 'page' : undefined}
+                >
+                  <User size={16} aria-hidden="true" />
+                  <span>Mi perfil</span>
+                </Link>
+                <button
+                  type="button"
+                  className="inicio-mobile-logout-btn"
+                  onClick={() => {
+                    cerrarMenu()
+                    onSalir?.()
+                  }}
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            </aside>
+          </div>
+        )
+        return typeof document !== 'undefined' && document.body
+          ? createPortal(cajonClinica, document.body)
+          : cajonClinica
+      })()}
     </header>
   )
 }

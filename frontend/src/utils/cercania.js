@@ -169,6 +169,13 @@ export async function consultarClinicasCercanas({
       errorJson?.mensaje ||
       `No se pudieron consultar los centros cercanos (código ${respuesta.status}).`;
 
+    if (respuesta.status === 401 || respuesta.status === 403) {
+      const errorAuth = new Error(mensaje);
+      errorAuth.status = respuesta.status;
+      errorAuth.codigo = errorJson?.codigo;
+      throw errorAuth;
+    }
+
     const rutaNoDisponible =
       respuesta.status === 404 ||
       (respuesta.status === 400 && /identificador de cl[ií]nica/i.test(mensaje));

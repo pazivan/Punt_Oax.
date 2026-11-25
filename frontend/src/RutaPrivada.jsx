@@ -9,12 +9,23 @@ export function RutaPrivada({
   error,
   onReintentar,
   rolesPermitidos,
+  avisoNoAutenticado = 'Inicia sesión o crea una cuenta para continuar.',
   children,
 }) {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
 
   if (!sesion) {
-    return <Navigate to="/login" replace />
+    const destinoActual = `${pathname}${search || ''}`
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          aviso: avisoNoAutenticado,
+          from: destinoActual,
+        }}
+      />
+    )
   }
 
   if (verificando) {

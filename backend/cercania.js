@@ -3,7 +3,7 @@
  *
  *   GET /api/clinicas/cercanas?lat=&lng=&radio_km=10&limite=10&servicios=its,ile
  *
- * - Pública, igual que GET /api/clinicas.
+ * - Protegida por sesión autenticada, al igual que los datos exclusivos del mapa.
  * - Solo clínicas aprobadas con ubicación confirmada (fija y verificada).
  * - Ordenadas por distancia en línea recta (PostGIS, geography).
  * - PRIVACIDAD: las coordenadas recibidas no se guardan ni se escriben en logs.
@@ -114,8 +114,9 @@ async function buscarCentrosCercanos(db, query) {
 // ------------------------------------------------------------------
 // Registro de la ruta (debe ir ANTES de GET /api/clinicas/:id)
 // ------------------------------------------------------------------
-function registrarRutasCercania(app, { pool }) {
-  app.get("/api/clinicas/cercanas", async (req, res) => {
+function registrarRutasCercania(app, { pool, autenticarToken } = {}) {
+  const middlewares = typeof autenticarToken === "function" ? [autenticarToken] : [];
+  app.get("/api/clinicas/cercanas", ...middlewares, async (req, res) => {
     try {
       const { status, body } = await buscarCentrosCercanos(pool, req.query);
       return res.status(status).json(body);

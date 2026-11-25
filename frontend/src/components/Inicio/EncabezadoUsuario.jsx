@@ -1,7 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, User, X } from 'lucide-react';
 import CampanaNotificaciones from './CampanaNotificaciones.jsx';
+import {
+  bloquearScrollFondo,
+  cerrarOtrasCapas,
+  establecerCapaActiva,
+  registrarCierreCapa,
+} from '../../utils/uiOverlays.js';
 
 /**
  * EncabezadoUsuario - Encabezado compartido y persistente para el área de usuario autenticado
@@ -15,7 +22,15 @@ export default function EncabezadoUsuario({
   onClicMapa = null,
 }) {
   const { pathname } = useLocation();
-  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
+  const [rutaMenuAbierto, setRutaMenuAbierto] = useState(null);
+  const menuMovilAbierto = rutaMenuAbierto === pathname;
+  const setMenuMovilAbierto = (valor) => {
+    setRutaMenuAbierto((prev) => {
+      const actual = prev === pathname;
+      const siguiente = typeof valor === 'function' ? valor(actual) : Boolean(valor);
+      return siguiente ? pathname : null;
+    });
+  };
   const [indicador, setIndicador] = useState({ left: 0, width: 0, visible: false });
   const botonMenuRef = useRef(null);
   const cajonRef = useRef(null);
@@ -46,14 +61,20 @@ export default function EncabezadoUsuario({
         { id: 'informacion', ruta: '/informacion-util', texto: 'Información útil' },
         { id: 'conocenos', ruta: '/conocenos', texto: 'Conócenos' },
       ]
-    : [
-        { id: 'inicio', ruta: rutaInicio, texto: 'Inicio' },
-        { id: 'mapa', ruta: '/mapa', texto: 'Mapa de centros' },
-        { id: 'agendar', ruta: '/agendar-cita', texto: 'Agendar cita' },
-        ...(sesion?.tipo === 'usuario' ? [{ id: 'citas', ruta: '/mis-citas', texto: 'Mis citas' }] : []),
-        { id: 'informacion', ruta: '/informacion-util', texto: 'Información útil' },
-        { id: 'conocenos', ruta: '/conocenos', texto: 'Conócenos' },
-      ];
+    : sesion
+      ? [
+          { id: 'inicio', ruta: rutaInicio, texto: 'Inicio' },
+          { id: 'mapa', ruta: '/mapa', texto: 'Mapa de centros' },
+          { id: 'agendar', ruta: '/agendar-cita', texto: 'Agendar cita' },
+          ...(sesion?.tipo === 'usuario' ? [{ id: 'citas', ruta: '/mis-citas', texto: 'Mis citas' }] : []),
+          { id: 'informacion', ruta: '/informacion-util', texto: 'Información útil' },
+          { id: 'conocenos', ruta: '/conocenos', texto: 'Conócenos' },
+        ]
+      : [
+          { id: 'inicio', ruta: rutaInicio, texto: 'Inicio' },
+          { id: 'informacion', ruta: '/informacion-util', texto: 'Información útil' },
+          { id: 'conocenos', ruta: '/conocenos', texto: 'Conócenos' },
+        ];
 
   useLayoutEffect(() => {
     const actualizarIndicador = () => {
@@ -79,15 +100,29 @@ export default function EncabezadoUsuario({
   }, [activa, enlaces.length]);
 
   useEffect(() => {
+    const desregistrar = registrarCierreCapa('menu-movil', () => setRutaMenuAbierto(null));
+    return () => {
+      desregistrar();
+      establecerCapaActiva('menu-movil', false);
+    };
+  }, []);
+
+  useEffect(() => {
+    establecerCapaActiva('menu-movil', menuMovilAbierto);
     if (!menuMovilAbierto) return undefined;
+    cerrarOtrasCapas('menu-movil');
+    const liberarScroll = bloquearScrollFondo();
     const manejarTecla = (e) => {
       if (e.key === 'Escape') {
-        setMenuMovilAbierto(false);
+        setRutaMenuAbierto(null);
         botonMenuRef.current?.focus();
       }
     };
     window.addEventListener('keydown', manejarTecla);
-    return () => window.removeEventListener('keydown', manejarTecla);
+    return () => {
+      liberarScroll();
+      window.removeEventListener('keydown', manejarTecla);
+    };
   }, [menuMovilAbierto]);
 
   const cerrarMenu = () => setMenuMovilAbierto(false);
@@ -204,77 +239,85 @@ export default function EncabezadoUsuario({
         </div>
       </div>
 
-      {menuMovilAbierto && (
-        <div
-          className="inicio-mobile-backdrop"
-          role="presentation"
-          onClick={cerrarMenu}
-        >
-          <aside
-            id="menu-movil-usuario"
-            ref={cajonRef}
-            className="inicio-mobile-drawer"
-            aria-label="Menú de navegación móvil"
-            onClick={(e) => e.stopPropagation()}
+      {menuMovilAbierto && (() => {
+        const cajonMovil = (
+          <div
+            className="inicio-mobile-backdrop"
+            role="presentation"
+            onClick={cerrarMenu}
           >
-            <div className="inicio-mobile-drawer-header">
-              <span className="inicio-brand">
-                <img src="/logo-puntoax.svg" alt="" className="inicio-brand-logo" aria-hidden="true" />
-                <span>PuntOax</span>
-              </span>
-              <button
-                type="button"
-                className="inicio-mobile-close-btn"
-                aria-label="Cerrar menú"
-                onClick={() => {
-                  cerrarMenu();
-                  botonMenuRef.current?.focus();
-                }}
-              >
-                <X size={20} aria-hidden="true" />
-              </button>
-            </div>
+            <aside
+              id="menu-movil-usuario"
+              ref={cajonRef}
+              className="inicio-mobile-drawer"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menú de navegación móvil"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="inicio-mobile-drawer-header">
+                <span className="inicio-brand">
+                  <img src="/logo-puntoax.svg" alt="" className="inicio-brand-logo" aria-hidden="true" />
+                  <span>PuntOax</span>
+                </span>
+                <button
+                  type="button"
+                  className="inicio-mobile-close-btn"
+                  aria-label="Cerrar menú"
+                  onClick={() => {
+                    cerrarMenu();
+                    botonMenuRef.current?.focus();
+                  }}
+                >
+                  <X size={20} aria-hidden="true" />
+                </button>
+              </div>
 
-            <nav className="inicio-mobile-nav-list" aria-label="Opciones de navegación">
-              {enlaces.map((item) => renderEnlaceNav(item, true))}
-            </nav>
+              <nav className="inicio-mobile-nav-list" aria-label="Opciones de navegación">
+                {enlaces.map((item) => renderEnlaceNav(item, true))}
+              </nav>
 
-            <div className="inicio-mobile-drawer-footer">
-              {sesion ? (
-                <>
-                  <Link
-                    to={rutaPerfil}
-                    onClick={cerrarMenu}
-                    className={`inicio-mobile-nav-link ${activa === 'perfil' ? 'active' : ''}`}
-                    aria-current={activa === 'perfil' ? 'page' : undefined}
-                  >
-                    {esAdmin ? 'Administración' : 'Mi perfil'}
-                  </Link>
-                  <button
-                    type="button"
-                    className="inicio-mobile-logout-btn"
-                    onClick={() => {
-                      cerrarMenu();
-                      onSalir?.();
-                    }}
-                  >
-                    Cerrar sesión
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link to="/login" onClick={cerrarMenu} className="inicio-mobile-nav-link">
-                    Iniciar sesión
-                  </Link>
-                  <Link to="/registro" onClick={cerrarMenu} className="inicio-mobile-logout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>
-                    Crear cuenta
-                  </Link>
-                </>
-              )}
-            </div>
-          </aside>
-        </div>
-      )}
+              <div className="inicio-mobile-drawer-footer">
+                {sesion ? (
+                  <>
+                    <Link
+                      to={rutaPerfil}
+                      onClick={cerrarMenu}
+                      className={`inicio-mobile-nav-link inicio-mobile-profile-link ${activa === 'perfil' ? 'active' : ''}`}
+                      aria-current={activa === 'perfil' ? 'page' : undefined}
+                    >
+                      <User size={16} aria-hidden="true" />
+                      <span>{esAdmin ? 'Administración' : 'Mi perfil'}</span>
+                    </Link>
+                    <button
+                      type="button"
+                      className="inicio-mobile-logout-btn"
+                      onClick={() => {
+                        cerrarMenu();
+                        onSalir?.();
+                      }}
+                    >
+                      Cerrar sesión
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" onClick={cerrarMenu} className="inicio-mobile-nav-link">
+                      Iniciar sesión
+                    </Link>
+                    <Link to="/registro" onClick={cerrarMenu} className="inicio-mobile-logout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>
+                      Crear cuenta
+                    </Link>
+                  </>
+                )}
+              </div>
+            </aside>
+          </div>
+        );
+        return typeof document !== 'undefined' && document.body
+          ? createPortal(cajonMovil, document.body)
+          : cajonMovil;
+      })()}
     </header>
   );
 }

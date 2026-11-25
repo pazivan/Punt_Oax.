@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Login from './components/Auth/Login.jsx'
 import Register from './components/Auth/Register.jsx'
@@ -22,10 +22,30 @@ import AsistentePuntOax from './components/Asistente/AsistentePuntOax.jsx'
 import { RutaPrivada } from './RutaPrivada.jsx'
 import { CargandoSesion, ErrorSesionTemporal } from './components/EstadoSesion.jsx'
 import { describirErrorConsulta } from './utils/erroresConsulta.js'
-import { ROLES, obtenerDestinoPorRol } from './utils/permisos.js'
-import { cerrarSesion, consultarPerfil, leerSesion, revocarSesion } from './api/auth.js'
+import { ROLES, obtenerDestinoPorRol, obtenerDestinoPostLogin } from './utils/permisos.js'
+import {
+  cerrarSesion,
+  consultarClinicasCatalogo,
+  consultarPerfil,
+  leerSesion,
+  registrarActividadSesion,
+  revocarSesion,
+} from './api/auth.js'
+import {
+  CLAVE_ULTIMA_ACTIVIDAD,
+  EVENTO_SESION_EXPIRADA,
+  evaluarEstadoInactividad,
+  leerUltimaActividad,
+  obtenerConfiguracionSesionCliente,
+  registrarActividadLocal,
+} from './utils/sesionInactividad.js'
+import { establecerCapaActiva } from './utils/uiOverlays.js'
 import { borrarVerificacionPendiente, guardarVerificacionPendiente, leerVerificacionPendiente } from './api/verificacionPendiente.js'
 import './App.css'
+
+const AVISO_MAPA_AUTENTICACION =
+  'Necesitas iniciar sesión o crear una cuenta para ver el mapa de centros de salud.'
+const INTERVALO_PING_ACTIVIDAD_MS = 60 * 1000
 
 function App() {
   const navigate = useNavigate()
@@ -41,36 +61,81 @@ function App() {
   const [reintentoPerfil, setReintentoPerfil] = useState(0)
   const consultaPerfil = useRef(0)
   const [clinicas, setClinicas] = useState([])
-  const [cargando, setCargando] = useState(true)
+  const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
   const [reintentoCatalogo, setReintentoCatalogo] = useState(0)
   const [mostrarConfirmacionSalir, setMostrarConfirmacionSalir] = useState(false)
+  const [advertenciaInactividad, setAdvertenciaInactividad] = useState({
+    abierta: false,
+    segundosRestantes: 60,
+    renovando: false,
+  })
+  const ultimaActividadPingRef = useRef(0)
+  const advertenciaAbiertaRef = useRef(false)
+  const cerrandoPorExpiracionRef = useRef(false)
+
+  const sesionToken = sesion?.token || null
+  const clinicasVisibles = sesionToken ? clinicas : []
+  const mostrarAdvertenciaInactividad = Boolean(sesionToken) && advertenciaInactividad.abierta
 
   useEffect(() => {
-    // El catálogo es público: no depende de una sesión verificada.
-    if (pathname !== '/mapa' && pathname !== '/agendar-cita') return
+    advertenciaAbiertaRef.current = mostrarAdvertenciaInactividad
+    establecerCapaActiva('modal-inactividad', mostrarAdvertenciaInactividad)
+    return () => establecerCapaActiva('modal-inactividad', false)
+  }, [mostrarAdvertenciaInactividad])
+
+  useEffect(() => {
+    establecerCapaActiva('modal-salir', mostrarConfirmacionSalir)
+    return () => establecerCapaActiva('modal-salir', false)
+  }, [mostrarConfirmacionSalir])
+
+  const finalizarSesionLocal = useCallback(async ({
+    revocarEnServidor = true,
+    mensaje = '',
+    rutaDestino = '/login',
+  } = {}) => {
+    consultaPerfil.current++
+    const tokenActual = sesionToken || leerSesion()?.token
+    const revocacion = revocarEnServidor && tokenActual
+      ? revocarSesion(tokenActual)
+      : Promise.resolve(true)
+    cerrarSesion()
+    setMostrarConfirmacionSalir(false)
+    setAdvertenciaInactividad({ abierta: false, segundosRestantes: 60, renovando: false })
+    setSesion(null)
+    setPerfil(null)
+    setClinicas([])
+    setCargando(false)
+    setError('')
+    setErrorPerfil('')
+    setMensajeAuth(mensaje)
+    navigate(rutaDestino, { replace: true, state: mensaje ? { aviso: mensaje } : null })
+    if (revocarEnServidor && tokenActual && !await revocacion && !mensaje) {
+      setMensajeAuth('Se cerró la sesión en este navegador, pero no se pudo confirmar el cierre en el servidor. Comprueba tu conexión.')
+    }
+  }, [navigate, sesionToken])
+
+  useEffect(() => {
+    // El catálogo del mapa requiere sesión válida.
+    if ((pathname !== '/mapa' && pathname !== '/agendar-cita') || !sesionToken) {
+      return undefined
+    }
     const controlador = new AbortController()
     async function cargarClinicas() {
       setCargando(true)
       setError('')
       setClinicas([])
       try {
-        const respuesta = await fetch('/api/clinicas', {
-          signal: controlador.signal,
-          headers: sesion?.token ? { Authorization: `Bearer ${sesion.token}` } : undefined,
-        })
-
-        if (!respuesta.ok) {
-          throw new Error(`El servidor respondió con estado ${respuesta.status}`)
+        const datos = await consultarClinicasCatalogo({ signal: controlador.signal })
+        if (!controlador.signal.aborted) setClinicas(datos)
+      } catch (err) {
+        if (err?.name === 'AbortError' || controlador.signal.aborted) return
+        setClinicas([])
+        if (err?.status === 401 || err?.codigo === 'SESION_REQUERIDA') {
+          setError('')
+          return
         }
-
-        const datos = await respuesta.json()
-        if (!controlador.signal.aborted) setClinicas(Array.isArray(datos) ? datos : [])
-      } catch {
-        if (!controlador.signal.aborted) {
-          setClinicas([])
-          setError('No se pudieron cargar las clínicas. Revisa que el servidor Node esté activo.')
-        }
+        setError(err?.message || 'No se pudieron cargar las clínicas. Revisa que el servidor Node esté activo.')
       } finally {
         if (!controlador.signal.aborted) setCargando(false)
       }
@@ -78,7 +143,7 @@ function App() {
 
     cargarClinicas()
     return () => controlador.abort()
-  }, [pathname, sesion, reintentoCatalogo])
+  }, [pathname, sesionToken, reintentoCatalogo])
 
   useEffect(() => {
     // Cada navegación comienza arriba; los enlaces internos de la ficha
@@ -126,13 +191,16 @@ function App() {
   }, [rutaKey])
 
   useEffect(() => {
-    if (!sesion) return
+    if (!sesionToken) return
     let activo = true
     const consulta = ++consultaPerfil.current
-    consultarPerfil()
+    consultarPerfil({ segundoPlano: true })
       .then((datos) => {
         if (activo && consulta === consultaPerfil.current) {
           setPerfil(datos.usuarioAutenticado)
+          if (datos.sesion_politica) {
+            setSesion((actual) => (actual ? { ...actual, politica: datos.sesion_politica } : actual))
+          }
           setErrorPerfil('')
           setVerificandoPerfil(false)
         }
@@ -146,16 +214,21 @@ function App() {
           if (!leerSesion()) {
             setSesion(null)
             setPerfil(null)
+            setClinicas([])
             setMensajeAuth(
-              err.codigo === 'TOKEN_EXPIRADO'
-                ? 'Tu sesión expiró. Inicia sesión de nuevo.'
-                : 'Tu sesión ya no es válida. Inicia sesión de nuevo.'
+              err.codigo === 'SESION_EXPIRADA_INACTIVIDAD'
+                ? 'Tu sesión expiró por inactividad. Inicia sesión de nuevo.'
+                : err.codigo === 'SESION_EXPIRADA_ABSOLUTA'
+                  ? 'Tu sesión alcanzó el tiempo máximo permitido. Inicia sesión de nuevo.'
+                  : err.codigo === 'TOKEN_EXPIRADO'
+                    ? 'Tu sesión expiró. Inicia sesión de nuevo.'
+                    : 'Tu sesión ya no es válida. Inicia sesión de nuevo.'
             )
           }
         }
       })
     return () => { activo = false }
-  }, [sesion, pathname, reintentoPerfil])
+  }, [sesionToken, pathname, reintentoPerfil])
 
   const reintentarVerificacionPerfil = errorPerfilReintentar ? () => {
     setErrorPerfil('')
@@ -163,69 +236,237 @@ function App() {
     setReintentoPerfil((valor) => valor + 1)
   } : undefined
 
+  // Sincronización entre pestañas, regreso tras bfcache/botón Atrás y eventos HTTP 401.
   useEffect(() => {
     function sincronizarSesion(evento) {
-      if (evento?.type === 'storage' && evento.key !== 'puntoax-sesion' && evento.key !== null) return
+      if (
+        evento?.type === 'storage' &&
+        evento.key !== 'puntoax-sesion' &&
+        evento.key !== CLAVE_ULTIMA_ACTIVIDAD &&
+        evento.key !== null
+      ) {
+        return
+      }
       if (evento?.type === 'visibilitychange' && document.visibilityState !== 'visible') return
       const actual = leerSesion()
-      if (actual?.token === sesion?.token) return
-      consultaPerfil.current++
-      setSesion(actual)
-      setPerfil(null)
-      setVerificandoPerfil(Boolean(actual))
-      setErrorPerfil('')
-      if (!actual && sesion) setMensajeAuth('La sesión se cerró en otra ventana. Inicia sesión de nuevo.')
+      if (!actual && sesion) {
+        consultaPerfil.current++
+        setSesion(null)
+        setPerfil(null)
+        setClinicas([])
+        setVerificandoPerfil(false)
+        setErrorPerfil('')
+        setAdvertenciaInactividad({ abierta: false, segundosRestantes: 60, renovando: false })
+        setMensajeAuth('La sesión se cerró en otra ventana. Inicia sesión de nuevo.')
+        return
+      }
+      if (actual?.token !== sesion?.token) {
+        consultaPerfil.current++
+        setSesion(actual)
+        setPerfil(null)
+        setVerificandoPerfil(Boolean(actual))
+        setErrorPerfil('')
+      }
     }
+
+    function manejarSesionExpirada(evento) {
+      const codigo = evento?.detail?.codigo || ''
+      const msg = codigo === 'SESION_EXPIRADA_INACTIVIDAD'
+        ? 'Tu sesión se cerró automáticamente por inactividad. Inicia sesión de nuevo.'
+        : codigo === 'SESION_EXPIRADA_ABSOLUTA'
+          ? 'Tu sesión alcanzó el tiempo máximo permitido. Inicia sesión de nuevo.'
+          : evento?.detail?.mensaje || 'Tu sesión expiró o dejó de ser válida. Inicia sesión de nuevo.'
+      finalizarSesionLocal({ revocarEnServidor: false, mensaje: msg })
+    }
+
+    function manejarPageShow(evento) {
+      const actual = leerSesion()
+      if (evento?.persisted || !actual) {
+        if (!actual && sesion) {
+          setSesion(null)
+          setPerfil(null)
+          setClinicas([])
+        }
+      }
+    }
+
     window.addEventListener('storage', sincronizarSesion)
     window.addEventListener('focus', sincronizarSesion)
+    window.addEventListener('pageshow', manejarPageShow)
+    window.addEventListener(EVENTO_SESION_EXPIRADA, manejarSesionExpirada)
     document.addEventListener('visibilitychange', sincronizarSesion)
     return () => {
       window.removeEventListener('storage', sincronizarSesion)
       window.removeEventListener('focus', sincronizarSesion)
+      window.removeEventListener('pageshow', manejarPageShow)
+      window.removeEventListener(EVENTO_SESION_EXPIRADA, manejarSesionExpirada)
       document.removeEventListener('visibilitychange', sincronizarSesion)
     }
-  }, [sesion])
+  }, [sesion, finalizarSesionLocal])
+
+  // Control automático de inactividad (15 min) con advertencia previa (60 s) y límite absoluto (8 h).
+  useEffect(() => {
+    if (!sesionToken) {
+      cerrandoPorExpiracionRef.current = false
+      return undefined
+    }
+
+    const config = obtenerConfiguracionSesionCliente(sesion?.politica)
+    if (!leerUltimaActividad()) {
+      registrarActividadLocal(Date.now())
+    }
+
+    const registrarInteraccionUsuario = () => {
+      // Mientras el modal de advertencia está abierto, el usuario debe confirmar explícitamente.
+      if (advertenciaAbiertaRef.current) return
+      const ahora = Date.now()
+      registrarActividadLocal(ahora)
+      if (ahora - ultimaActividadPingRef.current >= INTERVALO_PING_ACTIVIDAD_MS) {
+        ultimaActividadPingRef.current = ahora
+        registrarActividadSesion()
+          .then((datos) => {
+            if (datos?.sesion_politica) {
+              setSesion((actual) => (actual ? { ...actual, politica: datos.sesion_politica } : actual))
+            }
+          })
+          .catch(() => {
+            // Si el servidor devolvió 401, enviarConSesion ya emitió el evento de expiración.
+          })
+      }
+    }
+
+    const comprobarInactividad = () => {
+      if (cerrandoPorExpiracionRef.current) return
+      const sesionActual = leerSesion()
+      if (!sesionActual?.token) return
+      const politicaActual = obtenerConfiguracionSesionCliente(sesionActual.politica || sesion?.politica)
+      const evaluacion = evaluarEstadoInactividad({
+        ahoraMs: Date.now(),
+        ultimaActividadMs: leerUltimaActividad() || sesionActual.iniciada_en || Date.now(),
+        iniciadaEnMs: sesionActual.iniciada_en,
+        expiraAbsolutaMs: politicaActual.expiraAbsolutaMs,
+        inactividadMs: politicaActual.inactividadMs,
+        advertenciaMs: politicaActual.advertenciaMs,
+        absolutaMs: politicaActual.absolutaMs,
+      })
+
+      if (evaluacion.estado === 'expirada_inactividad' || evaluacion.estado === 'expirada_absoluta') {
+        cerrandoPorExpiracionRef.current = true
+        finalizarSesionLocal({
+          revocarEnServidor: true,
+          mensaje:
+            evaluacion.estado === 'expirada_absoluta'
+              ? 'Tu sesión alcanzó la duración máxima permitida. Inicia sesión nuevamente.'
+              : 'Tu sesión se cerró automáticamente por inactividad. Inicia sesión nuevamente.',
+        })
+        return
+      }
+
+      if (evaluacion.estado === 'advertencia') {
+        setAdvertenciaInactividad((prev) =>
+          prev.abierta && prev.segundosRestantes === evaluacion.segundosRestantes
+            ? prev
+            : { ...prev, abierta: true, segundosRestantes: evaluacion.segundosRestantes }
+        )
+      } else if (advertenciaAbiertaRef.current) {
+        // Otra pestaña renovó la actividad.
+        setAdvertenciaInactividad({ abierta: false, segundosRestantes: Math.ceil(config.advertenciaMs / 1000), renovando: false })
+      }
+    }
+
+    const alVolverVisible = () => {
+      if (document.visibilityState === 'visible') {
+        comprobarInactividad()
+        // Verificar también con el servidor sin reiniciar inactividad por ser comprobación automática.
+        consultarPerfil({ segundoPlano: true }).catch(() => {})
+      }
+    }
+
+    const eventosActividad = ['pointerdown', 'keydown', 'touchstart', 'click', 'scroll']
+    for (const ev of eventosActividad) {
+      window.addEventListener(ev, registrarInteraccionUsuario, { passive: true })
+    }
+    document.addEventListener('visibilitychange', alVolverVisible)
+    window.addEventListener('focus', comprobarInactividad)
+
+    const inicioVerificacion = setTimeout(comprobarInactividad, 0)
+    const intervalo = setInterval(comprobarInactividad, 1000)
+
+    return () => {
+      clearTimeout(inicioVerificacion)
+      clearInterval(intervalo)
+      for (const ev of eventosActividad) {
+        window.removeEventListener(ev, registrarInteraccionUsuario)
+      }
+      document.removeEventListener('visibilitychange', alVolverVisible)
+      window.removeEventListener('focus', comprobarInactividad)
+    }
+  }, [sesionToken, sesion?.politica, sesion?.iniciada_en, finalizarSesionLocal])
+
+  async function continuarSesionActiva() {
+    setAdvertenciaInactividad((prev) => ({ ...prev, renovando: true }))
+    try {
+      const datos = await registrarActividadSesion()
+      const ahora = Date.now()
+      registrarActividadLocal(ahora)
+      ultimaActividadPingRef.current = ahora
+      if (datos?.sesion_politica) {
+        setSesion((actual) => (actual ? { ...actual, politica: datos.sesion_politica } : actual))
+      }
+      setAdvertenciaInactividad({ abierta: false, segundosRestantes: 60, renovando: false })
+    } catch {
+      // Si el backend ya expiró la sesión (401), enviarConSesion disparará la salida segura.
+      setAdvertenciaInactividad((prev) => ({ ...prev, renovando: false }))
+    }
+  }
 
   function salir() {
     setMostrarConfirmacionSalir(true)
   }
 
   async function confirmarSalir() {
-    consultaPerfil.current++
-    const revocacion = revocarSesion(sesion?.token)
-    cerrarSesion()
-    setMostrarConfirmacionSalir(false)
-    setSesion(null)
-    setPerfil(null)
-    setErrorPerfil('')
-    setMensajeAuth('')
-    navigate('/login', { replace: true })
-    if (!await revocacion) {
-      setMensajeAuth('Se cerró la sesión en este navegador, pero no se pudo confirmar el cierre en el servidor. Comprueba tu conexión.')
-    }
+    await finalizarSesionLocal({ revocarEnServidor: true, mensaje: '', rutaDestino: '/login' })
   }
 
   const modalConfirmacionSalir = (
-    <ModalConfirmacion
-      abierto={mostrarConfirmacionSalir}
-      titulo="¿Estás seguro de que quieres salir?"
-      mensaje="Se cerrará tu sesión actual y serás dirigido a la página de iniciar sesión."
-      textoCancelar="Cancelar"
-      textoConfirmar="Sí, salir"
-      onCancelar={() => setMostrarConfirmacionSalir(false)}
-      onConfirmar={confirmarSalir}
-    />
+    <>
+      <ModalConfirmacion
+        abierto={mostrarConfirmacionSalir}
+        titulo="¿Estás seguro de que quieres salir?"
+        mensaje="Se cerrará tu sesión actual y serás dirigido a la página de iniciar sesión."
+        textoCancelar="Cancelar"
+        textoConfirmar="Sí, salir"
+        onCancelar={() => setMostrarConfirmacionSalir(false)}
+        onConfirmar={confirmarSalir}
+      />
+      <ModalConfirmacion
+        abierto={mostrarAdvertenciaInactividad}
+        titulo="Tu sesión está por finalizar"
+        mensaje={`Tu sesión está a punto de finalizar por inactividad. ¿Deseas continuar? (${advertenciaInactividad.segundosRestantes} s restantes)`}
+        textoCancelar="Cerrar sesión"
+        textoConfirmar={advertenciaInactividad.renovando ? 'Continuando…' : 'Continuar sesión'}
+        onCancelar={() => finalizarSesionLocal({
+          revocarEnServidor: true,
+          mensaje: 'Cerraste tu sesión correctamente.',
+          rutaDestino: '/login',
+        })}
+        onConfirmar={continuarSesionActiva}
+        deshabilitarAcciones={advertenciaInactividad.renovando}
+      />
+    </>
   )
 
   const esUsuarioOVisitanteConHeader =
     (!sesion || sesion.tipo !== 'clinica') && (
-      pathname === '/inicio' ||
-      pathname === '/mapa' ||
-      pathname === '/agendar-cita' ||
-      pathname === '/mis-citas' ||
       pathname === '/informacion-util' ||
-      pathname === '/mi-perfil' ||
-      (pathname === '/conocenos' && Boolean(sesion))
+      (Boolean(sesion) && (
+        pathname === '/inicio' ||
+        pathname === '/mapa' ||
+        pathname === '/agendar-cita' ||
+        pathname === '/mis-citas' ||
+        pathname === '/mi-perfil' ||
+        pathname === '/conocenos'
+      ))
     )
 
   function renderRuta() {
@@ -253,7 +494,7 @@ function App() {
         navigate('/registro')
       }}
       onBackToPublic={() => navigate('/conocenos')}
-      onLogin={(nuevaSesion) => {
+      onLogin={(nuevaSesion, destinoSolicitado = '') => {
         borrarVerificacionPendiente()
         setVerificacionPendiente(null)
         setPerfil(null)
@@ -261,7 +502,9 @@ function App() {
         setSesion(nuevaSesion)
         setErrorPerfil('')
         setMensajeAuth('')
-        navigate(obtenerDestinoPorRol(null, nuevaSesion), { replace: true })
+        cerrandoPorExpiracionRef.current = false
+        ultimaActividadPingRef.current = Date.now()
+        navigate(obtenerDestinoPostLogin(destinoSolicitado, null, nuevaSesion), { replace: true })
       }}
       mensaje={estadoRuta?.aviso || mensajeAuth}
     />
@@ -307,23 +550,33 @@ function App() {
   if (pathname === '/mapa') {
     return (
       <>
-        {error ? (
-          <ErrorSesionTemporal
-            titulo="No se pudo cargar el mapa"
-            mensaje={error}
-            onReintentar={() => setReintentoCatalogo((valor) => valor + 1)}
-            rutaInicio={sesion ? obtenerDestinoPorRol(perfil, sesion) : '/conocenos'}
-            textoInicio="Ir al inicio"
-          />
-        ) : (
-          <MapaCentros
-            sesion={sesion}
-            onSalir={salir}
-            clinicas={clinicas}
-            cargando={cargando}
-            sinEncabezado={esUsuarioOVisitanteConHeader}
-          />
-        )}
+        <RutaPrivada
+          sesion={sesion}
+          perfil={perfil}
+          verificando={verificandoPerfil}
+          error={errorPerfil}
+          onReintentar={reintentarVerificacionPerfil}
+          rolesPermitidos={[ROLES.USUARIO, ROLES.CLINICA, ROLES.ADMINISTRADOR]}
+          avisoNoAutenticado={AVISO_MAPA_AUTENTICACION}
+        >
+          {error ? (
+            <ErrorSesionTemporal
+              titulo="No se pudo cargar el mapa"
+              mensaje={error}
+              onReintentar={() => setReintentoCatalogo((valor) => valor + 1)}
+              rutaInicio={sesion ? obtenerDestinoPorRol(perfil, sesion) : '/conocenos'}
+              textoInicio="Ir al inicio"
+            />
+          ) : (
+            <MapaCentros
+              sesion={sesion}
+              onSalir={salir}
+              clinicas={clinicasVisibles}
+              cargando={cargando}
+              sinEncabezado={esUsuarioOVisitanteConHeader}
+            />
+          )}
+        </RutaPrivada>
         {modalConfirmacionSalir}
       </>
     )
@@ -342,7 +595,7 @@ function App() {
         >
           <AgendarCitaDatos
             clinica={estadoRuta?.clinica || null}
-            clinicas={clinicas}
+            clinicas={clinicasVisibles}
             cargandoClinicas={cargando}
             errorClinicas={error}
             onReintentarClinicas={() => setReintentoCatalogo((valor) => valor + 1)}

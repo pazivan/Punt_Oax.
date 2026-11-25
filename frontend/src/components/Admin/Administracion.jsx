@@ -1614,8 +1614,13 @@ function MapaCentrosAdmin({ sesion, onSalir }) {
 
   useEffect(() => {
     let activo = true
-    fetch('/api/clinicas')
-      .catch(() => {
+    const controlador = new AbortController()
+    fetch('/api/clinicas', {
+      signal: controlador.signal,
+      headers: sesion?.token ? { Authorization: `Bearer ${sesion.token}` } : undefined,
+    })
+      .catch((err) => {
+        if (err?.name === 'AbortError') throw err
         const errorConexion = new Error('No se pudo conectar con el servidor.')
         errorConexion.codigo = 'ERROR_CONEXION'
         throw errorConexion
@@ -1629,10 +1634,10 @@ function MapaCentrosAdmin({ sesion, onSalir }) {
         return res.json()
       })
       .then((datos) => { if (activo) { setClinicas(Array.isArray(datos) ? datos : []); setError('') } })
-      .catch((err) => { if (activo) setError(err) })
+      .catch((err) => { if (activo && err?.name !== 'AbortError') setError(err) })
       .finally(() => { if (activo) setCargando(false) })
-    return () => { activo = false }
-  }, [recarga])
+    return () => { activo = false; controlador.abort() }
+  }, [recarga, sesion?.token])
 
   function recargar() { setCargando(true); setRecarga((v) => v + 1) }
 

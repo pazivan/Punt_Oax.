@@ -219,7 +219,19 @@ export default function InformacionUtil({ sesion, onSalir, sinEncabezado = false
           {/* Enlace de regreso */}
           <div className="detalle-back-margin">
             <div className="detalle-back-wrap">
-              <Link to="/inicio" className="detalle-back-link" style={{ textDecoration: 'none' }}>
+              <Link
+                to={
+                  sesion
+                    ? sesion.tipo === 'clinica'
+                      ? '/panel-clinica'
+                      : sesion.tipo === 'administrador'
+                        ? '/admin'
+                        : '/inicio'
+                    : '/conocenos'
+                }
+                className="detalle-back-link"
+                style={{ textDecoration: 'none' }}
+              >
                 <span className="detalle-back-icon" aria-hidden="true">
                   <ArrowLeft size={14} color="#001D14" />
                 </span>
@@ -642,12 +654,28 @@ export default function InformacionUtil({ sesion, onSalir, sinEncabezado = false
                     Consulta el directorio interactivo con horarios, dirección exacta, teléfono, requisitos y servicios por municipio.
                   </p>
                 </div>
-                <Link to="/mapa" className="inicio-hero-cta-link">
-                  <span className="inicio-hero-cta-text">Ir al mapa de centros</span>
-                  <span className="inicio-hero-cta-icon" aria-hidden="true">
-                    <ArrowRight size={14} color="#FFFFFF" />
-                  </span>
-                </Link>
+                {sesion ? (
+                  <Link to="/mapa" className="inicio-hero-cta-link">
+                    <span className="inicio-hero-cta-text">Ir al mapa de centros</span>
+                    <span className="inicio-hero-cta-icon" aria-hidden="true">
+                      <ArrowRight size={14} color="#FFFFFF" />
+                    </span>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/login"
+                    state={{
+                      aviso: 'Necesitas iniciar sesión o crear una cuenta para ver el mapa de centros de salud.',
+                      from: '/mapa',
+                    }}
+                    className="inicio-hero-cta-link"
+                  >
+                    <span className="inicio-hero-cta-text">Iniciar sesión para ver el mapa</span>
+                    <span className="inicio-hero-cta-icon" aria-hidden="true">
+                      <ArrowRight size={14} color="#FFFFFF" />
+                    </span>
+                  </Link>
+                )}
               </div>
             </section>
           )}

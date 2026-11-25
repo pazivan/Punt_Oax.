@@ -1,3 +1,9 @@
+import {
+  emitirEventoSesionExpirada,
+  limpiarActividadLocal,
+  registrarActividadLocal,
+} from '../utils/sesionInactividad.js'
+
 function mensajeError(estado) {
   if (estado === 400) return 'Revisa los datos enviados e inténtalo de nuevo.'
   if (estado === 401) return 'Correo o contraseña incorrectos.'
@@ -125,15 +131,32 @@ export function guardarSesion(respuesta, tipo) {
       typeof cuenta !== 'object' || Array.isArray(cuenta)) {
     throw new Error('La respuesta de inicio de sesión no es válida.')
   }
-  const sesion = { token: respuesta.token, cuenta, tipo }
+  const ahora = Date.now()
+  const sesion = {
+    token: respuesta.token,
+    cuenta,
+    tipo,
+    iniciada_en: ahora,
+    ...(respuesta.sesion_politica ? { politica: respuesta.sesion_politica } : {}),
+  }
   try {
     localStorage.setItem(CLAVE_MIGRACION, '1')
     localStorage.setItem(CLAVE_SESION, JSON.stringify(sesion))
     sessionStorage.removeItem(CLAVE_SESION)
+    registrarActividadLocal(ahora)
   } catch {
     throw new Error('No se pudo guardar la sesión en este navegador.')
   }
   return sesion
+}
+
+export function actualizarPoliticaSesionLocal(politica) {
+  if (!politica || typeof politica !== 'object') return
+  try {
+    const sesion = leerSesion()
+    if (!sesion) return
+    localStorage.setItem(CLAVE_SESION, JSON.stringify({ ...sesion, politica }))
+  } catch { /* ignorar error de almacenamiento local */ }
 }
 
 let cacheCitas = { token: null, ts: 0, promesa: null, resultado: null }
@@ -145,6 +168,7 @@ export function invalidarCacheCitas() {
 
 export function cerrarSesion() {
   invalidarCacheCitas()
+  limpiarActividadLocal()
   try {
     localStorage.setItem(CLAVE_MIGRACION, '1')
     localStorage.removeItem(CLAVE_SESION)
@@ -168,6 +192,16 @@ export async function revocarSesion(token = leerSesion()?.token) {
   finally { clearTimeout(plazo) }
 }
 
+const CODIGOS_SESION_INVALIDA = [
+  'TOKEN_EXPIRADO',
+  'TOKEN_INVALIDO',
+  'SESION_INVALIDA',
+  'SESION_REVOCADA',
+  'SESION_EXPIRADA_INACTIVIDAD',
+  'SESION_EXPIRADA_ABSOLUTA',
+  'CUENTA_DESACTIVADA',
+]
+
 export async function enviarConSesion(ruta, opciones = {}) {
   const token = leerSesion()?.token
   if (!token) {
@@ -177,13 +211,16 @@ export async function enviarConSesion(ruta, opciones = {}) {
     throw error
   }
 
+  const { segundoPlano = false, ...opcionesFetch } = opciones || {}
+
   let respuesta
   try {
     respuesta = await fetch(ruta, {
-      ...opciones,
-      method: opciones.method || 'GET',
+      ...opcionesFetch,
+      method: opcionesFetch.method || 'GET',
       headers: {
-        ...(opciones.headers || {}),
+        ...(opcionesFetch.headers || {}),
+        ...(segundoPlano ? { 'X-Puntoax-Background': '1' } : {}),
         Authorization: `Bearer ${token}`,
       },
     })
@@ -196,20 +233,79 @@ export async function enviarConSesion(ruta, opciones = {}) {
   }
 
   try {
-    return await leerRespuesta(respuesta)
+    const datos = await leerRespuesta(respuesta)
+    if (!segundoPlano) registrarActividadLocal(Date.now())
+    if (datos?.sesion_politica) actualizarPoliticaSesionLocal(datos.sesion_politica)
+    return datos
   } catch (error) {
     // La falta de permisos o el estado de la clínica no invalidan la sesión.
-    // Solo las respuestas que indican credenciales inválidas la cierran.
+    // Solo las respuestas que indican credenciales inválidas o expiradas la cierran.
     if ((respuesta.status === 401 ||
-        (respuesta.status === 403 &&
-          ['TOKEN_EXPIRADO', 'TOKEN_INVALIDO', 'SESION_INVALIDA', 'CUENTA_DESACTIVADA'].includes(error.codigo))) &&
-        leerSesion()?.token === token) cerrarSesion()
+        (respuesta.status === 403 && CODIGOS_SESION_INVALIDA.includes(error.codigo))) &&
+        leerSesion()?.token === token) {
+      cerrarSesion()
+      emitirEventoSesionExpirada(error.codigo || 'SESION_EXPIRADA', error.message)
+    }
     throw error
   }
 }
 
-export async function consultarPerfil() {
-  return enviarConSesion('/api/auth/perfil')
+export async function consultarPerfil({ segundoPlano = false } = {}) {
+  return enviarConSesion('/api/auth/perfil', segundoPlano ? { segundoPlano: true } : undefined)
+}
+
+export async function registrarActividadSesion() {
+  return enviarConSesion('/api/auth/actividad', { method: 'POST' })
+}
+
+export async function consultarClinicasCatalogo({ signal } = {}) {
+  const token = leerSesion()?.token
+  if (!token) {
+    const error = new Error('Inicia sesión para consultar el mapa de centros.')
+    error.status = 401
+    error.codigo = 'SESION_REQUERIDA'
+    throw error
+  }
+
+  let respuesta
+  try {
+    respuesta = await fetch('/api/clinicas', {
+      method: 'GET',
+      signal,
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  } catch (err) {
+    if (err?.name === 'AbortError') throw err
+    const error = new Error('No se pudieron cargar las clínicas. Revisa que el servidor Node esté activo.')
+    error.esRed = true
+    error.esTemporal = true
+    error.codigo = 'ERROR_CONEXION'
+    throw error
+  }
+
+  if (!respuesta.ok) {
+    let contenido
+    try { contenido = await respuesta.json() } catch { contenido = null }
+    const error = new Error(
+      typeof contenido?.error === 'string' && contenido.error.trim()
+        ? contenido.error
+        : `El servidor respondió con estado ${respuesta.status}`
+    )
+    error.status = respuesta.status
+    error.codigo = contenido?.codigo
+    error.esTemporal = respuesta.status >= 500
+    if ((respuesta.status === 401 ||
+        (respuesta.status === 403 && CODIGOS_SESION_INVALIDA.includes(error.codigo))) &&
+        leerSesion()?.token === token) {
+      cerrarSesion()
+      emitirEventoSesionExpirada(error.codigo || 'SESION_EXPIRADA', error.message)
+    }
+    throw error
+  }
+
+  const datos = await respuesta.json()
+  registrarActividadLocal(Date.now())
+  return Array.isArray(datos) ? datos : []
 }
 
 export async function actualizarPerfilUsuario({ nombre, apellidos, telefono } = {}) {
@@ -253,7 +349,7 @@ export const bloquearDiaClinica = (fecha) => enviarConSesion('/api/clinicas/mi-a
 
 // Citas del paciente autenticado: el servidor filtra por su JWT.
 // Deduplica solicitudes simultáneas y reutiliza respuesta reciente para acelerar Inicio/Campana.
-export function consultarCitasUsuario({ forzar = false } = {}) {
+export function consultarCitasUsuario({ forzar = false, segundoPlano = false } = {}) {
   const token = leerSesion()?.token || null
   const ahora = Date.now()
   if (!forzar && token && cacheCitas.token === token) {
@@ -262,7 +358,7 @@ export function consultarCitasUsuario({ forzar = false } = {}) {
       return Promise.resolve(cacheCitas.resultado)
     }
   }
-  const promesa = enviarConSesion('/api/citas')
+  const promesa = enviarConSesion('/api/citas', segundoPlano ? { segundoPlano: true } : undefined)
     .then((datos) => {
       cacheCitas = { token, ts: Date.now(), promesa: null, resultado: datos }
       return datos
