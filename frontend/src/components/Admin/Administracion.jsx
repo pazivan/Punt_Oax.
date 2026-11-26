@@ -6,7 +6,7 @@ import {
   AlertCircle, ArrowLeft, ArrowRight, Building2, CalendarDays, Check,
   CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, ClipboardList, Clock3,
   Download, ExternalLink, Eye, EyeOff, FileText, Globe, LayoutDashboard, LoaderCircle,
-  LogOut, Mail, Map as MapIcon, MapPin, Phone, Plus, RefreshCw, Search, ShieldCheck,
+  LogOut, Mail, Map as MapIcon, MapPin, Phone, RefreshCw, Search, ShieldCheck,
   SlidersHorizontal, User, Users, X, XCircle,
 } from 'lucide-react'
 import {
@@ -28,6 +28,7 @@ import L from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import './Administracion.css'
+import { useDialogFocus } from '../../utils/useDialogFocus.js'
 
 const ETIQUETAS_TIPO_SOLICITUD = {
   postulacion: 'Postulación inicial',
@@ -606,13 +607,15 @@ function Documentos({ documentos }) {
 }
 
 function ModalAccion({ accion, procesando, error, observaciones, setObservaciones, cerrar, confirmar }) {
+  const dialogoRef = useRef(null)
+  useDialogFocus(dialogoRef, true, cerrar, procesando)
   const esRechazo = accion === 'rechazar'
   useEffect(() => {
     const tecla = (e) => { if (e.key === 'Escape' && !procesando) cerrar() }
     document.addEventListener('keydown', tecla)
     return () => document.removeEventListener('keydown', tecla)
   }, [cerrar, procesando])
-  return <div className="admin-modal-fondo" role="presentation"><div className="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-modal-titulo" aria-describedby="admin-modal-descripcion">
+  return <div className="admin-modal-fondo" role="presentation"><div ref={dialogoRef} tabIndex={-1} className="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-modal-titulo" aria-describedby="admin-modal-descripcion">
     <div className="admin-modal-cabecera"><span className={`admin-modal-icon admin-modal-icon--${accion}`}>
       {['aprobar', 'mostrar'].includes(accion) ? <CheckCircle2 size={25} /> : accion === 'rechazar' ? <XCircle size={25} /> : <EyeOff size={25} />}
     </span><button type="button" className="admin-cerrar" onClick={cerrar} disabled={procesando} aria-label="Cerrar"><X size={20} /></button></div>
@@ -790,7 +793,6 @@ function ListaClinicasAdmin({ onSalir }) {
   return <>
     <Encabezado titulo="Clínicas registradas" descripcion="Consulta todas las clínicas almacenadas en la plataforma y gestiona su visibilidad." onSalir={onSalir}
       acciones={<>
-        <Link to="/admin/clinicas/nueva" className="admin-btn admin-btn--primario"><Plus size={17} />Registrar clínica</Link>
         <button type="button" className="admin-btn admin-btn--outline" onClick={recargar} disabled={cargando}><RefreshCw size={17} />Actualizar</button>
       </>} />
     <div className="admin-cuerpo">

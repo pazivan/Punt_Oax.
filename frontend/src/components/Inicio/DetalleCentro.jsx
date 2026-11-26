@@ -18,6 +18,7 @@ import '../../styles/Inicio.css';
 import { normalizarUrlExterna, urlEnTexto } from '../../utils/enlaces.js';
 import { ubicacionConfirmada } from '../../utils/centros.js';
 import { formatearDistanciaKm } from '../../utils/cercania.js';
+import { formatearHorariosResumen } from '../../utils/comparacionFicha.js';
 
 /**
  * DetalleCentro - Ventana "Detalle de centro - PuntoOax" según diseño oficial de Figma (1280x1218),
@@ -58,6 +59,7 @@ export default function DetalleCentro({
 
   const esUsuario = !sesion || sesion.tipo === 'usuario';
   const servicios = Array.isArray(clinica.servicios) ? clinica.servicios : [];
+  const detalles = Array.isArray(clinica.servicios_detallados) ? clinica.servicios_detallados : [];
   const linksRelacionados = Array.isArray(clinica.links_relacionados)
     ? clinica.links_relacionados.filter(Boolean)
     : [];
@@ -181,6 +183,16 @@ export default function DetalleCentro({
                   </div>
                 </div>
               )}
+              {detalles.map((servicio) => (
+                <div className="detalle-general-info" key={servicio.id_clinica_servicio}>
+                  <h3 className="detalle-section-h3">{servicio.nombre}</h3>
+                  <p>{servicio.detalle_servicio || 'Descripción específica no registrada.'}</p>
+                  <p>Requisitos: {servicio.requisitos || 'No registrados; confirma con el centro.'}</p>
+                  <p>Costo: {servicio.costo_texto || (servicio.costo != null
+                    ? Number(servicio.costo).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
+                    : 'No registrado; confirma con el centro.')}</p>
+                </div>
+              ))}
 
               {/* Center Data Grid (Columnas exactas del archivo Filtración) */}
               <div className="detalle-data-grid-section">
@@ -196,7 +208,7 @@ export default function DetalleCentro({
                       <span className="detalle-data-label">Horario</span>
                     </div>
                     <p className="detalle-data-value">
-                      {clinica.horario || 'No especificado'}
+                      {clinica.horario || (clinica.horarios?.length ? formatearHorariosResumen(clinica.horarios) : 'Horario no registrado; confirma con el centro.')}
                     </p>
                   </div>
 

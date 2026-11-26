@@ -26,45 +26,26 @@ import { consultarEspaciosClinica, solicitarCita } from '../../api/auth.js';
 import { validarEmail, validarTelefono, normalizarTelefono, MENSAJE_TELEFONO } from '../../utils/validaciones.js';
 import CampoTelefono from '../CampoTelefono.jsx';
 import { leerPerfilLocal, guardarPerfilLocal } from '../../utils/perfilLocal.js';
+import { formatearHorariosResumen } from '../../utils/comparacionFicha.js';
 import '../../styles/Inicio.css';
 
-const NOMBRE_MIN = 2;
-const NOMBRE_MAX = 60;
-const APELLIDOS_MIN = 2;
-const APELLIDOS_MAX = 80;
-const REGEX_SOLO_LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
-
-function limpiarTextoNombre(valor, maxLen) {
-  return String(valor || '')
-    .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '')
-    .replace(/\s{2,}/g, ' ')
-    .slice(0, maxLen);
-}
+import { NOMBRE_MIN, NOMBRE_MAX, NOMBRE_MIN as APELLIDOS_MIN, APELLIDOS_MAX, REGEX_NOMBRE as REGEX_SOLO_LETRAS, limpiarTextoNombre } from '../../utils/nombres.mjs';
 
 function formatearHorarioDeCentro(clinica) {
   if (typeof clinica?.horario === 'string' && clinica.horario.trim()) {
     return clinica.horario.trim();
   }
   if (Array.isArray(clinica?.horarios) && clinica.horarios.length > 0) {
-    const diasNombres = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    return clinica.horarios
-      .map((h) => {
-        const dia = diasNombres[h.dia_semana] ?? `Día ${h.dia_semana}`;
-        return `${dia} ${h.apertura}–${h.cierre}`;
-      })
-      .join(', ');
+    return formatearHorariosResumen(clinica.horarios);
   }
   return 'Consultar disponibilidad en el Paso 2';
 }
 
-function obtenerRequisitosDeCentro(clinica, servicioSeleccionado) {
+function obtenerRequisitosDeCentro(_clinica, servicioSeleccionado) {
   if (typeof servicioSeleccionado?.requisitos === 'string' && servicioSeleccionado.requisitos.trim()) {
     return servicioSeleccionado.requisitos.trim();
   }
-  if (typeof clinica?.requisitos === 'string' && clinica.requisitos.trim()) {
-    return clinica.requisitos.trim();
-  }
-  return 'Sin requisitos adicionales especificados por el centro.';
+  return 'Requisitos no registrados para este servicio; confirma con el centro.';
 }
 
 const ZONA_HORARIA = 'America/Mexico_City';
@@ -117,12 +98,6 @@ function etiquetaHora(fechaHora) {
   return new Date(fechaHora).toLocaleTimeString('es-MX', {
     timeZone: ZONA_HORARIA, hour: '2-digit', minute: '2-digit', hour12: false,
   });
-}
-
-function categoriaDeServicio(clinica) {
-  const categorias = Array.isArray(clinica?.categorias) ? clinica.categorias : [];
-  if (categorias.includes('Aborto')) return 'ILE / Salud Reproductiva';
-  return categorias[0] || 'Detección de ITS';
 }
 
 /**
@@ -234,9 +209,8 @@ export default function AgendarCitaDatos({
         id_clinica: clinicaActiva?.id_clinica || '',
         id_servicio: espacio.id_servicio,
         nombre: espacio.nombre_servicio,
-        categoria: categoriaDeServicio(clinicaActiva),
-        requisitos:
-          clinicaActiva?.requisitos || 'Presentar CURP o identificación oficial. Sin ayuno.',
+        categoria: espacio.categoria || '',
+        requisitos: espacio.requisitos || null,
         requiere_cita: true,
         activo: true,
       });
@@ -798,7 +772,7 @@ export default function AgendarCitaDatos({
                           <ShieldCheck size={17} color="#596763" />
                         </span>
                         <span className="agendar-privacy-text">
-                          Tu información se comparte únicamente con el centro seleccionado.
+                          El centro seleccionado y la administración autorizada pueden consultar los datos necesarios para gestionar tu cita.
                         </span>
                       </div>
 

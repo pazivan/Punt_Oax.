@@ -1,14 +1,8 @@
 const { esUuid } = require('./validacionesCitas');
 const { consultarEstadoClinica, esEstadoOperativo, respuestaNoAprobada } = require('./clinicasEstado');
+const { fechaValida, enHorarioSql } = require('./horarios');
 
-const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-function fechaValida(fecha) {
-  if (typeof fecha !== 'string' || !FECHA.test(fecha)) return false;
-  const d = new Date(`${fecha}T12:00:00Z`);
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === fecha;
-}
 
 function festivoNacional(fecha) {
   if (!fechaValida(fecha)) return null;
@@ -136,11 +130,7 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
         FROM clinicas_servicios cs WHERE cs.id_clinica_servicio = ed.id_clinica_servicio
           AND cs.id_clinica = $1 AND ed.habilitado AND ed.fecha_hora_inicio > NOW()
           AND NOT EXISTS (SELECT 1 FROM citas ci WHERE ci.id_espacio = ed.id_espacio AND ci.estado <> 'cancelada')
-          AND NOT EXISTS (SELECT 1 FROM horarios_atencion h WHERE h.id_clinica = cs.id_clinica
-            AND h.dia_semana = EXTRACT(DOW FROM ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')
-            AND (h.es_24_horas OR (NOT h.cruza_medianoche
-              AND (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::time >= h.hora_apertura
-              AND (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::time < h.hora_cierre)))
+          AND NOT ${enHorarioSql('ed.fecha_hora_inicio', 'cs.id_clinica')}
         RETURNING ed.id_espacio`, [req.usuario.id]);
       await client.query('COMMIT');
       return responder(res, 200, { mensaje: 'Horario actualizado; las citas existentes se conservan.',
@@ -160,9 +150,7 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
         ((($2::date + $3::time) AT TIME ZONE 'America/Mexico_City') > NOW()) AS futuro,
         ($2::date >= (NOW() AT TIME ZONE 'America/Mexico_City')::date
           AND $2::date < (NOW() AT TIME ZONE 'America/Mexico_City')::date + 15) AS en_ventana,
-        EXISTS (SELECT 1 FROM horarios_atencion h WHERE h.id_clinica = cs.id_clinica
-          AND h.dia_semana = EXTRACT(DOW FROM $2::date)
-          AND (h.es_24_horas OR (NOT h.cruza_medianoche AND $3::time >= h.hora_apertura AND $3::time < h.hora_cierre))) AS en_horario,
+        ${enHorarioSql("(($2::date + $3::time) AT TIME ZONE 'America/Mexico_City')", 'cs.id_clinica')} AS en_horario,
         EXISTS (SELECT 1 FROM clinicas_dias_bloqueados b WHERE b.id_clinica = cs.id_clinica AND b.fecha = $2::date) AS bloqueado
         FROM clinicas_servicios cs JOIN clinicas cl ON cl.id_clinica = cs.id_clinica
         JOIN servicios s ON s.id_servicio = cs.id_servicio
@@ -174,6 +162,12 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
       if (!registro.futuro || !registro.en_ventana) return responder(res, 400, { error: 'Elige una hora futura dentro de los próximos 15 días.' });
       if (!registro.en_horario) return responder(res, 409, { error: 'La hora no coincide con el horario de atención.' });
       if (registro.bloqueado || festivoNacional(fecha)) return responder(res, 409, { error: 'No se pueden ofrecer cupos en un día no laborable.' });
+      const choque = await client.query(`SELECT 1 FROM espacios_disponibles
+        WHERE id_clinica_servicio = $1 AND habilitado
+          AND fecha_hora_inicio < (($2::date + $3::time) AT TIME ZONE 'America/Mexico_City') + INTERVAL '1 hour'
+          AND fecha_hora_inicio + INTERVAL '1 hour' > (($2::date + $3::time) AT TIME ZONE 'America/Mexico_City')
+        LIMIT 1`, [servicio, fecha, hora]);
+      if (choque.rows.length) return responder(res, 409, { error: 'El cupo se superpone con otro de este servicio. Cada cita dura una hora.' });
       const { rows: espacios } = await client.query(`INSERT INTO espacios_disponibles (id_clinica_servicio, fecha_hora_inicio)
         VALUES ($1, ($2::date + $3::time) AT TIME ZONE 'America/Mexico_City')
         ON CONFLICT (id_clinica_servicio, fecha_hora_inicio) DO NOTHING RETURNING id_espacio`, [servicio, fecha, hora]);
@@ -186,20 +180,32 @@ function registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol }
   app.patch('/api/clinicas/mi-agenda/espacios/:id', ...soloClinica, envolver(async (req, res) => {
     if (!esUuid(req.params.id) || typeof req.body?.habilitado !== 'boolean')
       return responder(res, 400, { error: 'Cupo o estado no válido.' });
-    const { rows } = await pool.query(`UPDATE espacios_disponibles ed SET habilitado = $3
+    const client = await pool.connect();
+    try {
+    await client.query('BEGIN');
+    await client.query('SELECT id_clinica FROM clinicas WHERE id_clinica = $1 FOR UPDATE', [req.usuario.id]);
+    const { rows: fechas } = await client.query(`SELECT
+      (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::date::text AS fecha
+      FROM espacios_disponibles ed JOIN clinicas_servicios cs ON cs.id_clinica_servicio = ed.id_clinica_servicio
+      WHERE ed.id_espacio = $1 AND cs.id_clinica = $2`, [req.params.id, req.usuario.id]);
+    if (req.body.habilitado && festivoNacional(fechas[0]?.fecha))
+      return responder(res, 409, { error: 'No se pueden ofrecer cupos en un día no laborable.' });
+    const { rows } = await client.query(`UPDATE espacios_disponibles ed SET habilitado = $3
       FROM clinicas_servicios cs WHERE ed.id_clinica_servicio = cs.id_clinica_servicio
         AND cs.id_clinica = $1 AND ed.id_espacio = $2 AND ed.fecha_hora_inicio > NOW()
         AND NOT EXISTS (SELECT 1 FROM citas ci WHERE ci.id_espacio = ed.id_espacio AND ci.estado <> 'cancelada')
         AND NOT EXISTS (SELECT 1 FROM clinicas_dias_bloqueados b WHERE b.id_clinica = cs.id_clinica
           AND b.fecha = (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::date)
-        AND ($3 = FALSE OR EXISTS (SELECT 1 FROM horarios_atencion h WHERE h.id_clinica = cs.id_clinica
-          AND h.dia_semana = EXTRACT(DOW FROM ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')
-          AND (h.es_24_horas OR (NOT h.cruza_medianoche
-            AND (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::time >= h.hora_apertura
-            AND (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::time < h.hora_cierre))))
+        AND ($3 = FALSE OR (${enHorarioSql('ed.fecha_hora_inicio', 'cs.id_clinica')}
+          AND NOT EXISTS (SELECT 1 FROM espacios_disponibles otro
+            WHERE otro.id_clinica_servicio = ed.id_clinica_servicio AND otro.id_espacio <> ed.id_espacio
+              AND otro.habilitado AND otro.fecha_hora_inicio < ed.fecha_hora_inicio + INTERVAL '1 hour'
+              AND otro.fecha_hora_inicio + INTERVAL '1 hour' > ed.fecha_hora_inicio)))
       RETURNING ed.id_espacio`, [req.usuario.id, req.params.id, req.body.habilitado]);
+    await client.query('COMMIT');
     return rows.length ? responder(res, 200, { mensaje: 'Cupo actualizado.' })
       : responder(res, 409, { error: 'No se puede modificar este cupo (reservado, bloqueado o inexistente).' });
+    } finally { await client.query('ROLLBACK').catch(() => {}); client.release(); }
   }));
 
   app.post('/api/clinicas/mi-agenda/bloqueos', ...soloClinica, envolver(async (req, res) => {

@@ -3,6 +3,8 @@
  * entre la versión aprobada/guardada y los datos editados en el formulario.
  */
 
+import { areasDesdeServicios } from './servicios.mjs'
+
 const ETIQUETAS_TIPO = {
   publica: 'Institución pública',
   privada: 'Clínica privada',
@@ -56,15 +58,8 @@ export function formatearHorariosResumen(horarios) {
 }
 
 function extraerAreasDesdeFicha(ficha) {
-  const mapa = { its: { seleccionado: false, detalle: '' }, ile: { seleccionado: false, detalle: '' } }
-  for (const s of ficha?.servicios || []) {
-    if (s.categoria in mapa) {
-      mapa[s.categoria] = {
-        seleccionado: true,
-        detalle: normalizarTexto(s.detalle_servicio || s.detalle || ''),
-      }
-    }
-  }
+  const mapa = areasDesdeServicios(ficha?.servicios)
+  for (const area of Object.values(mapa)) area.detalle = normalizarTexto(area.detalle)
   return mapa
 }
 

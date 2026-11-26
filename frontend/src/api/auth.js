@@ -9,6 +9,7 @@ function mensajeError(estado) {
   if (estado === 401) return 'Correo o contraseña incorrectos.'
   if (estado === 403) return 'No tienes permisos para realizar esta acción.'
   if (estado === 409) return 'Este correo ya está registrado.'
+  if (estado === 413) return 'El archivo o formulario supera el tamaño permitido. Adjunta hasta cinco documentos de 5 MB cada uno.'
   return `Error del servidor (${estado}). Inténtalo más tarde.`
 }
 

@@ -1,3 +1,5 @@
+// HISTÓRICA, fuera del gate vigente: esperaba catálogo sin sesión y registro
+// sin verificación. No ejecutar como criterio de entrega; ver docs/entrega-local-auditada.md.
 // Navegador real, API y PostGIS locales; no intercepta ni simula respuestas.
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');

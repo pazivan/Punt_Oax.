@@ -59,7 +59,7 @@ export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
               {/* Descripción (max-width: 576px, height: 48px) */}
               <div className="inicio-hero-desc-wrap">
                 <p className="inicio-hero-desc">
-                  Consulta centros verificados de detección de ITS e interrupción legal del embarazo, conoce sus servicios y organiza tu visita con tranquilidad.
+                  Consulta centros publicados de detección de ITS e interrupción legal del embarazo, conoce sus servicios y confirma sus datos con el establecimiento antes de acudir.
                 </p>
               </div>
 
@@ -86,7 +86,7 @@ export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
                   <span className="inicio-hero-check-icon" aria-hidden="true">
                     <Check size={13} color="#001D14" strokeWidth={2.5} />
                   </span>
-                  <span className="inicio-hero-check-text">Centros verificados</span>
+                  <span className="inicio-hero-check-text">Información revisada</span>
                 </div>
               </div>
             </div>

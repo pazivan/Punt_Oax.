@@ -278,9 +278,12 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
     setMensajes((prev) => [...prev, { id: idUsuario, emisor: 'usuario', texto: limpia }])
     setPregunta('')
     setCargando(true)
+    const controlador = new AbortController()
+    const plazo = setTimeout(() => controlador.abort(), 45000)
 
     try {
       const respuesta = await fetch('/api/asistente/consultar', {
+        signal: controlador.signal,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -311,10 +314,13 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
         {
           id: `err-${Date.now()}`,
           emisor: 'error',
-          texto: err?.message || 'No se pudo conectar con el asistente. Revisa tu conexión e inténtalo de nuevo.',
+          texto: err?.name === 'AbortError'
+            ? 'El asistente tardó demasiado en responder. Puedes continuar desde el mapa de centros.'
+            : `${err?.message || 'No se pudo conectar con el asistente.'} Puedes continuar desde el mapa de centros.`,
         },
       ])
     } finally {
+      clearTimeout(plazo)
       enviandoRef.current = false
       setCargando(false)
     }
@@ -446,6 +452,11 @@ export default function AsistentePuntOax({ abiertoInicial = false, sesion = null
                   </div>
                 )}
 
+                {m.emisor === 'error' && (
+                  <Link to={sesion?.token ? '/mapa' : '/login'} className="puntoax-asistente-fuente-link">
+                    {sesion?.token ? 'Continuar al mapa de centros' : 'Iniciar sesión para consultar los centros'}
+                  </Link>
+                )}
                 {Array.isArray(m.fuentes) && m.fuentes.length > 0 && (
                   <div className="puntoax-asistente-fuentes">
                     <span className="puntoax-asistente-fuentes-titulo">Establecimientos en PuntOax</span>

@@ -70,7 +70,7 @@ export default function AgendaClinica({ sesion, onSalir }) {
         <header className="agenda-encabezado">
           <span className="agenda-eyebrow">CLÍNICA · DISPONIBILIDAD</span>
           <h1>Gestionar agenda</h1>
-          <p>Crea cupos concretos para ITS o ILE durante los próximos 15 días. No se generan citas automáticamente ni se supone cuánto dura cada atención.</p>
+          <p>Crea cupos de una hora para ITS o ILE durante los próximos 15 días, dentro del horario de atención de tu centro.</p>
         </header>
         {error && <p role="alert" className="citas-alerta citas-alerta--error">{error}</p>}
         {mensaje && <p role="status" className="citas-alerta citas-alerta--ok">{mensaje}</p>}
@@ -123,7 +123,7 @@ export default function AgendaClinica({ sesion, onSalir }) {
                 </div>
                 <button type="submit" className="agenda-btn agenda-btn--primario" disabled={ocupado || !agenda.servicios.length}>Publicar cupo</button>
               </div>
-              <p className="agenda-ayuda">La clínica decide cuántas horas ofrecer y evita horas demasiado próximas: aún no se calcula duración ni capacidad automáticamente.</p>
+              <p className="agenda-ayuda">Los cupos del mismo servicio no pueden superponerse. ITS e ILE mantienen disponibilidad independiente.</p>
             </form>
           </section>
 

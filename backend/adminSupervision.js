@@ -1,8 +1,8 @@
 const { festivoNacional } = require("./agendaClinica");
 const { esUuid } = require("./validacionesCitas");
+const { fechaValida } = require("./horarios");
 
 const ESTADOS_CITA = ["confirmada", "completada", "cancelada", "no_asistio"];
-const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 const respuesta = (status, body) => ({ status, body });
 
 function fechaMexicoDesdeIso(valor) {
@@ -157,7 +157,7 @@ async function consultarCalendarioAdmin(db, { id_clinica, fecha, page, limit } =
   if (id_clinica && !esUuid(id_clinica)) {
     return respuesta(400, { error: "Identificador de clínica no válido." });
   }
-  if (fecha !== undefined && fecha !== "" && (typeof fecha !== "string" || !FECHA_RE.test(fecha) || Number.isNaN(Date.parse(fecha)))) {
+  if (fecha !== undefined && fecha !== "" && !fechaValida(fecha)) {
     return respuesta(400, { error: "El parámetro 'fecha' debe tener formato AAAA-MM-DD." });
   }
 

@@ -1,5 +1,6 @@
 import { ArrowRight, Clock, Heart, MapPin, Navigation } from 'lucide-react';
 import { formatearDistanciaKm } from '../../utils/cercania.js';
+import { formatearHorariosResumen } from '../../utils/comparacionFicha.js';
 
 /**
  * TarjetaClinica - Tarjeta resumida de sede según diseño de Figma (ventana Mapa)
@@ -34,7 +35,7 @@ export default function TarjetaClinica({
   const servicios = Array.isArray(clinica.servicios) ? clinica.servicios : [];
   const etiquetaSuperior = clinica.etiqueta_ubicacion || clinica.municipio || 'Oaxaca';
   const textoUbicacion = clinica.direccion || clinica.municipio || 'Oaxaca';
-  const textoHorario = clinica.horario || 'Horario no especificado';
+  const textoHorario = clinica.horario || (clinica.horarios?.length ? formatearHorariosResumen(clinica.horarios) : 'Horario no registrado');
   const textoNivel = clinica.nivel_atencion
     ? `Nivel: ${clinica.nivel_atencion}`
     : 'Nivel no especificado';

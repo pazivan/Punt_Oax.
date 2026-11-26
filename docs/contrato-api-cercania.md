@@ -17,7 +17,9 @@ aquí primero y se avisa en el grupo.
 GET /api/clinicas/cercanas
 ```
 
-- **Pública**, igual que `GET /api/clinicas`: no requiere sesión.
+- **Autenticada**, igual que `GET /api/clinicas`: requiere `Authorization: Bearer <token>`.
+  Sin sesión devuelve 401. El mapa, directorio, búsqueda, cercanía y ficha
+  requieren registro e inicio de sesión; portada e información general son públicas.
 - Se registra **antes** de `GET /api/clinicas/:id` en `servidor.js`, para que
   Express no confunda `cercanas` con un identificador.
 
@@ -208,4 +210,3 @@ completo (ITS con coordenadas e ILE), los primeros resultados esperados son:
 Invoke-RestMethod "http://localhost:3000/api/clinicas/cercanas?lat=17.0654&lng=-96.7236&radio_km=10&limite=10" |
   Select-Object -ExpandProperty centros | Select-Object distancia_km, nombre
 ```
-

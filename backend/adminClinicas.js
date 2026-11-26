@@ -227,7 +227,9 @@ async function resolverSolicitud(pool, idSolicitud, cuerpo) {
     }
 
     const nuevoEstado = decision === "aprobar" ? "aprobada" : "rechazada";
-    const tipoSolicitud = actual.tipo_solicitud || actual.datos_ficha?.tipo_solicitud || "postulacion";
+    // Las solicitudes antiguas de ubicación tenían el default "postulacion"
+    // en la columna, pero el tipo correcto dentro del snapshot.
+    const tipoSolicitud = actual.datos_ficha?.tipo_solicitud || actual.tipo_solicitud || "postulacion";
     const esActualizacionAprobada =
       actual.estado_clinica === "aprobada" &&
       ["actualizacion_ubicacion", "actualizacion_informacion"].includes(tipoSolicitud);

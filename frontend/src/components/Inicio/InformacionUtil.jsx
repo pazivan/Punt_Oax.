@@ -316,7 +316,7 @@ export default function InformacionUtil({ sesion, onSalir, sinEncabezado = false
                 </article>
 
                 <article className="info-util-box">
-                  <h3 className="info-util-box-title">3. Privacidad absoluta</h3>
+                  <h3 className="info-util-box-title">3. Protección de datos personales</h3>
                   <p className="info-util-box-text">
                     Los datos personales, el motivo de consulta y los diagnósticos forman parte del expediente clínico confidencial protegido por la normativa sanitaria federal (Secretaría de Salud, 2016; Secretaría de Salud & CENSIDA, 2018).
                   </p>

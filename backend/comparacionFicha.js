@@ -140,7 +140,7 @@ function calcularCambiosRevisionServidor(fichaActual, body) {
       errores.areas_servicio = "Selecciona al menos un área válida (ITS o ILE).";
     } else {
       const nuevasAreas = [...new Set(body.areas_servicio)].sort();
-      const actualesAreas = [...new Set((fichaActual.servicios || []).map((s) => s.categoria).filter((c) => c in ETIQUETAS_AREA))].sort();
+      const actualesAreas = [...new Set((fichaActual.servicios || []).map((s) => String(s.categoria || "").trim().toLowerCase()).filter((c) => Object.hasOwn(ETIQUETAS_AREA, c)))].sort();
       if (JSON.stringify(actualesAreas) !== JSON.stringify(nuevasAreas)) {
         cambios.push({
           campo: "areas_servicio",

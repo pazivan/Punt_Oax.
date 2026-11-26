@@ -27,8 +27,9 @@ const {
 const { festivoNacional } = require("./agendaClinica");
 const { esEstadoOperativo, respuestaNoAprobada } = require("./clinicasEstado");
 const { validarTelefono, normalizarTelefono } = require("./validacionesRegistro");
+const { fechaValida, DURACION_CITA_MINUTOS, enHorarioSql } = require("./horarios");
+const { errorNombre } = require("../frontend/src/utils/nombres.mjs");
 
-const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ESTADOS = Array.from(ESTADOS_VALIDOS);
 const ESTADOS_CLINICA = Array.from(ESTADOS_PERMITIDOS_CLINICA);
 const MAX_DIAS_CONSULTA = 60;
@@ -102,7 +103,7 @@ async function listarEspaciosDisponibles(db, idClinica, { desde, hasta, servicio
   }
   for (const [nombre, valor] of [["desde", desde], ["hasta", hasta]]) {
     if (valor !== undefined &&
-        (typeof valor !== "string" || !FECHA_RE.test(valor) || Number.isNaN(Date.parse(valor)))) {
+        !fechaValida(valor)) {
       return respuesta(400, { error: `El parámetro '${nombre}' debe tener el formato AAAA-MM-DD.` });
     }
   }
@@ -125,10 +126,14 @@ async function listarEspaciosDisponibles(db, idClinica, { desde, hasta, servicio
   // Fechas en hora de México; sin 'desde'/'hasta' se muestran los próximos 30 días.
   const { rows } = await db.query(
      `SELECT ed.id_espacio, ed.fecha_hora_inicio, cs.id_clinica_servicio,
-             s.id_servicio, s.nombre AS nombre_servicio,
+             s.id_servicio, s.nombre AS nombre_servicio, s.categoria,
+             cs.requisitos, cs.requiere_cita,
              (ed.fecha_hora_inicio > NOW()) AS es_futuro,
-             NOT EXISTS (
-               SELECT 1 FROM citas ci WHERE ci.id_espacio = ed.id_espacio AND ci.estado <> 'cancelada'
+              NOT EXISTS (
+                SELECT 1 FROM citas ci JOIN espacios_disponibles ocupado ON ocupado.id_espacio = ci.id_espacio
+                WHERE ocupado.id_clinica_servicio = ed.id_clinica_servicio AND ci.estado <> 'cancelada'
+                  AND ocupado.fecha_hora_inicio < ed.fecha_hora_inicio + INTERVAL '1 hour'
+                  AND ocupado.fecha_hora_inicio + INTERVAL '1 hour' > ed.fecha_hora_inicio
              ) AS disponible,
              (ed.fecha_hora_inicio AT TIME ZONE 'America/Mexico_City')::date::text AS fecha_local
      FROM espacios_disponibles ed
@@ -136,13 +141,18 @@ async function listarEspaciosDisponibles(db, idClinica, { desde, hasta, servicio
      INNER JOIN servicios s ON s.id_servicio = cs.id_servicio
      WHERE cs.id_clinica = $1
        AND ($2::uuid IS NULL OR s.id_servicio = $2::uuid)
-       AND ed.habilitado = TRUE AND cs.activo = TRUE AND s.activo = TRUE
+        AND ed.habilitado = TRUE AND cs.activo = TRUE AND s.activo = TRUE
+        AND (NOT EXISTS (SELECT 1 FROM horarios_atencion ha WHERE ha.id_clinica = cs.id_clinica)
+             OR ${enHorarioSql('ed.fecha_hora_inicio', 'cs.id_clinica')})
        AND ($5::boolean OR ed.fecha_hora_inicio > NOW())
        AND ed.fecha_hora_inicio >= COALESCE($3::date::timestamp AT TIME ZONE 'America/Mexico_City', NOW())
        AND ed.fecha_hora_inicio < COALESCE(($4::date + 1)::timestamp AT TIME ZONE 'America/Mexico_City',
                                            NOW() + INTERVAL '30 days')
-       AND ($5::boolean OR NOT EXISTS (
-          SELECT 1 FROM citas ci WHERE ci.id_espacio = ed.id_espacio AND ci.estado <> 'cancelada'
+        AND ($5::boolean OR NOT EXISTS (
+           SELECT 1 FROM citas ci JOIN espacios_disponibles ocupado ON ocupado.id_espacio = ci.id_espacio
+           WHERE ocupado.id_clinica_servicio = ed.id_clinica_servicio AND ci.estado <> 'cancelada'
+             AND ocupado.fecha_hora_inicio < ed.fecha_hora_inicio + INTERVAL '1 hour'
+             AND ocupado.fecha_hora_inicio + INTERVAL '1 hour' > ed.fecha_hora_inicio
         ))
         AND NOT EXISTS (SELECT 1 FROM clinicas_dias_bloqueados b
           WHERE b.id_clinica = cs.id_clinica
@@ -165,14 +175,23 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
   const errorTelefono = validarTelefono(cuerpo?.telefono, { requerido: true });
   if (errorTelefono) return respuesta(400, { error: errorTelefono });
   const telefonoLimpio = normalizarTelefono(cuerpo.telefono);
-  const nombreLimpio = typeof cuerpo?.nombre === "string" ? cuerpo.nombre.trim().slice(0, 100) : "";
-  const apellidosLimpios = typeof cuerpo?.apellidos === "string" ? cuerpo.apellidos.trim().slice(0, 150) : "";
+  const errorDatos = errorNombre(cuerpo?.nombre) || errorNombre(cuerpo?.apellidos, { apellidos: true });
+  if (errorDatos) return respuesta(400, { error: errorDatos });
+  const nombreLimpio = typeof cuerpo?.nombre === "string" ? cuerpo.nombre.trim() : "";
+  const apellidosLimpios = typeof cuerpo?.apellidos === "string" ? cuerpo.apellidos.trim() : "";
 
   try {
     return await enTransaccion(pool, async (db) => {
+      // Serializar la agenda del paciente antes de comprobar cualquier espacio.
+      // Dos espacios diferentes no comparten el bloqueo de ed.
+      await db.query("SELECT id_usuario FROM usuarios WHERE id_usuario = $1 FOR UPDATE", [idUsuario]);
+      await db.query(`SELECT cs.id_clinica_servicio
+        FROM clinicas_servicios cs JOIN espacios_disponibles ed
+          ON ed.id_clinica_servicio = cs.id_clinica_servicio
+        WHERE ed.id_espacio = $1 FOR UPDATE OF cs`, [idEspacio]);
       // Bloquea el horario para que dos personas no lo reserven al mismo tiempo.
       const espacio = await db.query(
-        `SELECT ed.fecha_hora_inicio,
+        `SELECT ed.fecha_hora_inicio, ed.id_clinica_servicio,
                 (ed.habilitado AND cs.activo AND s.activo AND cl.estado_publicacion = 'aprobada') AS reservable,
                 ed.fecha_hora_inicio > NOW() AS es_futuro,
                  cl.id_clinica,
@@ -199,14 +218,23 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
         [idEspacio]
       );
       if (ocupado.rows.length) return respuesta(409, { error: "El horario seleccionado ya fue reservado." });
+      const servicioOcupado = await db.query(`SELECT 1 FROM citas ci
+        JOIN espacios_disponibles ed ON ed.id_espacio = ci.id_espacio
+        WHERE ed.id_clinica_servicio = $1 AND ci.estado <> 'cancelada'
+          AND ed.fecha_hora_inicio < $2::timestamptz + INTERVAL '1 hour'
+          AND ed.fecha_hora_inicio + INTERVAL '1 hour' > $2::timestamptz
+        LIMIT 1`, [e.id_clinica_servicio, e.fecha_hora_inicio]);
+      if (servicioOcupado.rows.length) return respuesta(409, { error: "El servicio ya tiene una cita durante este intervalo." });
 
       const choque = await db.query(
         `SELECT 1 FROM citas ci
          INNER JOIN espacios_disponibles ed ON ed.id_espacio = ci.id_espacio
-         WHERE ci.id_usuario = $1 AND ci.estado = 'confirmada' AND ed.fecha_hora_inicio = $2`,
+          WHERE ci.id_usuario = $1 AND ci.estado = 'confirmada'
+            AND ed.fecha_hora_inicio < $2::timestamptz + INTERVAL '1 hour'
+            AND ed.fecha_hora_inicio + INTERVAL '1 hour' > $2::timestamptz`,
         [idUsuario, e.fecha_hora_inicio]
       );
-      if (choque.rows.length) return respuesta(409, { error: "Ya tienes otra cita a esa misma hora." });
+      if (choque.rows.length) return respuesta(409, { error: "Ya tienes otra cita que se superpone con este horario. Cada cita dura una hora." });
 
       // Validar si la clínica tiene franjas de horarios_atencion y si el turno cae dentro de ellas
       if (e.id_clinica) {
@@ -216,7 +244,7 @@ async function solicitarCita(pool, idUsuario, cuerpo) {
           [e.id_clinica]
         );
         if (horariosClinica.length > 0 &&
-            !validarEnHorarioAtencion(e.fecha_hora_inicio, horariosClinica, "America/Mexico_City")) {
+            !validarEnHorarioAtencion(e.fecha_hora_inicio, horariosClinica, "America/Mexico_City", DURACION_CITA_MINUTOS)) {
           return respuesta(409, {
             error: "El horario seleccionado no coincide con los días y horas de atención de la clínica.",
           });

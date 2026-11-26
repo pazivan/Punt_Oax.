@@ -8,6 +8,8 @@
     "test": "node probar-db.js",
     "test:qa": "node --test tests/qa-catalogo-telefono.test.cjs tests/admin-clinicas.test.cjs tests/admin-usuarios.test.cjs tests/cercania.test.cjs tests/citas.test.cjs tests/citas-clinica.test.cjs tests/citas-modelo.test.cjs tests/datos-clinica.test.cjs tests/enlaces-informacion.test.cjs tests/habilitar-citas-its.test.cjs tests/importador-filtracion.test.cjs tests/catalogo-ile.test.cjs tests/restringir-acciones-rol.test.cjs tests/validaciones-registro.test.cjs tests/validar-horarios-permisos.test.cjs tests/migraciones.test.cjs",
     "test:qa:integration": "node --test --test-concurrency=1 tests/qa-municipios-migracion.integracion.cjs tests/correo.integracion.test.cjs tests/integracion-auth.test.cjs tests/qa-api.integracion.cjs",
+    "test:local": "npm run test:qa && node --test tests/sesion-inactividad-y-mapa.test.cjs tests/cercania-postgis.test.cjs",
+    "test:auditoria:integration": "node --test --test-concurrency=1 tests/auditoria-correcciones.integracion.cjs",
     "import:municipios": "node scripts/importar-municipios.js",
     "audit:municipios": "node scripts/auditar-municipios.js",
     "test:citas-modelo": "node --test tests/citas-modelo.test.cjs",

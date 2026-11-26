@@ -231,6 +231,8 @@ export default function MapaLeaflet({
               }}
             />
             <Marker
+              title="Tu ubicación actual"
+              alt="Tu ubicación actual"
               position={[ubicacionUsuario.lat, ubicacionUsuario.lng]}
               icon={crearIconoUsuario()}
               zIndexOffset={1500}
@@ -252,6 +254,8 @@ export default function MapaLeaflet({
           return (
             <Marker
               key={`${clinica.id_clinica}-${tipo}-${esPropia ? 'own' : 'std'}-${seleccionada ? 'sel' : 'base'}`}
+              title={clinica.nombre || 'Centro de salud'}
+              alt={clinica.nombre || 'Centro de salud'}
               position={coordenadas(clinica)}
               icon={crearIconoMarcador(tipo, seleccionada, esPropia)}
               zIndexOffset={esPropia ? 1500 : seleccionada ? 1000 : 0}

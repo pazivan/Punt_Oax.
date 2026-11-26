@@ -37,6 +37,7 @@ import PanelClinica from './PanelClinica.jsx'
 import SelectorUbicacionMapa from './SelectorUbicacionMapa.jsx'
 import EditorHorarios from './EditorHorarios.jsx'
 import HistorialSolicitudesClinica from './HistorialSolicitudesClinica.jsx'
+import { areasDesdeServicios } from '../../utils/servicios.mjs'
 
 const AREAS = [
   {
@@ -62,15 +63,7 @@ function numeroUbicacion(valor) {
 }
 
 function estadoInicialDesdeFicha(ficha) {
-  const servicios = { its: { seleccionado: false, detalle: '' }, ile: { seleccionado: false, detalle: '' } }
-  for (const servicio of ficha.servicios || []) {
-    if (servicio.categoria in servicios) {
-      servicios[servicio.categoria] = {
-        seleccionado: true,
-        detalle: servicio.detalle_servicio || '',
-      }
-    }
-  }
+  const servicios = areasDesdeServicios(ficha.servicios)
   const latitud = numeroUbicacion(ficha.clinica?.latitud)
   const longitud = numeroUbicacion(ficha.clinica?.longitud)
   return {
