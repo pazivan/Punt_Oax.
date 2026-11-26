@@ -25,7 +25,11 @@ revocación, cupos y revisión de postulaciones.
   permanecen en las rutas existentes `GET/PATCH /api/admin/*`, protegidas en
   `backend/adminClinicas.js`. No se cambió su implementación.
 
-## Pendiente de backend
+## Nota histórica — sustituida por el manual vigente
+
+El apartado siguiente describe ese sprint, no la entrega actual. Hoy existen
+`GET /api/auth/perfil`, `PATCH /api/auth/perfil` y cambio autenticado de contraseña;
+la reserva persiste contacto en servidor. Ver [manual vigente](entrega-local-auditada.md).
 
 Nombre, apellidos y teléfono del perfil **solo se guardan en localStorage**:
 no se sincronizan entre dispositivos y el servidor no los registra al reservar,

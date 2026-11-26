@@ -31,19 +31,7 @@ import { guardarPerfilLocal, leerPerfilLocal } from '../../utils/perfilLocal.js'
 import '../../styles/Inicio.css';
 import CampoTelefono from '../CampoTelefono.jsx';
 
-const NOMBRE_MIN = 2;
-const NOMBRE_MAX = 60;
-const APELLIDOS_MIN = 2;
-const APELLIDOS_MAX = 80;
-const REGEX_SOLO_LETRAS = /^[A-Za-zÁÉÍÓÚáéíóúÜüÑñ]+(?:[ '-][A-Za-zÁÉÍÓÚáéíóúÜüÑñ]+)*$/;
-
-function limpiarTextoNombre(valor, maxLen) {
-  if (typeof valor !== 'string') return '';
-  return valor
-    .replace(/[^A-Za-zÁÉÍÓÚáéíóúÜüÑñ '-]/g, '')
-    .replace(/\s{2,}/g, ' ')
-    .slice(0, maxLen);
-}
+import { NOMBRE_MIN, NOMBRE_MAX, NOMBRE_MIN as APELLIDOS_MIN, APELLIDOS_MAX, REGEX_NOMBRE as REGEX_SOLO_LETRAS, limpiarTextoNombre } from '../../utils/nombres.mjs';
 
 /**
  * MiPerfil - Vista de perfil del usuario autenticado.

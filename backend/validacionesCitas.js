@@ -175,7 +175,7 @@ function validarDisponibilidadHorario({
  * @param {string} zonaHoraria - Zona IANA de las franjas (por defecto UTC)
  * @returns {boolean}
  */
-function validarEnHorarioAtencion(fechaHora, horariosAtencion, zonaHoraria = "UTC") {
+function validarEnHorarioAtencion(fechaHora, horariosAtencion, zonaHoraria = "UTC", duracionMinutos = 0) {
   if (!Array.isArray(horariosAtencion) || horariosAtencion.length === 0) {
     // Si la clínica no tiene horarios estructurados cargados, no bloquear
     return true;
@@ -194,21 +194,17 @@ function validarEnHorarioAtencion(fechaHora, horariosAtencion, zonaHoraria = "UT
   const valor = (tipo) => partes.find((parte) => parte.type === tipo)?.value;
   const dias = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
   const diaSemana = dias[valor("weekday")];
-  const horaCita = `${valor("hour")}:${valor("minute")}`;
-  if (!Number.isInteger(diaSemana) || !/^\d{2}:\d{2}$/.test(horaCita)) return false;
-
-  const franjasDia = horariosAtencion.filter((h) => Number(h.dia_semana) === diaSemana);
-  if (franjasDia.length === 0) return false;
-
-  return franjasDia.some((h) => {
-    if (h.es_24_horas) return true;
-    const apertura = String(h.hora_apertura).slice(0, 5);
-    const cierre = String(h.hora_cierre).slice(0, 5);
-
-    if (h.cruza_medianoche) {
-      return horaCita >= apertura || horaCita < cierre;
-    }
-    return horaCita >= apertura && horaCita < cierre;
+  const minutoCita = Number(valor("hour")) * 60 + Number(valor("minute"));
+  if (!Number.isInteger(diaSemana) || !Number.isFinite(minutoCita)) return false;
+  const minutos = (hora) => { const [h, m] = String(hora).split(":").map(Number); return h * 60 + m; };
+  return horariosAtencion.some((h) => {
+    const dia = Number(h.dia_semana);
+    const esAnterior = dia === (diaSemana + 6) % 7;
+    if (dia !== diaSemana && !(esAnterior && (h.cruza_medianoche || h.es_24_horas))) return false;
+    const inicio = h.es_24_horas ? 0 : minutos(h.hora_apertura);
+    const fin = h.es_24_horas ? 1440 : minutos(h.hora_cierre) + (h.cruza_medianoche ? 1440 : 0);
+    const cita = minutoCita + (esAnterior ? 1440 : 0);
+    return cita >= inicio && cita < fin && cita + duracionMinutos <= fin;
   });
 }
 

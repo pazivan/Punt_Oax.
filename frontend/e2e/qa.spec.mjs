@@ -9,7 +9,7 @@ const bcrypt = require('../../backend/node_modules/bcryptjs')
 if (process.env.PUNTOAX_TEST_DB !== '1' || !process.env.PGDATABASE?.startsWith('puntoax_s4_test') ||
     !['127.0.0.1', 'localhost'].includes(process.env.PGHOST) ||
     ['5432', '55441'].includes(process.env.PGPORT)) throw new Error('Solo BD local aislada de QA.')
-const api = 'http://127.0.0.1:3107'
+const api = `http://127.0.0.1:${process.env.PUNTOAX_TEST_API_PORT || '3107'}`
 const capturas = process.env.PUNTOAX_QA_CAPTURAS || '/tmp/puntoax-qa-browser/capturas'
 let pool
 let clinica

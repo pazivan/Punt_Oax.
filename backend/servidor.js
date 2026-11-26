@@ -30,6 +30,7 @@ const { registrarRutasDatosClinica } = require("./datosClinica");
 const { calcularCambiosRevisionServidor } = require("./comparacionFicha");
 const { validarCoordenadas } = require("./ubicacion");
 const { municipios, fuenteMunicipios, resolverMunicipio, validarMunicipioEntrada } = require("../frontend/src/utils/municipios.mjs");
+const { errorNombre } = require("../frontend/src/utils/nombres.mjs");
 const {
   consultarEstadoClinica,
   esEstadoOperativo,
@@ -487,8 +488,17 @@ async function guardarHorarios(client, idClinica, horarios) {
   }
 }
 
-app.get("/health", (req, res) => {
+app.get(["/health", "/api/health"], (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.get("/api/ready", async (_req, res) => {
+  try {
+    await pool.query({ text: "SELECT 1", query_timeout: 2000 });
+    return res.json({ status: "ok", database: "ok" });
+  } catch {
+    return res.status(503).json({ status: "unavailable", database: "unavailable" });
+  }
 });
 
 // Catálogo real para el formulario institucional; nunca crea servicios nuevos desde el cliente.
@@ -678,6 +688,8 @@ app.post(
   procesarDocumentos,
   async (req, res) => {
     let client;
+    let commitSolicitado = false;
+    let commitConfirmado = false;
     const archivosGuardados = [];
     try {
       client = await pool.connect();
@@ -725,21 +737,27 @@ app.post(
             archivo.size, createHash("sha256").update(archivo.buffer).digest("hex")]
         );
       }
+      // Preparar la respuesta antes del commit: una lectura fallida todavía
+      // puede revertir tanto los metadatos como los archivos de este lote.
+      const ficha = await cargarFicha(req.usuario.id, client);
+      commitSolicitado = true;
       await client.query("COMMIT");
-
-      const ficha = await cargarFicha(req.usuario.id);
+      commitConfirmado = true;
       return res.status(201).json({ mensaje: "Documentos guardados correctamente.", ...ficha });
     } catch (error) {
-      if (client) {
+      if (client && !commitSolicitado) {
         try { await client.query("ROLLBACK"); } catch { /* Conservar el error original. */ }
       }
-      await Promise.allSettled(archivosGuardados.map((ruta) => fs.unlink(ruta)));
+      // Si se perdió la confirmación del COMMIT su resultado es incierto.
+      // Conservar los archivos es preferible a borrar un respaldo confirmado.
+      if (!commitSolicitado) await Promise.allSettled(archivosGuardados.map((ruta) => fs.unlink(ruta)));
       console.error("Error al guardar documentos de la clínica:", error.message);
       if (error.status) return res.status(error.status).json({ error: error.message });
       if (responderErrorEsquema(res, error)) return;
       return res.status(500).json({ error: "No se pudieron guardar los documentos." });
     } finally {
-      client?.release();
+      // Una conexión con COMMIT incierto no debe volver al pool.
+      client?.release(commitSolicitado && !commitConfirmado);
     }
   }
 );
@@ -848,10 +866,10 @@ app.post(
         documentos: ficha.documentos,
       };
       const { rows: solicitudes } = await client.query(
-        `INSERT INTO solicitudes_clinicas (id_clinica, estado, datos_ficha)
-         VALUES ($1, 'pendiente', $2)
+        `INSERT INTO solicitudes_clinicas (id_clinica, estado, tipo_solicitud, datos_ficha)
+         VALUES ($1, 'pendiente', 'postulacion', $2)
          RETURNING id_solicitud, estado, fecha_solicitud`,
-        [req.usuario.id, snapshot]
+         [req.usuario.id, snapshot]
       );
       await client.query(
         "UPDATE clinicas SET estado_publicacion = 'pendiente' WHERE id_clinica = $1",
@@ -1066,8 +1084,8 @@ app.post(
         ubicacion_solicitada: ubicacionSolicitada,
       };
       const { rows: solicitudes } = await client.query(
-        `INSERT INTO solicitudes_clinicas (id_clinica, estado, datos_ficha)
-         VALUES ($1, 'pendiente', $2)
+        `INSERT INTO solicitudes_clinicas (id_clinica, estado, tipo_solicitud, datos_ficha)
+         VALUES ($1, 'pendiente', 'actualizacion_ubicacion', $2)
          RETURNING id_solicitud, estado, fecha_solicitud`,
         [req.usuario.id, snapshot]
       );
@@ -1229,6 +1247,16 @@ app.get("/api/clinicas", autenticarToken, async (req, res) => {
         ), '[]'::json) AS servicios,
         COALESCE((
           SELECT json_agg(json_build_object(
+            'id_servicio', s.id_servicio, 'id_clinica_servicio', cs.id_clinica_servicio,
+            'nombre', s.nombre, 'categoria', s.categoria,
+            'detalle_servicio', cs.detalle_servicio, 'requisitos', cs.requisitos,
+            'costo', cs.costo, 'costo_texto', cs.costo_texto, 'requiere_cita', cs.requiere_cita
+          ) ORDER BY s.nombre)
+          FROM clinicas_servicios cs JOIN servicios s ON s.id_servicio = cs.id_servicio
+          WHERE cs.id_clinica = c.id_clinica AND cs.activo = TRUE AND s.activo = TRUE
+        ), '[]'::json) AS servicios_detallados,
+        COALESCE((
+          SELECT json_agg(json_build_object(
             'dia_semana', h.dia_semana,
             'apertura', to_char(h.hora_apertura, 'HH24:MI'),
             'cierre', to_char(h.hora_cierre, 'HH24:MI'),
@@ -1388,12 +1416,14 @@ app.post("/api/auth/registro-usuario", async (req, res) => {
       });
     }
 
-    const correoValido = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(correo);
+    const correoValido = correo.trim().length <= 255 && /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(correo.trim());
     if (!correoValido) {
       return res.status(400).json({
         error: "El formato del correo electrónico no es válido.",
       });
     }
+    const errorDatos = errorNombre(nombre) || errorNombre(apellidos, { apellidos: true });
+    if (errorDatos) return res.status(400).json({ error: errorDatos });
     if (!permitido(correo) || !proveedorCorreo.listo()) {
       return res.status(503).json({ error: "El correo no está disponible. Inténtalo más tarde." });
     }
@@ -1430,8 +1460,8 @@ app.post("/api/auth/registro-usuario", async (req, res) => {
         telefono,
         fecha_registro`,
       [
-        nombre,
-        apellidos,
+        typeof nombre === "string" ? nombre.trim() || null : null,
+        typeof apellidos === "string" ? apellidos.trim() || null : null,
         correo,
         hash,
         normalizarTelefono(telefono),
@@ -1816,18 +1846,14 @@ app.get("/api/auth/perfil", autenticarToken, (req, res) => {
 
 app.patch("/api/auth/perfil", autenticarToken, requerirRol(["usuario"]), async (req, res) => {
   const { nombre, apellidos, telefono } = req.body || {};
+  const errorDatos = errorNombre(nombre) || errorNombre(apellidos, { apellidos: true });
+  if (errorDatos) return res.status(400).json({ error: errorDatos });
   const errorTelefono = validarTelefono(telefono);
   if (errorTelefono) return res.status(400).json({ error: errorTelefono });
   const telefonoLimpio = normalizarTelefono(telefono);
 
   const nombreLimpio = typeof nombre === "string" ? nombre.trim() : null;
   const apellidosLimpios = typeof apellidos === "string" ? apellidos.trim() : null;
-  if (nombreLimpio && nombreLimpio.length > 100) {
-    return res.status(400).json({ error: "El nombre no puede superar los 100 caracteres." });
-  }
-  if (apellidosLimpios && apellidosLimpios.length > 150) {
-    return res.status(400).json({ error: "Los apellidos no pueden superar los 150 caracteres." });
-  }
 
   try {
     const { rows } = await pool.query(
@@ -1893,6 +1919,14 @@ registrarRutasAsistente(app, { pool, autenticarTokenOpcional });
 
 // Datos de la clínica publicada desde su panel (Sprint 7 · issue #65). Ver backend/datosClinica.js
 registrarRutasDatosClinica(app, { pool, autenticarToken, requerirRol });
+app.use((error, _req, res, _next) => {
+  if (error.type === "entity.parse.failed") return res.status(400).json({ error: "El cuerpo JSON de la petición no es válido." });
+  if (error.type === "entity.too.large") return res.status(413).json({ error: "La petición supera el tamaño permitido." });
+  console.error("Error no controlado:", error.code || error.name);
+  return res.status(500).json({ error: "No se pudo procesar la petición." });
+});
+
+if (require.main === module) {
 app.listen(PUERTO, () => {
   console.log(`Servidor listo en http://localhost:${PUERTO}`);
 });
@@ -1912,3 +1946,5 @@ pool
   .catch((error) => {
     console.warn("No se pudo verificar si existen administradores:", error.message);
   });
+}
+module.exports = app;

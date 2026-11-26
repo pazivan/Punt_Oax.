@@ -42,6 +42,7 @@ import { validarEmail, validarTelefono } from '../../utils/validaciones'
 import { describirErrorConsulta } from '../../utils/erroresConsulta.js'
 import '../../styles/Inicio.css'
 import '../../css/PanelClinica.css'
+import { areasDesdeServicios, categoriaServicio } from '../../utils/servicios.mjs'
 
 function numeroUbicacion(valor) {
   if (valor == null || valor === '') return null
@@ -72,18 +73,7 @@ const ETIQUETA_ESTADO_PUBLICACION = {
 }
 
 function estadoInicialDesdeFicha(ficha) {
-  const servicios = {
-    its: { seleccionado: false, detalle: '' },
-    ile: { seleccionado: false, detalle: '' },
-  }
-  for (const servicio of ficha.servicios || []) {
-    if (servicio.categoria in servicios) {
-      servicios[servicio.categoria] = {
-        seleccionado: true,
-        detalle: servicio.detalle_servicio || '',
-      }
-    }
-  }
+  const servicios = areasDesdeServicios(ficha.servicios)
   const latitud = numeroUbicacion(ficha.clinica?.latitud)
   const longitud = numeroUbicacion(ficha.clinica?.longitud)
   return {
@@ -528,10 +518,10 @@ export default function PanelClinica({ sesion, onSalir }) {
       const token = leerSesion()?.token
       const serviciosExistentes = Array.isArray(ficha?.servicios) ? ficha.servicios : []
       const serviciosPatch = serviciosExistentes
-        .filter((s) => s.id_servicio && form.servicios[s.categoria]?.seleccionado)
+        .filter((s) => s.id_servicio && form.servicios[categoriaServicio(s.categoria)]?.seleccionado)
         .map((s) => ({
           id_servicio: s.id_servicio,
-          detalle_servicio: form.servicios[s.categoria]?.detalle?.trim() || null,
+          detalle_servicio: form.servicios[categoriaServicio(s.categoria)]?.detalle?.trim() || null,
         }))
 
       const respuestaHttp = await fetch('/api/clinicas/mi-ficha/datos-publicados', {

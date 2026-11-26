@@ -12,12 +12,23 @@ services:
       - ./db/migrations/001_create_schema_puntoax_v1_3.up.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
       - ./db/docker-init/002_marcar_schema.sql:/docker-entrypoint-initdb.d/002_marcar_schema.sql:ro
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d puntoax_bd"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
     container_name: puntoax_sprint4_backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     ports:
       - "127.0.0.1:3000:3000"
     environment:
@@ -46,15 +57,23 @@ services:
     volumes:
       - puntoax_documentos:/var/lib/puntoax
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend # Corregido: de ./front a ./frontend
     container_name: puntoax_sprint4_frontend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/api/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     ports:
       - "127.0.0.1:8080:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   sprint4_pgdata:

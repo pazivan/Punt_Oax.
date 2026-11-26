@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertCircle } from 'lucide-react';
 import { bloquearScrollFondo } from '../../utils/uiOverlays.js';
 import '../../styles/Inicio.css';
+import { useDialogFocus } from '../../utils/useDialogFocus.js';
 
 /**
  * ModalConfirmacion - Componente reutilizable de ventana emergente de advertencia / confirmación.
@@ -17,6 +18,9 @@ export default function ModalConfirmacion({
   onConfirmar,
   deshabilitarAcciones = false,
 }) {
+  const dialogoRef = useRef(null);
+  const tituloId = useId();
+  useDialogFocus(dialogoRef, abierto, onCancelar, deshabilitarAcciones);
   useEffect(() => {
     if (!abierto) return undefined;
     return bloquearScrollFondo();
@@ -26,17 +30,19 @@ export default function ModalConfirmacion({
 
   const contenido = (
     <div
+      ref={dialogoRef}
+      tabIndex={-1}
       className="inicio-logout-modal-overlay"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="modal-confirmacion-titulo"
+      aria-labelledby={tituloId}
     >
       <div className="inicio-logout-modal-card">
         <div className="inicio-logout-modal-icon" aria-hidden="true">
           <AlertCircle size={22} color="#001D14" />
         </div>
 
-        <h2 id="modal-confirmacion-titulo" className="inicio-logout-modal-title">
+        <h2 id={tituloId} className="inicio-logout-modal-title">
           {titulo}
         </h2>
 

@@ -353,6 +353,7 @@
 
 /* Tarjeta blanca derecha compacta para abarcar pantalla sin tanto scroll */
 .panel-clinica-card {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -379,6 +380,8 @@
 }
 
 .panel-clinica-top-overview-left {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -393,6 +396,7 @@
 }
 
 .panel-clinica-badge-row {
+  flex-wrap: wrap;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -430,6 +434,7 @@
 }
 
 .panel-clinica-welcome-actions {
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -437,6 +442,8 @@
 }
 
 .panel-clinica-center-meta {
+  min-width: 0;
+  overflow-wrap: anywhere;
   margin: 0;
   font-family: 'Nimbus Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-style: normal;
@@ -1094,6 +1101,17 @@
 }
 
 @media (max-width: 720px) {
+  .panel-clinica-workspace,
+  .panel-clinica-summary-view,
+  .panel-clinica-top-overview,
+  .panel-clinica-summary-block {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .panel-clinica-stats-row { flex-wrap: wrap; }
+  .panel-clinica-card p,
+  .panel-clinica-card h2,
+  .panel-clinica-card a { overflow-wrap: anywhere; }
   .panel-clinica-card {
     padding: 18px;
   }
@@ -1119,4 +1137,3 @@
     width: 100%;
   }
 }
-

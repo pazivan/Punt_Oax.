@@ -752,7 +752,9 @@ function App() {
     )
   }
 
-  const esNuevaClinica = pathname === '/admin/clinicas/nueva'
+   // El alta institucional pertenece a la propia clínica; preservar enlaces antiguos.
+   if (pathname === '/admin/clinicas/nueva') return <Navigate to="/admin/clinicas" replace />
+   const esNuevaClinica = false
   const esRutaAdmin =
     pathname === '/admin' ||
     pathname === '/admin/usuarios' ||
