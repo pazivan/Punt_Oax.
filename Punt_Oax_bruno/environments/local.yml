@@ -1,0 +1,70 @@
+name: local
+variables:
+  - name: baseUrl
+    value: http://127.0.0.1:3000
+  - name: permitirEscrituras
+    value: 'false'
+  - name: correoUsuario
+    value: ''
+  - name: passwordUsuario
+    value: ''
+  - name: correoClinica
+    value: ''
+  - name: passwordClinica
+    value: ''
+  - name: nombreClinica
+    value: Clínica de pruebas local
+  - name: correoAdmin
+    value: ''
+  - name: passwordAdmin
+    value: ''
+  - name: tokenUsuario
+    value: ''
+  - name: tokenClinica
+    value: ''
+  - name: tokenAdmin
+    value: ''
+  - name: tokenSesion
+    value: ''
+  - name: passwordActual
+    value: ''
+  - name: rolCorreo
+    value: usuario
+  - name: correoCuenta
+    value: ''
+  - name: codigoVerificacion
+    value: ''
+  - name: tokenRecuperacion
+    value: ''
+  - name: passwordNueva
+    value: ''
+  - name: nombrePaciente
+    value: Paciente
+  - name: apellidosPaciente
+    value: Local
+  - name: telefono
+    value: '+529511234567'
+  - name: municipioClave
+    value: '20067'
+  - name: idUsuario
+    value: 00000000-0000-0000-0000-000000000000
+  - name: fechaAgenda
+    value: ''
+  - name: horaAgenda
+    value: '10:00'
+  - name: idClinica
+    value: 00000000-0000-0000-0000-000000000000
+  - name: idServicio
+    value: 00000000-0000-0000-0000-000000000000
+  - name: idServicioClinica
+    value: 00000000-0000-0000-0000-000000000000
+  - name: idClinicaServicio
+    value: 00000000-0000-0000-0000-000000000000
+  - name: idEspacio
+    value: 00000000-0000-0000-0000-000000000000
+  - name: idCita
+    value: 00000000-0000-0000-0000-000000000000
+  - name: idSolicitud
+    value: 00000000-0000-0000-0000-000000000000
+  - name: idDocumento
+    value: 00000000-0000-0000-0000-000000000000

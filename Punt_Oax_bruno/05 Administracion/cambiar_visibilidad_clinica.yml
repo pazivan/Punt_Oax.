@@ -1,0 +1,17 @@
+info:
+  name: cambiar_visibilidad_clinica
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: '{{baseUrl}}/api/admin/clinicas/{{idClinica}}/visibilidad'
+  body:
+    type: json
+    data: |-
+      { "accion": "ocultar" }
+  auth:
+    type: bearer
+    token: '{{tokenAdmin}}'
+docs: |-
+  Oculta (aprobada → suspendida) o vuelve a mostrar (suspendida → aprobada) una clínica en el directorio público. accion: ocultar | mostrar.

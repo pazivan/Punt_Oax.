@@ -1,0 +1,18 @@
+info:
+  name: centros_cercanos
+  type: http
+  seq: 6
+http:
+  method: GET
+  url: '{{baseUrl}}/api/clinicas/cercanas?lat=17.0654&lng=-96.7236&radio_km=10'
+  auth:
+    type: bearer
+    token: '{{tokenUsuario}}'
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Cercanía con sesión', () => {
+          expect(res.status).to.equal(200);
+          expect(res.body.centros).to.be.an('array');
+        });

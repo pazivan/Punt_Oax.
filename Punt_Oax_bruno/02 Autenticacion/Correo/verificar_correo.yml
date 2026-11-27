@@ -1,0 +1,22 @@
+info:
+  name: verificar_correo
+  type: http
+  seq: 1
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/verificar-correo'
+  body:
+    type: json
+    data: |-
+      {
+        "rol": "{{rolCorreo}}",
+        "correo": "{{correoCuenta}}",
+        "codigo": "{{codigoVerificacion}}"
+      }
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Código válido consumido', () => expect(res.status).to.equal(200));
+docs: |-
+  rolCorreo: usuario o clinica. Copia el código de seis dígitos recibido. No inicia sesión ni genera un JWT.

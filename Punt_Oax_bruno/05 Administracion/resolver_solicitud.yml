@@ -1,0 +1,20 @@
+info:
+  name: resolver_solicitud
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: '{{baseUrl}}/api/admin/solicitudes/{{idSolicitud}}'
+  body:
+    type: json
+    data: |-
+      {
+        "decision": "aprobar",
+        "observaciones": "Documentación completa y verificada."
+      }
+  auth:
+    type: bearer
+    token: '{{tokenAdmin}}'
+docs: |-
+  Aprueba o rechaza una solicitud pendiente. decision: aprobar | rechazar. Para rechazar, observaciones es obligatoria (mínimo 10 caracteres). Aprobar publica la clínica; una solicitud ya resuelta responde 409.

@@ -1,0 +1,12 @@
+info:
+  name: cancelar_cita
+  type: http
+  seq: 5
+http:
+  method: PATCH
+  url: '{{baseUrl}}/api/citas/{{idCita}}/cancelar'
+  auth:
+    type: bearer
+    token: '{{tokenUsuario}}'
+docs: |-
+  Solo el usuario dueño de una cita confirmada futura puede cancelarla.

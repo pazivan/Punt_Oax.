@@ -20,19 +20,20 @@ npm ci
 npm run dev
 ```
 
-Abrir la dirección que muestra Vite (normalmente `http://localhost:5173`). La consulta pública del directorio no exige iniciar sesión. Para obtener datos reales o usar los formularios, debe estar activa una API en `http://localhost:3000`: Vite reenvía allí las peticiones a `/api` mediante `vite.config.js`. En el despliegue con Nginx, `nginx.conf` reenvía `/api/` al servicio `backend:3000`. La URL de la API no se configura en el formulario.
+Abrir la dirección que muestra Vite (normalmente `http://localhost:5173`). El mapa y el directorio requieren iniciar sesión. Debe estar activa una API en `http://localhost:3000`: Vite reenvía allí las peticiones a `/api` mediante `vite.config.js`. En el despliegue con Nginx, `nginx.conf` reenvía `/api/` al servicio `backend:3000`.
 
 La API integrada debe ofrecer:
 
 | Operación | Ruta | Solicitud/respuesta esperada |
 | --- | --- | --- |
-| Registro de usuario | `POST /api/auth/registro-usuario` | `{ correo, password }` (mínimo 8 caracteres); respuesta JSON de éxito. No se envía nombre. |
+| Registro de usuario | `POST /api/auth/registro-usuario` | `{ correo, password }`; exige verificar el correo antes del acceso. |
+| Registro de clínica | `POST /api/auth/registro-clinica` | `{ nombre, correo, password }`; crea una cuenta en borrador que debe verificar su correo. |
 | Acceso de usuario | `POST /api/auth/login-usuario` | `{ correo, password }` → `{ token, usuario }`. |
 | Acceso de clínica | `POST /api/auth/login-clinica` | `{ correo, password }` → `{ token, clinica }`. |
 | Perfil | `GET /api/auth/perfil` | `Authorization: Bearer <token>` → datos de perfil. |
-| Directorio público | `GET /api/clinicas` | Lista de clínicas sin autenticación. |
+| Directorio | `GET /api/clinicas` | Lista de clínicas aprobadas con sesión válida. |
 
-El registro de clínicas **no está disponible**: no existe un endpoint para ello. Las rutas `/cuenta` y `/admin` adaptan la navegación protegida de Citlalli: verifican el token con la API antes de mostrar contenido y `/admin` exige rol de administrador. Los paneles de cada rol siguen pendientes; la protección real de datos también debe imponerse en la API. Para este prototipo, `src/api/auth.js` concentra la persistencia en `sessionStorage` (solo en esta pestaña, se elimina al cerrar sesión o si `/api/auth/perfil` rechaza el token con 401/403). El equipo debe acordar la estrategia definitiva de sesión antes de desplegarla.
+Las rutas protegidas verifican sesión y rol en frontend y backend. `src/api/auth.js` concentra la sesión compartida entre pestañas y el cierre de sesión.
 
 ## Comprobaciones
 
@@ -42,4 +43,4 @@ npm run test
 npm run build
 ```
 
-`npm run test` simula las respuestas de la API: prueba las rutas, el cuerpo de las solicitudes, los formatos de login, errores y la sesión. **No crea cuentas ni prueba la base de datos real**. Para pruebas reales y consideraciones de migración consultar [`docs/integracion-sprint4.md`](../docs/integracion-sprint4.md). Una base ya creada con `nombre NOT NULL` necesita la migración 003: editar solo el SQL de inicialización no altera una tabla existente.
+Las pruebas unitarias no crean cuentas en producción. Para instalación, permisos y pruebas con una base aislada consulta el [manual vigente](../docs/entrega-local-auditada.md).

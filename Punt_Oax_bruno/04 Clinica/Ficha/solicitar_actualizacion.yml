@@ -1,0 +1,19 @@
+info:
+  name: solicitar_actualizacion
+  type: http
+  seq: 8
+http:
+  method: POST
+  url: '{{baseUrl}}/api/clinicas/mi-ficha/solicitud-actualizacion'
+  body:
+    type: json
+    data: |-
+      {
+        "motivo": "Solicitud controlada de cambio de municipio",
+        "municipio_clave": "{{municipioClave}}"
+      }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Clínica aprobada sin solicitud pendiente. Selecciona un municipio distinto del actual para generar un cambio real. La publicación no cambia hasta aprobación.

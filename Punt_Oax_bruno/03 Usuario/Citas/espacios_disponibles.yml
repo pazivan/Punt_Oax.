@@ -1,0 +1,12 @@
+info:
+  name: espacios_disponibles
+  type: http
+  seq: 1
+http:
+  method: GET
+  url: '{{baseUrl}}/api/clinicas/{{idClinica}}/espacios'
+  auth:
+    type: bearer
+    token: '{{tokenUsuario}}'
+docs: |-
+  Requiere sesión (cualquier rol). Opcional: ?desde=AAAA-MM-DD&hasta=AAAA-MM-DD&servicio=UUID; máximo 60 días entre fechas. Copia un id_espacio de la respuesta al entorno.

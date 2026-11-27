@@ -1,0 +1,18 @@
+info:
+  name: resumen_administrativo
+  type: http
+  seq: 12
+http:
+  method: GET
+  url: '{{baseUrl}}/api/admin/resumen'
+  auth:
+    type: bearer
+    token: '{{tokenAdmin}}'
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Estadísticas por municipio oficial', () => {
+          expect(res.status).to.equal(200);
+          expect(res.body.municipios).to.be.an('array');
+        });

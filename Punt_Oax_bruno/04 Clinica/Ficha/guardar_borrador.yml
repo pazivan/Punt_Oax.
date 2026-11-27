@@ -1,0 +1,30 @@
+info:
+  name: guardar_borrador
+  type: http
+  seq: 2
+http:
+  method: PUT
+  url: '{{baseUrl}}/api/clinicas/mi-ficha'
+  body:
+    type: json
+    data: |-
+      {
+        "nombre": "{{nombreClinica}}",
+        "tipo_institucion": "privada",
+        "descripcion": "Atencion en salud sexual y reproductiva.",
+        "telefono": "{{telefono}}",
+        "correo_contacto": "{{correoClinica}}",
+        "municipio_clave": "{{municipioClave}}",
+        "direccion": "Calle de ejemplo 123",
+        "servicios": [
+          { "categoria": "its", "detalle": "Pruebas y orientacion de ITS." }
+        ],
+        "horarios": [
+          { "dia_semana": 1, "apertura": "09:00", "cierre": "17:00" }
+        ]
+      }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Se pueden enviar solo los campos a modificar. Los arrays servicios y horarios reemplazan los valores previos. dia_semana: 0=domingo, 6=sabado. No editable con postulación pendiente o clínica publicada.

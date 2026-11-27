@@ -1,0 +1,12 @@
+info:
+  name: eliminar_documento
+  type: http
+  seq: 4
+http:
+  method: DELETE
+  url: '{{baseUrl}}/api/clinicas/mi-ficha/documentos/{{idDocumento}}'
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Copia id_documento desde mi_ficha. Acción irreversible; solo disponible mientras la ficha sea editable.

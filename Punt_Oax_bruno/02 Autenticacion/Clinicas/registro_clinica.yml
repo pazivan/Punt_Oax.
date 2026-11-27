@@ -1,0 +1,17 @@
+info:
+  name: registro_clinica
+  type: http
+  seq: 1
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/registro-clinica'
+  body:
+    type: json
+    data: |-
+      {
+        "nombre": "{{nombreClinica}}",
+        "correo": "{{correoClinica}}",
+        "password": "{{passwordClinica}}"
+      }
+docs: |-
+  Crea una cuenta en borrador sin token. Verifica el correo con el código recibido antes de iniciar sesión y completar la ficha.

@@ -1,0 +1,22 @@
+info:
+  name: cerrar_sesion
+  type: http
+  seq: 18
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/cerrar-sesion'
+  auth:
+    type: bearer
+    token: '{{tokenSesion}}'
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+          const token = bru.getVar('tokenSesion') || bru.getEnvVar('tokenSesion');
+          ['tokenUsuario', 'tokenClinica', 'tokenAdmin', 'tokenSesion'].forEach(nombre => {
+            if ((bru.getVar(nombre) || bru.getEnvVar(nombre)) === token) bru.setVar(nombre, '');
+          });
+        }
+docs: |-
+  Revoca las sesiones de la cuenta del último login. Ejecutar al terminar las comprobaciones de ese rol.

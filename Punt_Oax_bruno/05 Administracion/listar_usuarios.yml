@@ -1,0 +1,12 @@
+info:
+  name: listar_usuarios
+  type: http
+  seq: 9
+http:
+  method: GET
+  url: '{{baseUrl}}/api/admin/usuarios?page=1&limit=10'
+  auth:
+    type: bearer
+    token: '{{tokenAdmin}}'
+docs: |-
+  Selecciona idUsuario explícitamente antes de consultar o modificar una cuenta. No guarda automáticamente el primer paciente.

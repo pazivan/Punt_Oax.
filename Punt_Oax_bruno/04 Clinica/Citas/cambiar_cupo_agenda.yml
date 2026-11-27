@@ -1,0 +1,17 @@
+info:
+  name: cambiar_cupo_agenda
+  type: http
+  seq: 5
+
+http:
+  method: PATCH
+  url: '{{baseUrl}}/api/clinicas/mi-agenda/espacios/{{idEspacio}}'
+  body:
+    type: json
+    data: |-
+      { "habilitado": false }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Habilita o deshabilita un cupo futuro. No se puede modificar si ya tiene una cita reservada, si el día está bloqueado o si queda fuera del horario al reactivarlo.

@@ -1,0 +1,21 @@
+info:
+  name: buscar_clinicas
+  type: http
+  seq: 4
+http:
+  method: GET
+  url: '{{baseUrl}}/api/clinicas?municipio_clave={{municipioClave}}&servicios=its'
+  auth:
+    type: bearer
+    token: '{{tokenUsuario}}'
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Filtro por clave oficial', () => {
+          expect(res.status).to.equal(200);
+          expect(res.body).to.be.an('array');
+          res.body.forEach(c => expect(c.municipio_clave).to.equal(bru.getEnvVar('municipioClave')));
+        });
+docs: |-
+  Requiere sesión. Filtros opcionales: nombre, municipio_clave (INEGI de 5 caracteres), municipio (nombre oficial inequívoco) y servicios. Los homónimos requieren clave.

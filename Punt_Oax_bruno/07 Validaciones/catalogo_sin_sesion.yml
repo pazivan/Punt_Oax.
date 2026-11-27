@@ -1,0 +1,15 @@
+info:
+  name: catalogo_sin_sesion
+  type: http
+  seq: 1
+http:
+  method: GET
+  url: '{{baseUrl}}/api/clinicas'
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Catálogo protegido', () => {
+          expect(res.status).to.equal(401);
+          expect(res.body.codigo).to.equal('SESION_REQUERIDA');
+        });

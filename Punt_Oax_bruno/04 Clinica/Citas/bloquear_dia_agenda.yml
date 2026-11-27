@@ -1,0 +1,20 @@
+info:
+  name: bloquear_dia_agenda
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: '{{baseUrl}}/api/clinicas/mi-agenda/bloqueos'
+  body:
+    type: json
+    data: |-
+      {
+        "fecha": "{{fechaAgenda}}",
+        "motivo": "Día no laborable"
+      }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Bloquea un día dentro de los próximos 15 días. Deshabilita sus cupos y cancela las citas confirmadas de ese día. El motivo es opcional (máximo 200 caracteres).

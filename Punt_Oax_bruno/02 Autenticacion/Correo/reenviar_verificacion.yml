@@ -1,0 +1,13 @@
+info:
+  name: reenviar_verificacion
+  type: http
+  seq: 2
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/reenviar-verificacion'
+  body:
+    type: json
+    data: |-
+      { "rol": "{{rolCorreo}}", "correo": "{{correoCuenta}}" }
+docs: |-
+  Envía correo si corresponde; respeta caducidad y límites de reenvío. No ejecutar contra direcciones de terceros.

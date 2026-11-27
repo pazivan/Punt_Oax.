@@ -1,0 +1,22 @@
+info:
+  name: rechazar_municipio_inventado
+  type: http
+  seq: 4
+http:
+  method: PUT
+  url: '{{baseUrl}}/api/clinicas/mi-ficha'
+  body:
+    type: json
+    data: |-
+      { "municipio": "Municipio inventado de prueba" }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Municipio fuera del catálogo rechazado', () => {
+          expect(res.status).to.equal(400);
+          expect(res.body.campos.municipio).to.be.a('string');
+        });

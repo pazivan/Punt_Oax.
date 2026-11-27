@@ -1,0 +1,16 @@
+info:
+  name: cambiar_estado_usuario
+  type: http
+  seq: 11
+http:
+  method: PATCH
+  url: '{{baseUrl}}/api/admin/usuarios/{{idUsuario}}/estado'
+  body:
+    type: json
+    data: |-
+      { "activo": false }
+  auth:
+    type: bearer
+    token: '{{tokenAdmin}}'
+docs: |-
+  Desactiva la cuenta seleccionada y revoca sus sesiones; no elimina su historial. Usa activo=true para reactivarla. Solo con una cuenta controlada.
