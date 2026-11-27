@@ -1,0 +1,16 @@
+info:
+  name: solicitar_cambio_ubicacion
+  type: http
+  seq: 9
+http:
+  method: POST
+  url: '{{baseUrl}}/api/clinicas/mi-ficha/ubicacion'
+  body:
+    type: json
+    data: |-
+      { "latitud": 17.0654, "longitud": -96.7236 }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Crea una solicitud para revisión, no mueve el marcador público inmediatamente. Sustituye las coordenadas de ejemplo por las autorizadas para tu prueba.

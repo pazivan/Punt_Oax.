@@ -1,0 +1,12 @@
+info:
+  name: enviar_postulacion
+  type: http
+  seq: 5
+http:
+  method: POST
+  url: '{{baseUrl}}/api/clinicas/mi-ficha/postulacion'
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Requiere ficha completa, al menos un servicio, un horario y un documento. Cambia el estado a pendiente y bloquea ediciones; ejecútala solo cuando estés listo.

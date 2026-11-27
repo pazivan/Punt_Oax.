@@ -1,0 +1,20 @@
+info:
+  name: mi_agenda
+  type: http
+  seq: 1
+http:
+  method: GET
+  url: '{{baseUrl}}/api/clinicas/mi-agenda'
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+          const servicio = res.body?.servicios?.[0];
+          if (servicio?.id_clinica_servicio) bru.setVar('idClinicaServicio', servicio.id_clinica_servicio);
+        }
+docs: |-
+  Devuelve servicios, cupos de los próximos 15 días, días bloqueados y horarios de la clínica autenticada. Guarda el primer id_clinica_servicio en la variable idClinicaServicio para crear cupos.

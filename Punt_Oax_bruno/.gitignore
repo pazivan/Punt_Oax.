@@ -1,0 +1,13 @@
+# Secrets
+.env*
+environments/*.private.yml
+environments/*.local.yml
+results*.json
+reports/
+
+# Dependencies
+node_modules
+
+# OS files
+.DS_Store
+Thumbs.db

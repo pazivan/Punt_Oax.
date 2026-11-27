@@ -1,0 +1,16 @@
+info:
+  name: actualizar_estado_cita
+  type: http
+  seq: 2
+http:
+  method: PATCH
+  url: '{{baseUrl}}/api/citas/{{idCita}}/estado'
+  body:
+    type: json
+    data: |-
+      { "estado": "completada" }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Solo citas confirmadas de la propia clínica. Estado: cancelada (antes de la cita); completada o no_asistio (después de la hora de la cita).

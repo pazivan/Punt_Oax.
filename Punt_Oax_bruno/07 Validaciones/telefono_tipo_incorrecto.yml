@@ -1,0 +1,19 @@
+info:
+  name: rechazar_telefono_numerico
+  type: http
+  seq: 3
+http:
+  method: PATCH
+  url: '{{baseUrl}}/api/auth/perfil'
+  body:
+    type: json
+    data: |-
+      { "telefono": 9511234567 }
+  auth:
+    type: bearer
+    token: '{{tokenUsuario}}'
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('No aceptar números JSON como teléfono', () => expect(res.status).to.equal(400));

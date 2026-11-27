@@ -1,0 +1,19 @@
+info:
+  name: rechazar_telefono_ficticio
+  type: http
+  seq: 2
+http:
+  method: PATCH
+  url: '{{baseUrl}}/api/auth/perfil'
+  body:
+    type: json
+    data: |-
+      { "telefono": "1234567890" }
+  auth:
+    type: bearer
+    token: '{{tokenUsuario}}'
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Secuencia ficticia rechazada', () => expect(res.status).to.equal(400));

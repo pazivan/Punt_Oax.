@@ -1,0 +1,19 @@
+info:
+  name: rechazar_municipio_ambiguo_sin_clave
+  type: http
+  seq: 5
+http:
+  method: PUT
+  url: '{{baseUrl}}/api/clinicas/mi-ficha'
+  body:
+    type: json
+    data: |-
+      { "municipio": "San Juan Mixtepec" }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Homónimo exige clave INEGI', () => expect(res.status).to.equal(400));

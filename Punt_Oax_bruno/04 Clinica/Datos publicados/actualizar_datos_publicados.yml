@@ -1,0 +1,27 @@
+info:
+  name: actualizar_datos_publicados
+  type: http
+  seq: 2
+
+http:
+  method: PATCH
+  url: '{{baseUrl}}/api/clinicas/mi-ficha/datos-publicados'
+  body:
+    type: json
+    data: |-
+      {
+        "telefono": "{{telefono}}",
+        "descripcion": "Atención actualizada desde el panel de la clínica.",
+        "servicios": [
+          {
+            "id_servicio": "{{idServicioClinica}}",
+            "requisitos": "Llegar 15 minutos antes.",
+            "costo_texto": "Gratuito"
+          }
+        ]
+      }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Actualiza la clínica publicada sin volver a revisión. Campos permitidos de la clínica: telefono, correo_contacto, sitio_web, descripcion. De servicios existentes: detalle_servicio, costo, costo_texto, requisitos, requiere_cita. Nombre, dirección, municipio o agregar/quitar servicios requiere revisión del administrador. Todo o nada: si un servicio no pertenece a la clínica, no se guarda nada.

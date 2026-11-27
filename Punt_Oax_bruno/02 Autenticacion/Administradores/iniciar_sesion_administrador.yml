@@ -1,0 +1,28 @@
+info:
+  name: iniciar_sesion_administrador
+  type: http
+  seq: 11
+
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/login-admin'
+  body:
+    type: json
+    data: |
+      {
+        "correo": "{{correoAdmin}}",
+        "password": "{{passwordAdmin}}"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        bru.setVar('tokenAdmin', res.status === 200 ? res.body?.token || '' : '');
+        bru.setVar('tokenSesion', res.status === 200 ? res.body?.token || '' : '');
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

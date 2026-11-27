@@ -1,0 +1,30 @@
+info:
+  name: registro_usuario
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/registro-usuario'
+  body:
+    type: json
+    data: |
+      {
+        "correo": "{{correoUsuario}}",
+        "password": "{{passwordUsuario}}"
+      }
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Registro sin sesión, pendiente de correo', () => {
+          expect(res.status).to.equal(201);
+          expect(res.body.requiere_verificacion).to.equal(true);
+          expect(res.body.token).to.equal(undefined);
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

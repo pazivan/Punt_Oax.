@@ -1,0 +1,15 @@
+info:
+  name: paciente_sin_permiso_admin
+  type: http
+  seq: 6
+http:
+  method: GET
+  url: '{{baseUrl}}/api/admin/usuarios'
+  auth:
+    type: bearer
+    token: '{{tokenUsuario}}'
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Paciente no consulta usuarios ajenos', () => expect(res.status).to.equal(403));

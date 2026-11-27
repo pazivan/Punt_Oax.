@@ -1,0 +1,23 @@
+info:
+  name: guardar_horarios_agenda
+  type: http
+  seq: 3
+
+http:
+  method: PUT
+  url: '{{baseUrl}}/api/clinicas/mi-agenda/horarios'
+  body:
+    type: json
+    data: |-
+      {
+        "horarios": [
+          { "dia_semana": 1, "apertura": "09:00", "cierre": "14:00" },
+          { "dia_semana": 1, "apertura": "16:00", "cierre": "19:00" },
+          { "dia_semana": 2, "apertura": "09:00", "cierre": "17:00" }
+        ]
+      }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Reemplaza el horario de atención. Solo clínicas aprobadas. Hasta 14 franjas, sin solaparse el mismo día. dia_semana: 0=domingo, 6=sábado. Los cupos libres fuera del nuevo horario se deshabilitan; las citas existentes se conservan.

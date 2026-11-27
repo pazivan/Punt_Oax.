@@ -1,0 +1,32 @@
+info:
+  name: solicitar_cita
+  type: http
+  seq: 2
+http:
+  method: POST
+  url: '{{baseUrl}}/api/citas'
+  body:
+    type: json
+    data: |-
+      {
+        "id_espacio": "{{idEspacio}}",
+        "telefono": "{{telefono}}",
+        "nombre": "{{nombrePaciente}}",
+        "apellidos": "{{apellidosPaciente}}"
+      }
+  auth:
+    type: bearer
+    token: '{{tokenUsuario}}'
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 201 && res.body?.cita?.id_cita) bru.setVar('idCita', res.body.cita.id_cita);
+    - type: tests
+      code: |-
+        test('Reserva y teléfono normalizado', () => {
+          expect(res.status).to.equal(201);
+          expect(res.body.cita.paciente_telefono).to.match(/^\+52\d{10}$/);
+        });
+docs: |-
+  Solo paciente. Requiere teléfono mexicano válido; se normaliza en el perfil. Usa un espacio futuro disponible, no uno pasado u ocupado.

@@ -1,0 +1,35 @@
+info:
+  name: inicio_sesion_usuario
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/login-usuario'
+  body:
+    type: json
+    data: |
+      {
+        "correo": "{{correoUsuario}}",
+        "password": "{{passwordUsuario}}"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        bru.setVar('tokenUsuario', res.status === 200 ? res.body?.token || '' : '');
+        bru.setVar('tokenSesion', res.status === 200 ? res.body?.token || '' : '');
+    - type: tests
+      code: |-
+        test('Acceso de paciente verificado', () => {
+          expect(res.status).to.equal(200);
+          expect(res.body.usuario.rol).to.equal('usuario');
+          expect(res.body.token).to.be.a('string').and.not.empty;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

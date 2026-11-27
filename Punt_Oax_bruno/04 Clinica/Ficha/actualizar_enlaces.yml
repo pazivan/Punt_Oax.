@@ -1,0 +1,20 @@
+info:
+  name: actualizar_enlaces_informacion
+  type: http
+  seq: 10
+http:
+  method: PUT
+  url: '{{baseUrl}}/api/clinicas/mi-ficha/enlaces'
+  body:
+    type: json
+    data: |-
+      {
+        "enlaces": [
+          { "titulo": "Información institucional", "url": "https://www.oaxaca.gob.mx/salud/" }
+        ]
+      }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+docs: |-
+  Reemplaza la lista de fuentes de la clínica. No editable mientras haya solicitud pendiente.

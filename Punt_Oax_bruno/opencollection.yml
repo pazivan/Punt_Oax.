@@ -1,0 +1,19 @@
+opencollection: 1.0.0
+
+info:
+  name: Punt_Oax
+request:
+  scripts:
+    - type: before-request
+      code: |-
+        const metodo = req.getMethod().toUpperCase();
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(metodo) &&
+            String(bru.getEnvVar('permitirEscrituras')) !== 'true') {
+          throw new Error('Petición bloqueada: activa permitirEscrituras=true únicamente en tu entorno de pruebas.');
+        }
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git

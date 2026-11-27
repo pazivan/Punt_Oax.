@@ -1,0 +1,26 @@
+info:
+  name: crear_cupo_agenda
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: '{{baseUrl}}/api/clinicas/mi-agenda/espacios'
+  body:
+    type: json
+    data: |-
+      {
+        "id_clinica_servicio": "{{idClinicaServicio}}",
+        "fecha": "{{fechaAgenda}}",
+        "hora": "{{horaAgenda}}"
+      }
+  auth:
+    type: bearer
+    token: '{{tokenClinica}}'
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 201 && res.body?.id_espacio) bru.setVar('idEspacio', res.body.id_espacio);
+docs: |-
+  Publica un cupo de una hora para un servicio propio. La clínica debe estar aprobada, la fecha debe ser futura y estar dentro de los próximos 15 días, coincidir con el horario y no ser día bloqueado o festivo. Guarda id_espacio automáticamente.

@@ -1,0 +1,28 @@
+info:
+  name: actualizar_perfil_paciente
+  type: http
+  seq: 2
+http:
+  method: PATCH
+  url: '{{baseUrl}}/api/auth/perfil'
+  body:
+    type: json
+    data: |-
+      {
+        "nombre": "{{nombrePaciente}}",
+        "apellidos": "{{apellidosPaciente}}",
+        "telefono": "{{telefono}}"
+      }
+  auth:
+    type: bearer
+    token: '{{tokenUsuario}}'
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test('Contacto persistido en formato mexicano', () => {
+          expect(res.status).to.equal(200);
+          expect(res.body.usuario.telefono).to.match(/^\+52\d{10}$/);
+        });
+docs: |-
+  Solo paciente. Omitir telefono conserva el valor; null o vacío explícito lo borra. Los tipos incorrectos y teléfonos ficticios se rechazan.

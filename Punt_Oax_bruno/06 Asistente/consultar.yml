@@ -1,0 +1,13 @@
+info:
+  name: consultar_asistente
+  type: http
+  seq: 1
+http:
+  method: POST
+  url: '{{baseUrl}}/api/asistente/consultar'
+  body:
+    type: json
+    data: |-
+      { "pregunta": "¿Qué centros publicados hay en Oaxaca de Juárez?" }
+docs: |-
+  Requiere proveedor de IA configurado. Para preguntas sobre citas propias agrega Bearer tokenUsuario; nunca envíes teléfonos ni datos médicos en la pregunta.

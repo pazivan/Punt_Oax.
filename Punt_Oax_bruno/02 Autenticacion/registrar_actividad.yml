@@ -1,0 +1,12 @@
+info:
+  name: registrar_actividad_explicita
+  type: http
+  seq: 17
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/actividad'
+  auth:
+    type: bearer
+    token: '{{tokenSesion}}'
+docs: |-
+  Renueva la actividad de la sesión. Las consultas en segundo plano no deben mantener la sesión indefinidamente.
