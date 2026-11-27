@@ -33,11 +33,6 @@ export default function Inicio({ sesion, onSalir, sinEncabezado = false }) {
       <main className="inicio-main">
         <div className="inicio-container">
           <BannerRecordatorioCitas sesion={sesion} />
-          <nav className="inicio-accesos" aria-label="Accesos rápidos">
-            {esPaciente && <Link to="/mis-citas">Mis citas</Link>}
-            <Link to="/conocenos">Conócenos</Link>
-            <Link to="/asistente">Asistente de IA</Link>
-          </nav>
 
           {/* Bloque superior (1232px x 368px) */}
           <section className="inicio-hero-section" aria-labelledby="inicio-hero-heading">
