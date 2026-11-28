@@ -2,8 +2,17 @@
 
 ## Alcance y resultado
 
+Los resultados automatizados de este informe corresponden a la implementación
+del commit `9698d52` (antes `a3ce67d`, renombrado sin cambios de código).
+La preparación posterior del cliente OAuth real y sus
+pruebas manuales se registran por separado en
+[Google real local](prueba-google-real-local.md): SDK real comprobado, pero
+registro, login, cancelación y vinculación reales todavía **pendientes**.
+
 Rama `boton-google`, basada en `origin/main` `3680d55`.
-Validación local, sin push, PR, CI remota, merge ni acceso al VPS.
+Validación realizada localmente, antes de publicar la rama/PR, sin CI remota,
+merge ni acceso al VPS. La publicación posterior no aprueba las pruebas reales
+pendientes ni autoriza un despliegue.
 Node 22.23.1, Chrome del sistema y PostgreSQL 15/PostGIS 3.3 en contenedores
 exclusivos de ensayo. No se usaron usuarios ni credenciales privadas de Google.
 

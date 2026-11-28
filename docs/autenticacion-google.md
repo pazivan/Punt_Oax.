@@ -4,8 +4,10 @@
 
 Implementación en `boton-google`, nombre confirmado por el solicitante, desde
 `origin/main` actualizado: `3680d559e4f6832c8f75655ab98ea9b80ec291bd`.
-No se fusionó, publicó ni desplegó. El directorio de trabajo original conserva
-sus archivos locales sin seguimiento.
+Durante la implementación y validación local no se fusionó, publicó ni desplegó.
+La publicación posterior de rama/PR fue solicitada por el responsable, sin
+autorizar fusión ni despliegue. El directorio de trabajo original conserva sus
+archivos locales sin seguimiento.
 
 - React/Vite: `Login.jsx`, `Register.jsx`, API centralizada en `src/api/auth.js`;
   `App.jsx` mantiene la sesión y el destino por rol.
@@ -208,6 +210,13 @@ existente puede establecer una contraseña local; «cambiar contraseña» sigue
 requiriendo una contraseña actual. No se inventa una contraseña por el usuario.
 
 ## Pruebas y evidencias
+
+**Continuación con cliente real:** el responsable ya creó el cliente web en el
+proyecto independiente `puntoax`. La configuración local, las comprobaciones
+del SDK real y la guía acompañada están en
+[prueba-google-real-local.md](prueba-google-real-local.md).
+Preparar el cliente o mostrar su botón no aprueba el flujo de autenticación;
+las selecciones de cuenta y consentimientos manuales siguen pendientes.
 
 Consultar [el informe de validación](validacion-google-auth.md) para resultados,
 fallo preexistente y rutas de evidencia local.
