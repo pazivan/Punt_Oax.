@@ -30,9 +30,13 @@ function GoogleConfigurado({ registro = false, disabled = false, onSuccess, onBu
     let plazo
     const controlador = new AbortController()
     const destino = contenedor.current
+    const plazoCarga = setTimeout(() => {
+      if (activo && aceptando) setMensaje('Google está tardando en cargar. Puedes usar tu correo y contraseña mientras esperas.')
+    }, 6000)
     const terminar = (texto) => {
       aceptando = false
       clearTimeout(plazo)
+      clearTimeout(plazoCarga)
       controlador.abort()
       intento.current = null
       setPassword('')
@@ -44,11 +48,13 @@ function GoogleConfigurado({ registro = false, disabled = false, onSuccess, onBu
     cancelar.current = () => terminar('Cancelaste el acceso con Google. Puedes intentarlo de nuevo o usar tu correo y contraseña.')
     async function preparar() {
       try {
-        const [gis, desafio] = await Promise.all([
-          cargarGoogleIdentity(),
-          enviarGoogle('/desafio', {}, controlador.signal),
-        ])
-        if (!activo) return
+        const gis = await cargarGoogleIdentity()
+        if (!activo || !aceptando) return
+        clearTimeout(plazoCarga)
+        setMensaje('')
+        // No consumir desafíos ni su tiempo de validez antes de tener el SDK.
+        const desafio = await enviarGoogle('/desafio', {}, controlador.signal)
+        if (!activo || !aceptando) return
         intento.current = desafio
         gis.initialize({
           client_id: CLIENT_ID, nonce: desafio.nonce, ux_mode: 'popup',
@@ -92,7 +98,7 @@ function GoogleConfigurado({ registro = false, disabled = false, onSuccess, onBu
         })
         setEstado('listo')
       } catch (error) {
-        if (activo) terminar(error.message)
+        if (activo && aceptando) terminar(error.message)
       }
     }
     preparar()
@@ -100,6 +106,7 @@ function GoogleConfigurado({ registro = false, disabled = false, onSuccess, onBu
       activo = false
       aceptando = false
       clearTimeout(plazo)
+      clearTimeout(plazoCarga)
       controlador.abort()
       intento.current = null
       destino?.replaceChildren()
@@ -149,7 +156,7 @@ function GoogleConfigurado({ registro = false, disabled = false, onSuccess, onBu
           <button className="auth-submit-btn" disabled={!confirmar || !password}>Autenticar y vincular Google</button>
         </form>
       )}
-      {['esperando', 'vincular'].includes(estado) && <button type="button" className="auth-inline-link" onClick={() => cancelar.current()}>Cancelar acceso con Google</button>}
+      {['preparando', 'esperando', 'vincular'].includes(estado) && <button type="button" className="auth-inline-link" onClick={() => cancelar.current()}>Cancelar acceso con Google</button>}
       {estado === 'error' && <button type="button" className="auth-inline-link" disabled={disabled} onClick={() => {
         setMensaje(''); setConfirmar(false); setEstado('preparando'); setCiclo((v) => v + 1)
       }}>Reintentar con Google</button>}

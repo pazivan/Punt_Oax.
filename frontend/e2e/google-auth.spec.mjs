@@ -100,6 +100,65 @@ test('si falla Google, muestra error en español y el formulario tradicional sig
   await expect(page.getByRole('button', { name: 'Iniciar sesión', exact: true })).toBeEnabled()
 })
 
+test('una descarga lenta del SDK no cancela Google antes de que aparezca el botón', async ({ page }) => {
+  await preparar(page)
+  await page.clock.install()
+  let liberarSdk
+  const permiso = new Promise((resolve) => { liberarSdk = resolve })
+  let desafios = 0
+  page.on('request', (r) => { if (r.url().endsWith('/api/auth/google/desafio')) desafios++ })
+  await page.route('https://accounts.google.com/gsi/client', async (route) => {
+    await permiso
+    await route.fulfill({ contentType: 'application/javascript', body: gis })
+  })
+  try {
+    await page.goto('/login', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByRole('status').filter({ hasText: 'Preparando acceso con Google' })).toBeVisible()
+    await page.clock.fastForward(13000)
+    await expect(page.getByRole('alert')).toHaveCount(0)
+    await expect(page.getByRole('status').filter({ hasText: 'Google está tardando en cargar' })).toBeVisible()
+    expect(desafios).toBe(0)
+    await expect(page.getByLabel('Correo electrónico', { exact: true })).toBeEnabled()
+    liberarSdk()
+    await expect(page.getByRole('button', { name: 'Iniciar sesión con Google', exact: true })).toBeVisible()
+    expect(desafios).toBe(1)
+  } finally { liberarSdk() }
+})
+
+test('cancelar durante la carga impide iniciar el flujo si el SDK termina después', async ({ page }) => {
+  await preparar(page)
+  let liberarSdk
+  const permiso = new Promise((resolve) => { liberarSdk = resolve })
+  let desafios = 0
+  page.on('request', (r) => { if (r.url().endsWith('/api/auth/google/desafio')) desafios++ })
+  await page.route('https://accounts.google.com/gsi/client', async (route) => {
+    await permiso
+    await route.fulfill({ contentType: 'application/javascript', body: gis })
+  })
+  try {
+    await page.goto('/login', { waitUntil: 'domcontentloaded' })
+    await page.getByRole('button', { name: 'Cancelar acceso con Google' }).click()
+    liberarSdk()
+    await page.waitForFunction(() => Boolean(window.google?.accounts?.id))
+    await expect(page.getByRole('alert')).toContainText('Cancelaste')
+    await expect(page.getByRole('button', { name: 'Iniciar sesión con Google', exact: true })).toHaveCount(0)
+    await expect(page.getByLabel('Correo electrónico', { exact: true })).toBeEnabled()
+    expect(desafios).toBe(0)
+    expect(await page.evaluate(() => localStorage.getItem('puntoax-sesion'))).toBeNull()
+  } finally { liberarSdk() }
+})
+
+test('reintentar después de un fallo de red carga Google sin recargar la página', async ({ page }) => {
+  await preparar(page, { falloSdk: true })
+  await page.goto('/login')
+  await expect(page.getByRole('alert')).toContainText('No se pudo cargar Google')
+  await page.route('https://accounts.google.com/gsi/client', (route) =>
+    route.fulfill({ contentType: 'application/javascript', body: gis }))
+  await page.getByRole('button', { name: 'Reintentar con Google' }).click()
+  await expect(page.getByRole('button', { name: 'Iniciar sesión con Google', exact: true })).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
+
 test('un error al guardar la sesión no deja el formulario bloqueado', async ({ page }) => {
   await preparar(page)
   await page.addInitScript(() => {
