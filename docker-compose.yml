@@ -54,6 +54,8 @@ services:
       - SESSION_IDLE_TIMEOUT_MINUTES=${SESSION_IDLE_TIMEOUT_MINUTES:-15}
       - SESSION_WARNING_SECONDS=${SESSION_WARNING_SECONDS:-60}
       - SESSION_ABSOLUTE_TIMEOUT_HOURS=${SESSION_ABSOLUTE_TIMEOUT_HOURS:-8}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_ALLOWED_ORIGINS=${GOOGLE_ALLOWED_ORIGINS:-https://puntoax.online}
     volumes:
       - puntoax_documentos:/var/lib/puntoax
     depends_on:
@@ -61,7 +63,10 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend # Corregido: de ./front a ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     container_name: puntoax_sprint4_frontend
     restart: unless-stopped
     healthcheck:

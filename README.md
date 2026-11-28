@@ -47,6 +47,7 @@ La plataforma tiene un propósito exclusivamente informativo y de localización;
 
 - [Flujos, instalación, privacidad, sesiones y puerta de pruebas](docs/entrega-local-auditada.md).
 - [Inventario, respaldo y recuperación](docs/operacion-y-recuperacion.md).
+- [Registro e inicio de sesión con Google: configuración, seguridad y pruebas](docs/autenticacion-google.md).
 
 El alta oficial la inicia la propia clínica y requiere aprobación administrativa.
 No existe un registro administrativo persistente de clínicas. Publicar un centro

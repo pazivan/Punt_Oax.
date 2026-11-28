@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ArrowRight, Building2, Check, Eye, EyeOff, ShieldCheck, User } from 'lucide-react';
 import '../../styles/Auth.css';
 import { registrarClinica, registrarUsuario } from '../../api/auth';
+import GoogleAuth from './GoogleAuth';
 import {
   PASSWORD_MAX_BYTES,
   PASSWORD_REQUISITOS,
@@ -12,7 +13,7 @@ import {
   validarRequerido,
 } from '../../utils/validaciones';
 
-export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar, initialAccountType = 'usuario', initialEmail = '' }) {
+export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar, onLogin, initialAccountType = 'usuario', initialEmail = '' }) {
   const [accountType, setAccountType] = useState(
     initialAccountType === 'clinica' ? 'clinica' : 'usuario'
   );
@@ -25,6 +26,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar,
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const [error, setError] = useState('');
   const enviando = useRef(false);
 
@@ -39,7 +41,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar,
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (enviando.current) return;
+    if (enviando.current || googleBusy) return;
     setError('');
 
     const correoLimpio = normalizarCorreo(email);
@@ -336,6 +338,9 @@ export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar,
                 </div>
               )}
 
+              {accountType === 'usuario' && <GoogleAuth registro disabled={loading} onBusy={setGoogleBusy} onSuccess={onLogin} />}
+
+              <fieldset className="auth-local-fields" disabled={googleBusy}>
               <form onSubmit={handleSubmit} className="auth-form" noValidate>
                 {accountType === 'clinica' ? (
                   <>
@@ -430,6 +435,7 @@ export default function Register({ onSwitchToLogin, onBackToPublic, onVerificar,
                   </>
                 )}
               </form>
+              </fieldset>
 
               <div className="auth-bottom-links">
                 <p className="auth-switch-text">

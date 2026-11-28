@@ -520,6 +520,18 @@ function App() {
       key={estadoRuta?.tipo || tipoRegistro}
       initialAccountType={estadoRuta?.tipo || tipoRegistro}
       initialEmail={estadoRuta?.correo || ''}
+      onLogin={(nuevaSesion) => {
+        borrarVerificacionPendiente()
+        setVerificacionPendiente(null)
+        setPerfil(null)
+        setVerificandoPerfil(true)
+        setSesion(nuevaSesion)
+        setErrorPerfil('')
+        setMensajeAuth('')
+        cerrandoPorExpiracionRef.current = false
+        ultimaActividadPingRef.current = Date.now()
+        navigate(obtenerDestinoPostLogin('', null, nuevaSesion), { replace: true })
+      }}
       onSwitchToLogin={(mensaje = '', tipo = 'usuario') => {
         setMensajeAuth(typeof mensaje === 'string' ? mensaje : '')
         setTipoRegistro(tipo === 'clinica' ? 'clinica' : 'usuario')

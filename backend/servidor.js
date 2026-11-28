@@ -37,6 +37,7 @@ const {
   respuestaNoAprobada,
 } = require("./clinicasEstado");
 const { registrarRutasCorreo, permitido } = require("./correo");
+const { registrarRutasGoogle } = require("./googleAuth");
 const {
   validarPassword,
   validarTelefono,
@@ -53,6 +54,7 @@ app.use(cors());
 app.use(express.json());
 app.get("/api/municipios", (_req, res) => res.json({ ...fuenteMunicipios, municipios }));
 const { enviarDesafio, proveedor: proveedorCorreo, limiteIp: limiteCorreo } = registrarRutasCorreo(app, { pool, hashearPassword, validarPassword });
+registrarRutasGoogle(app, { pool, crearSesionActiva, verificarPassword, limiteIp: limiteCorreo });
 // Registrar las rutas estáticas de la agenda antes de /api/clinicas/:id.
 registrarRutasAgendaClinica(app, { pool, autenticarToken, requerirRol });
 // Centros cercanos (Sprint 8 · #94 y #95). Debe ir antes de /api/clinicas/:id.
