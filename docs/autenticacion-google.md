@@ -30,6 +30,12 @@ Se utiliza **Google Identity Services**, botón oficial renderizado con
 No hay OAuth authorization code, refresh token, access token de Google ni
 client secret en esta integración. No se usa One Tap automático.
 
+Antes de pedir el desafío se carga el SDK oficial. Se toleran hasta 30 segundos
+para esa descarga; a los seis segundos se muestra un aviso informativo, sin
+bloquear los formularios tradicionales. No se muestra el botón de Google hasta
+disponer del SDK y del desafío. Se puede cancelar durante la preparación o
+reintentar un fallo sin recargar. Véase [la corrección de carga lenta](correccion-carga-google.md).
+
 1. `POST /api/auth/google/desafio`: exige JSON, `X-Puntoax-Google: 1` y un
    `Origin` de la lista exacta. Emite `desafio`, `csrf`, `nonce` aleatorios
    de 256 bits y una cookie de navegador `HttpOnly`, `SameSite=Strict`,
