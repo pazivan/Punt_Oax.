@@ -570,6 +570,15 @@
 }
 
 /* Mensajes de error */
+.auth-local-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+.auth-google { display: grid; gap: 12px; margin: 0 0 16px; min-width: 0; }
+.auth-google-button { width: 100%; min-width: 0; overflow: hidden; }
+.auth-google-button[inert] { opacity: .6; }
+.auth-google p { margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.auth-google .auth-google-divider { color: #596763; text-align: center; padding-top: 4px; }
+.auth-google-confirm { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #103328; }
+.auth-google-confirm input { accent-color: #103328; flex-shrink: 0; }
+
 .auth-error-alert {
   background-color: #FEE2E2;
   color: #991B1B;

@@ -5,6 +5,7 @@ import { guardarSesion, iniciarSesion, iniciarSesionAdmin, iniciarSesionClinica 
 import { normalizarCorreo, validarEmail, validarRequerido } from '../../utils/validaciones';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { leerVerificacionPendiente } from '../../api/verificacionPendiente';
+import GoogleAuth from './GoogleAuth';
 
 export default function Login({
   onSwitchToRegister,
@@ -22,6 +23,7 @@ export default function Login({
   const [password, setPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const [error, setError] = useState('');
   const enviando = useRef(false);
   const navigate = useNavigate();
@@ -46,7 +48,7 @@ export default function Login({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (enviando.current) return;
+    if (enviando.current || googleBusy) return;
     setError('');
 
     // Validación básica en cliente
@@ -246,7 +248,11 @@ export default function Login({
                 </button>
               </div>
 
+              {accountType === 'usuario' && <GoogleAuth disabled={loading} onBusy={setGoogleBusy}
+                onSuccess={(sesion) => onLogin(sesion, destinoPostLogin)} />}
+
               {/* Formulario */}
+              <fieldset className="auth-local-fields" disabled={googleBusy}>
               <form onSubmit={handleSubmit} className="auth-form" noValidate>
                 <div className="auth-input-group">
                   <label htmlFor="login-email" className="auth-label">
@@ -310,6 +316,7 @@ export default function Login({
                   )}
                 </button>
               </form>
+              </fieldset>
 
               {/* Enlaces secundarios */}
               <div className="auth-bottom-links auth-login-links">

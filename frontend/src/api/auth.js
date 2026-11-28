@@ -32,6 +32,8 @@ async function leerRespuesta(respuesta) {
       error.codigo = contenido.codigo
       error.requiere_verificacion = contenido.requiere_verificacion
       error.faltantes = contenido.faltantes
+      error.vinculacion = contenido.vinculacion
+      error.correo = contenido.correo
     }
     throw error
   }
@@ -73,6 +75,35 @@ export function registrarClinica(datos) {
 
 export function iniciarSesion(correo, password) {
   return enviarAuth('/api/auth/login-usuario', { correo, password })
+}
+
+export async function enviarGoogle(accion, datos, signal) {
+  const controlador = new AbortController()
+  const abortar = () => controlador.abort()
+  if (signal?.aborted) abortar()
+  signal?.addEventListener('abort', abortar, { once: true })
+  let vencido = false
+  const plazo = setTimeout(() => { vencido = true; abortar() }, 20000)
+  try {
+    let respuesta
+    try {
+      respuesta = await fetch(`/api/auth/google${accion}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-Puntoax-Google': '1' },
+        body: JSON.stringify(datos),
+        signal: controlador.signal,
+      })
+    } catch (error) {
+      if (vencido) throw new Error('El acceso con Google tardó demasiado. Inténtalo de nuevo.', { cause: error })
+      if (error.name === 'AbortError') throw error
+      throw new Error('No se pudo conectar con el servidor. Inténtalo de nuevo.', { cause: error })
+    }
+    return await leerRespuesta(respuesta)
+  } finally {
+    clearTimeout(plazo)
+    signal?.removeEventListener('abort', abortar)
+  }
 }
 
 export function iniciarSesionClinica(correo, password) {
